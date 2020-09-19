@@ -31,11 +31,12 @@
      (reset
        [this new-value]
        (assert (validator new-value) "Validator rejected reference state")
-       (let [{:keys [value opset] :as s} state]
+       (let [{:keys [value opset] :as s} state
+             opset                       (opset/add-ops-from-diff opset actor value new-value)]
          (set! state (assoc s
-                            :value new-value
+                            :value (edn/edn opset)
                             :dirty? false
-                            :opset (opset/add-ops-from-diff opset actor value new-value)))
+                            :opset opset))
          (notify-w this watches value new-value)
          new-value))
      (swap [this f]          (.reset this (f (:value state))))

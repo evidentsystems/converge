@@ -56,6 +56,8 @@
 
 (comment
 
+  (require '[criterium.core :as criterium])
+
   (def m (convergent-ref {}))
   @m
   (ref/-state m)
@@ -64,18 +66,26 @@
   @v
   (ref/-state v)
 
-  (def a (convergent-ref
-          {:empty-m {}
-           :empty-l []
-           :a       :key
-           :another {:nested {:key [1 2 3]}}
-           :a-list  [:foo "bar" 'baz {:nested :inalist}]
-           :a-set   #{1 2 3 4 5}}))
-  (binding [*print-meta* true]
-    (prn @a))
-  (ref/-state a)
+  (def a
+    {:empty-m {}
+     :empty-l []
+     :a       :key
+     :another {:nested {:key [1 2 3]}}
+     :a-list  [:foo "bar" 'baz {:nested :inalist}]
+     :a-set   #{1 2 3 4 5}})
 
-  (swap! a dissoc :a)
-  @a
+  (criterium/bench
+   (convergent-ref a))
+
+  (def c (convergent-ref a))
+  @c
+
+  (binding [*print-meta* true]
+    (prn @c))
+  (ref/-state c)
+
+  (criterium/bench
+   (swap! c dissoc :a))
+  @c
 
   )
