@@ -32,9 +32,11 @@
        [this new-value]
        (assert (validator new-value) "Validator rejected reference state")
        (let [{:keys [value opset] :as s} state
-             opset                       (opset/add-ops-from-diff opset actor value new-value)]
+             opset                       (opset/add-ops-from-diff opset actor value new-value)
+             computed-new-value          (edn/edn opset)]
+         (assert (= new-value computed-new-value) "Unsupported reference state")
          (set! state (assoc s
-                            :value (edn/edn opset)
+                            :value computed-new-value
                             :dirty? false
                             :opset opset))
          (notify-w this watches value new-value)
@@ -118,11 +120,14 @@
      (-reset!
        [this new-value]
        (assert (validator new-value) "Validator rejected reference state")
-       (let [{:keys [value opset] :as s} state]
+       (let [{:keys [value opset] :as s} state
+             opset                       (opset/add-ops-from-diff opset actor value new-value)
+             computed-new-value          (edn/edn opset)]
+         (assert (= new-value computed-new-value) "Unsupported reference state")
          (set! state (assoc s
-                            :value new-value
+                            :value computed-new-value
                             :dirty? false
-                            :opset (opset/add-ops-from-diff opset actor value new-value)))
+                            :opset opset))
          (notify-w this watches value new-value)
          new-value))
 
