@@ -1,22 +1,43 @@
 # Converge
 
-FIXME: my new library.
+This library provides a convergent reference type for Clojure and
+ClojureScript.  Its local modification and access API resembles the
+behavior of an Atom (i.e. `swap!`, `reset!`, and `deref`).  However,
+it also has API functions for applying patches from the local site or
+from remote sites, and for a converging merge with a remote OpSet or
+convergent ref.
 
 ## Usage
 
-FIXME: write usage documentation!
+## Development
 
-Build a deployable jar of this library:
+This library uses a Makefile for development, testing, and CI/CD use.
 
-    $ clojure -A:jar
+To install dev dependencies (tested on Mac OS):
 
-Install it locally:
+``` bash
+$ make bootstrap
+```
 
-    $ clojure -A:install
+To run a REPL:
 
-Deploy it to Clojars -- needs `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` environment variables:
+``` bash
+$ make dev CLJ_REPL_ALIAS=:cider-nrepl # or your preferred REPL alias
+(test) ; to run test suite from REPL
+```
 
-    $ clojure -A:deploy
+To run tests from CLI:
+
+``` bash
+$ make test
+$ make # `test` is also the default target
+```
+
+To analyze lines of code:
+
+``` bash
+$ make loc
+```
 
 ## License
 
