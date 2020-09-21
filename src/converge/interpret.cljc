@@ -29,7 +29,6 @@
   (transitive-closure
    (into #{} (map (juxt :object :value) elements))))
 
-;; TODO: optimize via a smart-slicing on sorting key(s), instead of clojure.core/filter
 (defmulti -interpret-op
   (fn [_agg _id {action :action :as op}] action)
   :default ::default)
@@ -38,8 +37,6 @@
   [agg _id _op]
   agg)
 
-;; TODO: We're not tracking multi-value registers here to preserve
-;; conflicts, but we probably should
 (defmethod -interpret-op :assign
   [{:keys [elements] :as agg} id {:keys [data] :as op}]
   (let [{:keys [object key value]} data]
@@ -59,8 +56,6 @@
                     id
                     (->Element object key value))))))
 
-;; TODO: We're not tracking multi-value registers here to preserve
-;; conflicts, but we probably should
 (defmethod -interpret-op :remove
   [{:keys [elements] :as agg} id {:keys [data] :as op}]
   (let [{:keys [object key]} data]

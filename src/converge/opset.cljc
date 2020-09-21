@@ -18,12 +18,8 @@
 
 (set! *warn-on-reflection* true)
 
-;; TODO: only assert on spec validations
-
 (declare id?)
 
-;; TODO: somehow include unique document ID, without fouling up equals, etc.
-;; TODO: somehow include wall-clock time without including in equals, etc.
 (defrecord Id [^UUID actor ^long counter]
   #?(:clj  Comparable
      :cljs IComparable)
@@ -58,8 +54,6 @@
 
 (defrecord Op [action data])
 
-;; TODO: multi-specs on action
-
 (defn op
   ([action]
    (op action nil))
@@ -69,8 +63,6 @@
    (->Op action data)))
 
 ;;;; Operations
-
-;; TODO: Specs!
 
 (defn make-map
   []

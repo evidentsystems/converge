@@ -16,8 +16,6 @@
   (-state [this] "Returns the current state of the convergent ref")
   (-update-behind! [this ops] "Adds the ops to the opset, and recompute the value setting dirty? to false"))
 
-;; TODO: on swap!/reset!, drop patch on a queue; async process reads queue and updates opset
-
 #?(:clj
    (deftype ConvergentRef [actor
                            ^:volatile-mutable state

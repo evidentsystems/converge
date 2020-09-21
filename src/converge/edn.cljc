@@ -48,10 +48,6 @@
         next-list
         (recur next next-list)))))
 
-;; TODO: performance ideas:
-;;   * Cache elements and list-links?
-;;   * Cache objects index?
-
 (defn edn
   [opset]
   (cond
