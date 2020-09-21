@@ -38,7 +38,7 @@ storage of historical changes to e.g. Transit.
 ;=> new value including changes provided in ops (order in which changes applied doesn't matter)
 
 ;=> remote (i.e. auto-generated actor distinct from that of `c`)
-(def remote-c (converge/ref-from-ops some-ops))
+(def remote-c (converge/ref-from-opset some-ops))
 
 (converge/merge! c remote-c)
 @c
