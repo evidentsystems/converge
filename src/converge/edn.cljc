@@ -48,6 +48,30 @@
         next-list
         (recur next next-list)))))
 
+(defn object-index
+  [opset {:keys [elements list-links]}]
+  (let [index (reduce-kv (fn [agg _id {:keys [object key value]}]
+                           (let [v (get-in opset [value :data :value]
+                                           value)]
+                             (cond-> agg
+                               ;; ensure empty collections are included in object-index
+                               (and (opset/id? v)
+                                    (some-> opset (get v) :action #{:make-list :make-map})
+                                    (empty? (get agg v)))
+                               (assoc v {})
+
+                               true
+                               (assoc-in [object key] v))))
+                         {}
+                         elements)]
+    (reduce-kv (fn [agg id object]
+                 (let [op (get opset id)]
+                   (if (= (:action op) :make-list)
+                     (assoc agg id (build-list id object list-links))
+                     agg)))
+               index
+               index)))
+
 (defn edn
   [opset]
   (cond
@@ -55,39 +79,23 @@
     nil
 
     (= (count opset) 1)
-    (case (some-> opset first val :action)
-      :make-map  {}
-      :make-list []
-      (throw (ex-info "Invalid OpSet" {:opset opset})))
+    (vary-meta
+     (case (some-> opset first val :action)
+       :make-map  {}
+       :make-list []
+       (throw (ex-info "Invalid OpSet" {:opset opset})))
+     assoc :converge/id opset/root-id)
 
     :else
-    (let [{:keys [elements list-links]}
-          (interpret/interpret opset)
-          object-index (reduce-kv (fn [agg _id {:keys [object key value]}]
-                                    (let [v (get-in opset [value :data :value]
-                                                    value)]
-                                      (cond-> agg
-                                        ;; ensure empty collections are included in object-index
-                                        (and (opset/id? v)
-                                             (some-> opset (get v) :action #{:make-list :make-map})
-                                             (empty? (get agg v)))
-                                        (assoc v {})
-
-                                        true
-                                        (assoc-in [object key] v))))
-                                  {}
-                                  elements)
-          object-index* (reduce-kv (fn [agg id object]
-                                     (let [op (get opset id)]
-                                       (if (= (:action op) :make-list)
-                                         (assoc agg id (build-list id object list-links))
-                                         agg)))
-                                   object-index
-                                   object-index)]
-      (vary-meta (get (walk/prewalk #(replace-id-values % object-index*)
-                                    object-index*)
-                      opset/root-id)
-                 assoc :converge/id opset/root-id))))
+    (let [interpretation (interpret/interpret opset)
+          index          (object-index opset interpretation)]
+      (some-> (walk/prewalk #(replace-id-values % index)
+                            index)
+              (get opset/root-id (case (some-> opset first val :action)
+                                   :make-map  {}
+                                   :make-list []
+                                   (throw (ex-info "Invalid OpSet" {:opset opset}))))
+              (vary-meta assoc :converge/id opset/root-id)))))
 
 (comment
 

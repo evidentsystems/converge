@@ -3,7 +3,7 @@
   `Op`(eration)s as per section 3.1 of the
   [OpSet paper](https://arxiv.org/pdf/1805.04263.pdf), and `OpSet`s or
   totally ordered maps of id -> op."
-  (:refer-clojure :exclude [remove list #?(:cljs uuid)])
+  (:refer-clojure :exclude [remove #?(:cljs uuid)])
   (:require #?@(:clj
                 [[clj-uuid :as uuid]]
                 :cljs
@@ -223,8 +223,7 @@
 
 (defmethod edit-to-ops :-
   [[path :as edit] old actor id]
-  (let [container    (or (util/safe-get-in old (butlast path))
-                         old)
+  (let [container    (util/safe-get-in old (butlast path))
         container-id (util/get-id container)
         key          (if (map? container)
                        (last path)
@@ -233,11 +232,22 @@
 
 (defmethod edit-to-ops :r
   [[path _ new-value :as edit] old actor id]
-  (if (seq path)
+  (if (empty? old)
+    (value-to-ops new-value actor root-id id)
     ;; TODO: Check for existing IDs?
-    (insert-and-or-assign edit old actor id)
-    ;; old value is empty
-    (value-to-ops new-value actor root-id id)))
+    (let [object    (util/safe-get-in old path)
+          object-id (util/get-id object)]
+      (if (and (coll? new-value)
+               (empty? new-value))
+        (:ops
+         (reduce (fn [{:keys [ops id] :as agg} k]
+                   (-> agg
+                       (update :ops conj [id (remove object-id k)])
+                       (assoc :id (successor-id id))))
+                 {:id  id
+                  :ops []}
+                 (keys old)))
+        (insert-and-or-assign edit old actor id)))))
 
 (defn add-ops-from-diff
   [opset actor old-value new-value]

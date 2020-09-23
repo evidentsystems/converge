@@ -16,7 +16,7 @@ storage of historical changes to e.g. Transit.
 ``` clj
 (require '[converge.api :as converge])
 
-(def c (converge/convergent-ref {:my :value}))
+(def c (converge/ref {:my :value}))
 @c
 ; => {:my :value}
 
@@ -31,7 +31,7 @@ storage of historical changes to e.g. Transit.
 ; throws
 
 (converge/opset c)
-;=> sorted set of all historical operations
+;=> sorted map of id -> op of all historical operations
 
 (converge/patch! c some-ops)
 @c
