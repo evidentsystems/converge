@@ -30,11 +30,15 @@
        (catch #?(:clj Exception
                  :cljs :default) e not-found)))))
 
+(def lookup-sentinel
+  #?(:clj  (Object.)
+     :cljs (js-obj)))
+
 (defn safe-get-in
   ([m ks]
    (safe-get-in m ks nil))
   ([m ks not-found]
-   (loop [sentinel (Object.)
+   (loop [sentinel lookup-sentinel
           m        m
           ks       (seq ks)]
      (if ks

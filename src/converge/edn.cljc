@@ -6,32 +6,22 @@
 
 #?(:clj (set! *warn-on-reflection* true))
 
-(defprotocol ReplaceIdValues
-  (replace-id-values [this index]))
-
-(extend-protocol ReplaceIdValues
-  #?(:cljs default
-     :clj  java.lang.Object)
-  (replace-id-values [this _index]
-    this)
-
-  nil
-  (replace-id-values [this _index]
-    this)
-
-  #?(:cljs MapEntry
-     :clj  java.util.Map$Entry)
-  (replace-id-values [[k v :as entry] _index]
-    (if (opset/id? k)
-      [(vary-meta k assoc :key? true) v]
-      entry))
-
-  converge.opset.Id
-  (replace-id-values [this index]
+(defn replace-id-values
+  [this index]
+  (cond
+    (opset/id? this)
     (if (:key? (meta this))
       (vary-meta this dissoc :key?)
       (vary-meta (get index this)
-                 assoc :converge/id this))))
+                 assoc :converge/id this))
+
+    (map-entry? this)
+    (if (opset/id? (key this))
+      (update this 0 vary-meta assoc :key? true)
+      this)
+
+    :else
+    this))
 
 (defn- build-list
   [head-id list-map list-links]

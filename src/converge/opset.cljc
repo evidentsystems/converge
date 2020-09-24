@@ -110,80 +110,74 @@
       (make-id actor)
       (successor-id latest))))
 
-(defprotocol ValueIntoOps
-  (value-to-ops [value actor value-id next-id]))
+(declare value-to-ops)
+(defn map-to-value
+  [value actor map-id next-id]
+  (let [initial-ops
+        (if (= root-id map-id)
+          [] ;; TODO: do we need this if we remove all special case init in convergent-ref?
+          [[map-id (make-map)]])]
+    (:ops
+     (reduce-kv (fn [{:keys [id] :as agg} k v]
+                  (let [value-id  id
+                        assign-id (successor-id value-id)
+                        value-ops (value-to-ops v actor value-id (successor-id assign-id))]
+                    (-> agg
+                        (update :ops
+                                into
+                                (apply vector
+                                       (first value-ops)
+                                       [assign-id (assign map-id k value-id)]
+                                       (next value-ops)))
+                        (assoc :id (successor-id
+                                    (if (next value-ops)
+                                      (first (last value-ops))
+                                      assign-id))))))
+                {:id  next-id
+                 :ops initial-ops}
+                value))))
 
-(extend-protocol ValueIntoOps
-  #?(:cljs default
-     :clj  java.lang.Object)
-  (value-to-ops
-    [value _ value-id _next-id]
-    [[value-id (make-value value)]])
+(defn sequential-to-value
+  [value actor list-id next-id]
+  (let [initial-ops
+        (if (= root-id list-id)
+          [] ;; TODO: do we need this if we remove all special case init in convergent-ref?
+          [[list-id (make-list)]])]
+    (:ops
+     (reduce (fn [{:keys [id tail-id] :as agg} v]
+               (let [insert-id id
+                     value-id  (successor-id insert-id)
+                     assign-id (successor-id value-id)
+                     value-ops (value-to-ops v actor value-id (successor-id assign-id))]
+                 (-> agg
+                     (update :ops
+                             into
+                             (apply vector
+                                    [insert-id (insert tail-id)]
+                                    (first value-ops)
+                                    [assign-id (assign list-id insert-id value-id)]
+                                    (next value-ops)))
+                     (assoc :id (successor-id
+                                 (if (next value-ops)
+                                   (first (last value-ops))
+                                   assign-id))
+                            :tail-id insert-id))))
+             {:id      next-id
+              :tail-id list-id
+              :ops     initial-ops}
+             value))))
 
-  nil
-  (value-to-ops
-    [value _ value-id _next-id]
-    [[value-id (make-value value)]])
+(defn value-to-ops
+  [value actor value-id next-id]
+  (cond
+    (map? value)
+    (map-to-value value actor value-id next-id)
 
-  #?(:cljs IMap
-     :clj  java.util.Map)
-  (value-to-ops
-    [value actor map-id next-id]
-    (let [initial-ops
-          (if (= root-id map-id)
-            [] ;; TODO: do we need this if we remove all special case init in convergent-ref?
-            [[map-id (make-map)]])]
-      (:ops
-       (reduce-kv (fn [{:keys [id] :as agg} k v]
-                    (let [value-id  id
-                          assign-id (successor-id value-id)
-                          value-ops (value-to-ops v actor value-id (successor-id assign-id))]
-                      (-> agg
-                          (update :ops
-                                  into
-                                  (apply vector
-                                         (first value-ops)
-                                         [assign-id (assign map-id k value-id)]
-                                         (next value-ops)))
-                          (assoc :id (successor-id
-                                      (if (next value-ops)
-                                        (first (last value-ops))
-                                        assign-id))))))
-                  {:id  next-id
-                   :ops initial-ops}
-                  value))))
+    (sequential? value)
+    (sequential-to-value value actor value-id next-id)
 
-  #?(:cljs ISequential
-     :clj  java.util.List)
-  (value-to-ops
-    [value actor list-id next-id]
-    (let [initial-ops
-          (if (= root-id list-id)
-            [] ;; TODO: do we need this if we remove all special case init in convergent-ref?
-            [[list-id (make-list)]])]
-      (:ops
-       (reduce (fn [{:keys [id tail-id] :as agg} v]
-                 (let [insert-id id
-                       value-id  (successor-id insert-id)
-                       assign-id (successor-id value-id)
-                       value-ops (value-to-ops v actor value-id (successor-id assign-id))]
-                   (-> agg
-                       (update :ops
-                               into
-                               (apply vector
-                                      [insert-id (insert tail-id)]
-                                      (first value-ops)
-                                      [assign-id (assign list-id insert-id value-id)]
-                                      (next value-ops)))
-                       (assoc :id (successor-id
-                                   (if (next value-ops)
-                                     (first (last value-ops))
-                                     assign-id))
-                              :tail-id insert-id))))
-               {:id      next-id
-                :tail-id list-id
-                :ops     initial-ops}
-               value)))))
+    :else
+    [[value-id (make-value value)]]))
 
 (defmulti edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
