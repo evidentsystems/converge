@@ -25,11 +25,17 @@ clean:
 
 # Development Workflow
 
+CLJ_REPL_ALIAS:=
+
+.PHONY: clj-dev
+clj-dev:
+	clojure -A:dev${CLJ_REPL_ALIAS}
+
 node_modules/.yarn-integrity: yarn.lock package.json
 	yarn install
 
-.PHONY: dev
-dev: node_modules/.yarn-integrity
+.PHONY: cljs-dev
+cljs-dev: node_modules/.yarn-integrity
 	yarn shadow-cljs -A:dev watch lib
 
 # Tests

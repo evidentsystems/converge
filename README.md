@@ -55,14 +55,22 @@ To install dev dependencies (tested on Mac OS):
 $ make bootstrap
 ```
 
-To run a REPL:
+To run a Clojure REPL:
 
 ``` bash
-$ make dev CLJ_REPL_ALIAS=:cider-nrepl # or your preferred REPL alias
+$ make clj-dev CLJ_REPL_ALIAS=:cider-nrepl # or your preferred REPL alias
 (test) ; to run test suite from REPL
 ```
 
-To run tests from CLI:
+To run a ClojureScript REPL (via `shadow-cljs`):
+
+``` bash
+$ make cljs-dev
+```
+
+Then connect your nREPL client of choice to port 9999.
+
+To run all tests:
 
 ``` bash
 $ make test
