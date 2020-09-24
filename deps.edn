@@ -1,6 +1,10 @@
 {:paths ["src" "resources"]
  :aliases
- {:dev
+ {:cljs
+  {:extra-deps
+   {thheller/shadow-cljs {:mvn/version "2.11.4"}}}
+
+  :dev
   {:extra-paths ["dev" "test"]
    :extra-deps
    {org.clojure/test.check      {:mvn/version "0.10.0"}
@@ -22,7 +26,7 @@
                 "-d" "test"]}}
 
  :deps {org.clojure/clojure    {:mvn/version "1.10.1"}
-        org.clojure/spec.alpha {:mvn/version "0.2.176"}
+        org.clojure/spec.alpha {:mvn/version "0.2.187"}
         org.clojure/data.avl   {:mvn/version "0.1.0"}
         juji/editscript        {:mvn/version "0.4.6"}
         danlentz/clj-uuid      {:mvn/version "0.1.9"}}}

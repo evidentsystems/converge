@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "license": "UNLICENSED",
+  "dependencies": {
+    "uuid": "^8.3.0"
+  },
+  "devDependencies": {
+    "karma": "^5.2.2",
+    "karma-chrome-launcher": "^3.1.0",
+    "karma-cljs-test": "^0.1.0",
+    "shadow-cljs": "^2.11.4"
+  }
+}

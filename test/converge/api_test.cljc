@@ -1,5 +1,6 @@
 (ns converge.api-test
-  (:require [clojure.test :refer :all]
+  (:require #?(:clj  [clojure.test :refer :all]
+               :cljs [cljs.test :refer-macros [deftest is testing run-tests]])
             [converge.api :as converge]))
 
 (def a {:empty-m {}

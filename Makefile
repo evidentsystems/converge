@@ -13,6 +13,10 @@ default: test
 bootstrap:
 	brew install clojure tokei
 
+.PHONY: outdated
+outdated:
+	clojure -R:cljs:dev:test -A:outdated
+
 # Clean
 
 .PHONY: clean
@@ -21,13 +25,26 @@ clean:
 
 # Development Workflow
 
+node_modules/.yarn-integrity: yarn.lock package.json
+	yarn install
+
 .PHONY: dev
-dev:
-	clojure -A:dev${CLJ_REPL_ALIAS}
+dev: node_modules/.yarn-integrity
+	yarn shadow-cljs -A:dev watch lib
+
+# Tests
+
+.PHONY: clj-test
+clj-test:
+	clojure -A:test:runner
+
+.PHONY: cljs-test
+cljs-test:
+	yarn shadow-cljs -A:test compile ci
+	yarn karma start --single-run
 
 .PHONY: test
-test:
-	clojure -A:test:runner
+test: clj-test cljs-test
 
 # Project info
 

@@ -1,0 +1,25 @@
+;; shadow-cljs configuration
+{:deps {:aliases [:cljs]}
+
+ ;; set an nrepl port for connection to a REPL.
+ :nrepl {:port 9999}
+
+ :builds
+ {:lib  {:target           :browser
+         :compiler-options {:infer-externs             :auto
+                            :cross-chunk-method-motion false}
+         :output-dir       "target/dist/js"
+         :asset-path       "/js"
+         :modules          {:main {:entries [converge.api]}}
+         :dev              {:closure-defines {"goog.DEBUG" true}}
+         :release          {}
+         :devtools         {:http-root "target/dist"
+                            :http-port 8000}}
+  :test {:target   :browser-test
+         :test-dir "target/test/js"
+         :devtools {:http-port 8008
+                    :http-root "target/test"}}
+  :ci   {:target    :karma
+         :output-to "target/js/ci.js"
+         :dev       {:closure-defins
+                     {"goog.DEBUG" true}}}}}

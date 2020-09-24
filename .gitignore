@@ -9,3 +9,6 @@
 /.nrepl-port
 .hgignore
 .hg/
+
+node_modules/
+.shadow-cljs/
