@@ -6,11 +6,12 @@
                 :cljs
                 [[uuid :as uuid]])))
 
-(set! *warn-on-reflection* true)
+#?(:clj (set! *warn-on-reflection* true))
 
 (defn uuid
   []
-  (uuid/v4))
+  #?(:clj  (uuid/v4)
+     :cljs (random-uuid)))
 
 (defn now
   []
@@ -26,7 +27,8 @@
      (get coll i not-found)
      (try
        (or (nth coll i) not-found)
-       (catch Exception e not-found)))))
+       (catch #?(:clj Exception
+                 :cljs :default) e not-found)))))
 
 (defn safe-get-in
   ([m ks]

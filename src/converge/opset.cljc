@@ -16,7 +16,7 @@
             [converge.util :as util])
   #?(:clj (:import java.util.UUID)))
 
-(set! *warn-on-reflection* true)
+#?(:clj (set! *warn-on-reflection* true))
 
 (declare id?)
 
@@ -100,7 +100,8 @@
 
 (defn latest-id
   [opset actor]
-  (first (avl/nearest opset < (make-id actor Long/MAX_VALUE))))
+  (first (avl/nearest opset < (make-id actor #?(:clj Long/MAX_VALUE
+                                                :cljs js/Number.MAX_SAFE_INTEGER)))))
 
 (defn next-id
   [opset actor]

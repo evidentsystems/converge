@@ -5,6 +5,8 @@
             [converge.edn :as edn])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
 
+#?(:clj (set! *warn-on-reflection* true))
+
 (defrecord ConvergentState [opset value ^boolean dirty?])
 
 (defn notify-w
@@ -106,7 +108,7 @@
        (let [{:keys [dirty? value opset] :as s}
              state]
          (if dirty?
-           (let [value (edn opset)]
+           (let [value (edn/edn opset)]
              (set! state
                    (assoc s
                           :value  value
@@ -153,11 +155,11 @@
        [this old-value new-value]
        (notify-w this watches old-value new-value))
      (-add-watch
-       [this key f]
+       [this k callback]
        (set! watches (assoc watches k callback))
        this)
      (-remove-watch
-       [this key]
+       [this k]
        (set! watches (dissoc watches k))
        this)
 

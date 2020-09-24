@@ -1,10 +1,11 @@
 (ns converge.interpret
   "Functions for interpreting an OpSet as per sections 3.2 and 5.2 of
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
-  (:require [clojure.set :as set])
-  (:import [converge.opset Id]))
+  (:require [clojure.set :as set]
+            [converge.opset :as opset])
+  #?(:clj (:import [converge.opset Id])))
 
-(set! *warn-on-reflection* true)
+#?(:clj (set! *warn-on-reflection* true))
 
 (defn transitive-closure
   [e]
@@ -18,7 +19,11 @@
       (recur (set/union e e2)))))
 
 
-(defrecord Element [^Id object key ^Id value])
+(defrecord Element [#?@(:cljs [^clj object]
+                        :clj  [^Id object])
+                    key
+                    #?@(:cljs [^clj value]
+                        :clj  [^Id value])])
 
 (defrecord Interpretation [elements list-links])
 

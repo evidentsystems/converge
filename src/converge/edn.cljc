@@ -4,7 +4,7 @@
             [converge.opset :as opset]
             [converge.interpret :as interpret]))
 
-(set! *warn-on-reflection* true)
+#?(:clj (set! *warn-on-reflection* true))
 
 (defprotocol ReplaceIdValues
   (replace-id-values [this index]))

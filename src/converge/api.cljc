@@ -8,6 +8,8 @@
             [converge.ref :as ref]
             [converge.util :as util]))
 
+#?(:clj (set! *warn-on-reflection* true))
+
 ;; TODO: add note to docstring about our special top-level type
 ;; validation logic
 (defn ref
