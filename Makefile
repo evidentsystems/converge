@@ -39,7 +39,7 @@ clj-test:
 	clojure -A:test:runner
 
 .PHONY: cljs-test
-cljs-test:
+cljs-test: clean
 	yarn shadow-cljs -A:test compile ci
 	yarn karma start --single-run
 

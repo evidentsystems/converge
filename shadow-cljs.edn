@@ -20,6 +20,6 @@
          :devtools {:http-port 8008
                     :http-root "target/test"}}
   :ci   {:target    :karma
-         :output-to "target/js/ci.js"
+         :output-to "target/ci/js/ci.js"
          :dev       {:closure-defins
                      {"goog.DEBUG" true}}}}}
