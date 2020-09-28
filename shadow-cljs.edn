@@ -9,16 +9,18 @@
          :compiler-options {:infer-externs             :auto
                             :cross-chunk-method-motion false}
          :output-dir       "target/dist/js"
-         :asset-path       "/js"
+         :asset-path       "/dist/js"
          :modules          {:main {:entries [converge.api]}}
          :dev              {:closure-defines {"goog.DEBUG" true}}
-         :release          {}
-         :devtools         {:http-root "target/dist"
+         :release          {:compiler-options {:source-map                         true
+                                               :source-map-detail-level            :symbols
+                                               :source-map-include-sources-content false}}
+         :devtools         {:http-root "target"
                             :http-port 8000}}
   :test {:target   :browser-test
          :test-dir "target/test/js"
          :devtools {:http-port 8008
-                    :http-root "target/test"}}
+                    :http-root "target"}}
   :ci   {:target    :karma
          :output-to "target/ci/js/ci.js"
          :dev       {:closure-defins

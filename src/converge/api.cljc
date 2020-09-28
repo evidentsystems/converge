@@ -136,9 +136,13 @@
   (criterium/bench
    (ref a))
 
+  (simple-benchmark [m a f ref] (f a) 1000)
+
   (def c (ref a))
   @c
   (opset c)
+
+  (simple-benchmark [c (ref a) v (random-uuid)] (swap! c assoc :foo v) 1000)
 
   (def b
     {:empty-m {}
