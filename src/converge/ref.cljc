@@ -15,16 +15,18 @@
     (if w (w k this old-value new-value))))
 
 (defprotocol IConvergentRef
+  (-set-actor! [this actor] "Sets this ref's actor to the given value")
   (-state [this] "Returns the current state of the convergent ref")
-  (-update-behind! [this ops] "Adds the ops to the opset, and recompute the value setting dirty? to false"))
+  (-update-state! [this ops] "Adds the ops to the opset, and recompute the value setting dirty? to false"))
 
 #?(:clj
-   (deftype ConvergentRef [actor
+   (deftype ConvergentRef [^:volatile-mutable actor
                            ^:volatile-mutable state
                            ^:volatile-mutable meta
                            ^:volatile-mutable validator
                            ^:volatile-mutable watches]
      IConvergentRef
+     (-set-actor! [this new-actor] (set! actor new-actor))
      (-state [this] state)
 
      IAtom
@@ -92,12 +94,13 @@
        this))
 
    :cljs
-   (deftype ConvergentRef [actor
+   (deftype ConvergentRef [^:mutable actor
                            ^:mutable state
                            meta
                            validator
                            ^:mutable watches]
      IConvergentRef
+     (-set-actor! [this new-actor] (set! actor new-actor))
      (-state [this] state)
 
      IAtom
