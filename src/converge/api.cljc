@@ -113,6 +113,10 @@
   [cr opset]
   )
 
+(defn set-actor!
+  [cr actor]
+  (ref/-set-actor! cr actor))
+
 (comment
 
   (require '[criterium.core :as criterium])
