@@ -34,8 +34,7 @@
   [initial-value & {:keys [actor meta validator] :as options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
-  (let [validator* (or validator (constantly true))
-        actor*     (or actor (util/uuid))
+  (let [actor* (or actor (util/uuid))
 
         r
         (cond
@@ -43,14 +42,14 @@
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState (opset/opset opset/root-id (opset/make-map)) nil false)
                                meta
-                               validator*
+                               validator
                                nil)
 
           (vector? initial-value)
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState (opset/opset opset/root-id (opset/make-list)) nil false)
                                meta
-                               validator*
+                               validator
                                nil)
 
           :else
@@ -83,17 +82,12 @@
           "Option `:actor`, if provided, must be a UUID")
   ;; TODO: assertions ensuring valid opset
   (let [opset*         (into (opset/opset) opset)
-        validator*     (or validator (constantly true))
         actor*         (or actor (util/uuid))
         initial-action (get-in opset* [opset/root-id :action])
-        type-pred      (case initial-action
-                         :make-map  map?
-                         :make-list vector?
-                         (throw (ex-info "Invalid opset" {:opset opset*})))
         r              (ref/->ConvergentRef actor*
                                             (ref/->ConvergentState opset* nil true)
                                             meta
-                                            #(and (type-pred %) (validator* %))
+                                            validator
                                             nil)]
     @r
     r))

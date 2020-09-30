@@ -22,7 +22,7 @@
                     map?
                     sequential?)]
     (and (type-pred new-value)
-         (validator new-value))))
+         (if (ifn? validator) (validator new-value) true))))
 
 (defprotocol IConvergentRef
   (-set-actor! [this actor] "Sets this ref's actor to the given value")
