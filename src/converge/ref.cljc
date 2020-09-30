@@ -14,6 +14,16 @@
   (doseq [[k w] watches]
     (if w (w k this old-value new-value))))
 
+(defn valid?
+  [validator old-value new-value]
+  (let [type-pred (if (or (map? old-value)
+                          (and (nil? old-value)
+                               (map? new-value)))
+                    map?
+                    sequential?)]
+    (and (type-pred new-value)
+         (validator new-value))))
+
 (defprotocol IConvergentRef
   (-set-actor! [this actor] "Sets this ref's actor to the given value")
   (-state [this] "Returns the current state of the convergent ref")
@@ -32,7 +42,7 @@
      IAtom
      (reset
        [this new-value]
-       (assert (validator new-value) "Validator rejected reference state")
+       (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
        (let [{:keys [value opset] :as s} state
              new-opset                   (opset/add-ops-from-diff opset actor value new-value)
              computed-new-value          (edn/edn new-opset)]
@@ -76,12 +86,8 @@
            value)))
      (setValidator
        [_ f]
-       (let [value      (:value state)
-             validator* (if (map? value)
-                          #(and (map? %)    (f %))
-                          #(and (vector? %) (f %)))]
-         (assert (validator* value) "Validator rejected reference state")
-         (set! validator validator*)))
+       (assert (valid? f (:value state) (:value state)) "Validator rejected reference state")
+       (set! validator f))
      (getValidator [_] validator)
      (getWatches   [_] watches)
      (addWatch
@@ -125,7 +131,7 @@
      IReset
      (-reset!
        [this new-value]
-       (assert (validator new-value) "Validator rejected reference state")
+       (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
        (let [{:keys [value opset] :as s} state
              new-opset                   (opset/add-ops-from-diff opset actor value new-value)
              computed-new-value          (edn/edn new-opset)]

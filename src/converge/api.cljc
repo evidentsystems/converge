@@ -43,14 +43,14 @@
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState (opset/opset opset/root-id (opset/make-map)) nil false)
                                meta
-                               #(and (map? %) (validator* %))
+                               validator*
                                nil)
 
           (vector? initial-value)
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState (opset/opset opset/root-id (opset/make-list)) nil false)
                                meta
-                               #(and (vector? %) (validator* %))
+                               validator*
                                nil)
 
           :else
