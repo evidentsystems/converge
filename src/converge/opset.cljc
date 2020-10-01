@@ -49,8 +49,10 @@
   (make-id nil 0))
 
 (defn successor-id
-  [{:keys [counter actor] :as i}]
-  (make-id actor (inc counter)))
+  ([id]
+   (successor-id id (:actor id)))
+  ([{:keys [counter] :as i} actor]
+   (make-id actor (inc counter))))
 
 (defrecord Op [action data])
 
@@ -99,20 +101,18 @@
    (apply avl/sorted-map id-ops)))
 
 (defn latest-id
-  [opset actor]
-  (first (avl/nearest opset < (make-id actor #?(:clj Long/MAX_VALUE
-                                                :cljs js/Number.MAX_SAFE_INTEGER)))))
+  [opset]
+  (some-> opset last key))
 
 (defn next-id
   [opset actor]
-  (let [latest (latest-id opset actor)]
-    (if (= root-id latest)
-      (make-id actor)
-      (successor-id latest))))
+  (if-let [latest (latest-id opset)]
+    (successor-id latest actor)
+    root-id))
 
 (declare value-to-ops)
 (defn map-to-value
-  [value actor map-id next-id]
+  [value actor map-id start-id]
   (let [initial-ops
         (if (= root-id map-id)
           [] ;; TODO: do we need this if we remove all special case init in convergent-ref?
@@ -133,12 +133,12 @@
                                     (if (next value-ops)
                                       (first (last value-ops))
                                       assign-id))))))
-                {:id  next-id
+                {:id  start-id
                  :ops initial-ops}
                 value))))
 
 (defn sequential-to-value
-  [value actor list-id next-id]
+  [value actor list-id start-id]
   (let [initial-ops
         (if (= root-id list-id)
           [] ;; TODO: do we need this if we remove all special case init in convergent-ref?
@@ -162,19 +162,19 @@
                                    (first (last value-ops))
                                    assign-id))
                             :tail-id insert-id))))
-             {:id      next-id
+             {:id      start-id
               :tail-id list-id
               :ops     initial-ops}
              value))))
 
 (defn value-to-ops
-  [value actor value-id next-id]
+  [value actor value-id start-id]
   (cond
     (map? value)
-    (map-to-value value actor value-id next-id)
+    (map-to-value value actor value-id start-id)
 
     (sequential? value)
-    (sequential-to-value value actor value-id next-id)
+    (sequential-to-value value actor value-id start-id)
 
     :else
     [[value-id (make-value value)]]))
