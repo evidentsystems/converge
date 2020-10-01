@@ -244,6 +244,23 @@
                  (keys old)))
         (insert-and-or-assign edit old actor id)))))
 
+(defn ops-from-diff
+  [opset actor old-value new-value]
+  (:ops
+   (reduce (fn [{:keys [ops id] :as agg} edit]
+             (let [new-ops (into ops
+                                 (edit-to-ops edit
+                                              old-value
+                                              actor
+                                              id))]
+               (assoc agg
+                      :ops new-ops
+                      :id  (next-id new-ops actor))))
+           {:ops (avl/sorted-map)
+            :id  (next-id opset actor)}
+           (edit/get-edits
+            (editscript/diff old-value new-value)))))
+
 (defn add-ops-from-diff
   [opset actor old-value new-value]
   (reduce (fn [agg edit]
