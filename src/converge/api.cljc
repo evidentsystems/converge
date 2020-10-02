@@ -43,14 +43,16 @@
                                (ref/->ConvergentState (opset/opset opset/root-id (opset/make-map)) nil false)
                                meta
                                validator
-                               nil)
+                               nil
+                               (util/queue))
 
           (vector? initial-value)
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState (opset/opset opset/root-id (opset/make-list)) nil false)
                                meta
                                validator
-                               nil)
+                               nil
+                               (util/queue))
 
           :else
           (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
@@ -88,28 +90,50 @@
                                             (ref/->ConvergentState opset* nil true)
                                             meta
                                             validator
-                                            nil)]
+                                            nil
+                                            (util/queue))]
     @r
     r))
 
-(defn opset
-  [cr]
-  (some-> cr ref/-state :opset))
+(defn convergent?
+  [o]
+  (satisfies? ref/IConvergent o))
 
-(defn patch!
-  [cr ops]
-  )
-
-;; TODO: ensure opset isn't just patch (i.e. an opset? predicate
-;; asserting that first op has root-id -> make-map/list)
-;; TODO: ensure actor id is different prior to merge?
-(defn merge!
-  [cr opset]
-  )
+(defn patch?
+  [o]
+  (instance? converge.ref.Patch o))
 
 (defn set-actor!
   [cr actor]
   (ref/-set-actor! cr actor))
+
+(defn opset
+  [cr]
+  (ref/-opset cr))
+
+(defn merge!
+  [cr other]
+  (let [patch (cond
+                (convergent? other)
+                (ref/->Patch (opset other))
+
+                (patch? other)
+                other
+
+                :else
+                (throw (ex-info "Cannot merge! this object into convergent reference"
+                                {:ref    cr
+                                 :object other})))]
+    (ref/-apply-state! cr (ref/-state-from-patch cr patch))
+    cr))
+
+(defn peek-patches
+  [cr]
+  (ref/-peek-patches cr))
+
+(defn pop-patches!
+  [cr]
+  (ref/-pop-patches! cr))
 
 (comment
 
@@ -117,11 +141,9 @@
 
   (def m (ref {}))
   @m
-  (ref/-state m)
 
   (def v (ref []))
   @v
-  (ref/-state v)
 
   (def a
     {:empty-m {}
@@ -160,7 +182,6 @@
 
   (binding [*print-meta* true]
     (prn @c))
-  (ref/-state c)
 
   (criterium/bench
    (swap! c dissoc :a))

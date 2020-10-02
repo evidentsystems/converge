@@ -28,24 +28,39 @@
     (and (type-pred new-value)
          (if (ifn? validator) (validator new-value) true))))
 
-(defprotocol IConvergentRef
-  (-actor [this])
-  (-set-actor! [this actor] "Sets this ref's actor to the given value")
-  (-state [this] "Returns the current state of the convergent ref")
-  (-apply-state! [this state] "[DANGER!] Sets this ref's state to the given value and notifies watches.")
-  (-make-patch [this new-value])
-  (-state-from-patch [this patch]))
+;; TODO trim down to bare semantics, split other ops into different protocols
+(defprotocol IConvergent
+  (-actor [this]
+    "Returns the current actor of this convergent")
+  (-set-actor! [this actor]
+    "Sets this ref's actor to the given value")
+  (-opset [this]
+    "Returns this convergent's opset")
+  (-make-patch [this new-value]
+    "Returns a Patch representing the changes necessary to reset from
+    the current value to the provided value.")
+  (-state-from-patch [this patch]
+    "Returns a new ConvergentState that is the result of applying the
+    given patch to the current state.")
+  (-apply-state! [this state]
+    "Sets this ref's state to the given value and notifies watches. USE WITH CAUTION!")
+  (-peek-patches [this]
+    "Returns the next patch from this ref's queue of applied patches.")
+  (-pop-patches! [this]
+    "Mutates this ref's queue of applied patches as with pop, and
+    returns the queue's new value."))
 
 #?(:clj
    (deftype ConvergentRef [^:volatile-mutable actor
                            ^:volatile-mutable state
                            ^:volatile-mutable meta
                            ^:volatile-mutable validator
-                           ^:volatile-mutable watches]
-     IConvergentRef
+                           ^:volatile-mutable watches
+                           ^:volatile-mutable patches]
+     IConvergent
      (-actor [this] actor)
      (-set-actor! [this new-actor] (set! actor new-actor))
-     (-state [this] state)
+     (-opset [this] (:opset state))
      (-apply-state! [this new-state]
        (let [old-value (:value state)]
          (set! state new-state)
@@ -54,7 +69,7 @@
        [this new-value]
        (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
        (let [{:keys [value opset] :as s} state]
-         (Patch. (opset/ops-from-diff opset actor value new-value))))
+         (->Patch (opset/ops-from-diff opset actor value new-value))))
      (-state-from-patch [this {:keys [ops] :as patch}]
        (let [{:keys [value opset] :as s} state
              new-opset                   (into opset ops)]
@@ -62,6 +77,8 @@
                 :value (edn/edn new-opset)
                 :dirty? false
                 :opset new-opset)))
+     (-peek-patches [this] (peek patches))
+     (-pop-patches! [this] (set! patches (pop patches)))
 
      IAtom
      (reset
@@ -70,6 +87,7 @@
              new-state (-state-from-patch this patch)]
          (assert (= new-value (:value new-state)) "Unsupported reference state")
          (-apply-state! this new-state)
+         (set! patches (conj patches patch))
          (:value new-state)))
      (swap [this f]          (.reset this (f (:value state))))
      (swap [this f a]        (.reset this (f (:value state) a)))
@@ -119,11 +137,12 @@
                            ^:mutable state
                            meta
                            validator
-                           ^:mutable watches]
-     IConvergentRef
+                           ^:mutable watches
+                           ^:mutable patches]
+     IConvergent
      (-actor [this] actor)
      (-set-actor! [this new-actor] (set! actor new-actor))
-     (-state [this] state)
+     (-opset [this] (:opset state))
      (-apply-state! [this new-state]
        (let [old-value (:value state)]
          (set! state new-state)
@@ -132,7 +151,7 @@
        [this new-value]
        (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
        (let [{:keys [value opset] :as s} state]
-         (Patch. (opset/ops-from-diff opset actor value new-value))))
+         (->Patch (opset/ops-from-diff opset actor value new-value))))
      (-state-from-patch [this {:keys [ops] :as patch}]
        (let [{:keys [value opset] :as s} state
              new-opset                   (into opset ops)]
@@ -140,6 +159,8 @@
                 :value (edn/edn new-opset)
                 :dirty? false
                 :opset new-opset)))
+     (-peek-patches [this] (peek patches))
+     (-pop-patches! [this] (set! patches (pop patches)))
 
      IAtom
 
@@ -167,6 +188,7 @@
              new-state (-state-from-patch this patch)]
          (assert (= new-value (:value new-state)) "Unsupported reference state")
          (-apply-state! this new-state)
+         (set! patches (conj patches patch))
          (:value new-state)))
 
      ISwap
@@ -176,7 +198,7 @@
      (-swap! [this f a b args] (-reset! this (apply f (:value state) a b args)))
 
      IWithMeta
-     (-with-meta [_ new-meta] (ConvergentRef. actor state new-meta validator watches))
+     (-with-meta [_ new-meta] (ConvergentRef. actor state new-meta validator watches patches))
 
      IMeta
      (-meta [_] meta)

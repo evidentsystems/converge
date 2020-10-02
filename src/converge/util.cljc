@@ -62,6 +62,12 @@
           (safe-get-in ks)
           get-id))
 
+(defn queue
+  [& elems]
+  (into #?(:clj  clojure.lang.PersistentQueue/EMPTY
+           :cljs (.-EMPTY PersistentQueue))
+        elems))
+
 #_(defn slice-by
     [sorted k v]
     (let []))

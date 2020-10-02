@@ -14,35 +14,53 @@ storage of historical changes to e.g. Transit.
 ## Usage
 
 ``` clj
-(require '[converge.api :as converge])
+(require '[converge.api :as convergent])
 
-(def c (converge/ref {:my :value}))
+(def c (convergent/ref {:my :value}))
 @c
 ; => {:my :value}
 
-;; swap! and reset! must maintain the top-level datatype
-;; (which constraint is enforced via the validator)
 (swap! c assoc :another {:nested {:key [1 2 3]}})
 
 @c
 ; => {:my :value :another {:nested {:key [1 2 3]}}}
 
+;; swap! and reset! must maintain the top-level datatype
+;; (which constraint is enforced via the validator)
 (reset! c [:whoops])
 ; throws
 
-(converge/opset c)
+(convergent/opset c)
 ;=> sorted map of id -> op of all historical operations
 
-(converge/patch! c some-ops)
 @c
 ;=> new value including changes provided in ops (order in which changes applied doesn't matter)
 
-;=> remote (i.e. auto-generated actor distinct from that of `c`)
-(def remote-c (converge/ref-from-opset some-ops))
+(convergent/peek-patches c)
+;=> a patch represnting the first locally-made change
 
-(converge/merge! c remote-c)
+(convergent/pop-patches! c)
+;=> removes the first locally-made change from the queue of patches, returning the new queue
+
+(while true
+ (if-let [patch (convergent/peek-patches c)]
+  (do
+   (do-something-with patch) ;; e.g. send to remote actors
+   (convergent/pop-patches! c))
+  (Thread/sleep 1000)))
+
+;=> remote (i.e. auto-generated actor distinct from that of `c`)
+(def remote-c (convergent/ref-from-opset an-opset))
+(swap! remote-c assoc :foo :bar)
+
+;; Merge another convergent ref (be careful that each local convergent ref has a unique actor!)
+(convergent/merge! c remote-c)
+
+;; Merge a patch
+(convergent/merge! c (convergent/peek-patches remote-c))
+
 @c
-;=> new value including changes from the other ref (must be managed by a different actor)
+;=> new value including changes
 ```
 
 ## Development
