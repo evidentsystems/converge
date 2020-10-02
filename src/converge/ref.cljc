@@ -203,9 +203,11 @@
      IMeta
      (-meta [_] meta)
 
-     ;; TODO: printing
-     #_IPrintWithWriter
-     #_(-pr-writer [this w opts] (pr-atom this w opts "ConvergentRef" {:val (-deref a)}))
+     IPrintWithWriter
+     (-pr-writer [this writer opts]
+       (-write writer "#object[converge.ref.ConvergentRef ")
+       (pr-writer {:val (-deref this)} writer opts)
+       (-write writer "]"))
 
      IWatchable
      (-notify-watches
