@@ -5,7 +5,8 @@
             [converge.edn :as edn])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
 
-#?(:clj (set! *warn-on-reflection* true))
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
 
 (defrecord ConvergentState [opset value ^boolean dirty?])
 

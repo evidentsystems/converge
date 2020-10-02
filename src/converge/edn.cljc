@@ -4,7 +4,8 @@
             [converge.opset :as opset]
             [converge.interpret :as interpret]))
 
-#?(:clj (set! *warn-on-reflection* true))
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
 
 (defn replace-id-values
   [this index]

@@ -16,7 +16,8 @@
             [converge.util :as util])
   #?(:clj (:import java.util.UUID)))
 
-#?(:clj (set! *warn-on-reflection* true))
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
 
 (declare id?)
 

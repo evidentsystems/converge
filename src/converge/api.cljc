@@ -8,7 +8,8 @@
             [converge.ref :as ref]
             [converge.util :as util]))
 
-#?(:clj (set! *warn-on-reflection* true))
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
 
 ;; TODO: add note to docstring about our special top-level type
 ;; validation logic

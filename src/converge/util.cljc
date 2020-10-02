@@ -6,7 +6,8 @@
                 :cljs
                 [[uuid :as uuid]])))
 
-#?(:clj (set! *warn-on-reflection* true))
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
 
 (defn uuid
   []

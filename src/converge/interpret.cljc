@@ -5,7 +5,8 @@
             [converge.opset :as opset])
   #?(:clj (:import [converge.opset Id])))
 
-#?(:clj (set! *warn-on-reflection* true))
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
 
 (defn transitive-closure
   [e]
