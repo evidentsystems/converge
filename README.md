@@ -1,11 +1,13 @@
 # Converge
 
 This library provides a convergent reference type for Clojure and
-ClojureScript.  Its local modification and access API resembles the
-behavior of an Atom (i.e. `swap!`, `reset!`, and `deref`).  However,
-it also has API functions for applying patches from the local actor or
-from remote actors, and for a converging merge with a remote
-convergent ref.
+ClojureScript, based on the [OpSets
+paper](https://arxiv.org/pdf/1805.04263.pdf) by [Martin
+Kleppmann](https://github.com/ept) and co-authors.  Its local
+modification and access API resembles the behavior of an Atom
+(i.e. `swap!`, `reset!`, and `deref`).  However, it also has API
+functions for applying patches from the local actor or from remote
+actors, and for a converging merge with a remote convergent ref.
 
 The current value of the ref is available as usual via `deref` (or
 `@`), but the convergent ref itself prints as EDN and serializes for
