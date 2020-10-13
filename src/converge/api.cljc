@@ -54,7 +54,10 @@
         (cond
           (map? initial-value)
           (ref/->ConvergentRef actor*
-                               (ref/->ConvergentState (opset/opset opset/root-id (opset/make-map)) {} false)
+                               (ref/->ConvergentState
+                                (opset/opset opset/root-id (opset/make-map))
+                                ^{:converge/id opset/root-id} {}
+                                false)
                                meta
                                validator
                                nil
@@ -62,7 +65,10 @@
 
           (vector? initial-value)
           (ref/->ConvergentRef actor*
-                               (ref/->ConvergentState (opset/opset opset/root-id (opset/make-list)) [] false)
+                               (ref/->ConvergentState
+                                (opset/opset opset/root-id (opset/make-list))
+                                ^{:converge/id opset/root-id} []
+                                false)
                                meta
                                validator
                                nil
