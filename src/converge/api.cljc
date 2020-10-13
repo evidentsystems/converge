@@ -56,8 +56,8 @@
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-map))
-                                ^{:converge/id opset/root-id} {}
-                                false)
+                                nil
+                                true)
                                meta
                                validator
                                nil
@@ -67,8 +67,8 @@
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-list))
-                                ^{:converge/id opset/root-id} []
-                                false)
+                                nil
+                                true)
                                meta
                                validator
                                nil
@@ -77,6 +77,7 @@
           :else
           (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
                           {:initial-value initial-value})))]
+    @r
     (reset! r initial-value)
     r))
 
