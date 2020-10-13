@@ -26,6 +26,10 @@
 ;; TODO: patch caches?
 (defrecord Patch [ops])
 
+(defn patch?
+  [o]
+  (instance? Patch o))
+
 (defn notify-w
   [this watches old-value new-value]
   (doseq [[k w] watches]
@@ -83,14 +87,17 @@
        [this new-value]
        (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
        (let [{:keys [value opset] :as s} state]
-         (->Patch (opset/ops-from-diff opset actor value new-value))))
-     (-state-from-patch [this {:keys [ops] :as patch}]
-       (let [{:keys [value opset] :as s} state
-             new-opset                   (into opset ops)]
-         (assoc s
-                :value (edn/edn new-opset)
-                :dirty? false
-                :opset new-opset)))
+         (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
+     (-state-from-patch [this patch]
+       (if (patch? patch)
+         (let [{:keys [ops]}               patch
+               {:keys [value opset] :as s} state
+               new-opset                   (into opset ops)]
+           (assoc s
+                  :value (edn/edn new-opset)
+                  :dirty? false
+                  :opset new-opset))
+         state))
      (-peek-patches [this] (peek patches))
      (-pop-patches! [this] (set! patches (pop patches)))
 
@@ -101,7 +108,7 @@
              new-state (-state-from-patch this patch)]
          (assert (= new-value (:value new-state)) "Unsupported reference state")
          (-apply-state! this new-state)
-         (set! patches (conj patches patch))
+         (when patch (set! patches (conj patches patch)))
          (:value new-state)))
      (swap [this f]          (.reset this (f (:value state))))
      (swap [this f a]        (.reset this (f (:value state) a)))
@@ -165,14 +172,17 @@
        [this new-value]
        (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
        (let [{:keys [value opset] :as s} state]
-         (->Patch (opset/ops-from-diff opset actor value new-value))))
-     (-state-from-patch [this {:keys [ops] :as patch}]
-       (let [{:keys [value opset] :as s} state
-             new-opset                   (into opset ops)]
-         (assoc s
-                :value (edn/edn new-opset)
-                :dirty? false
-                :opset new-opset)))
+         (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
+     (-state-from-patch [this patch]
+       (if (patch? patch)
+         (let [{:keys [ops]}               patch
+               {:keys [value opset] :as s} state
+               new-opset                   (into opset ops)]
+           (assoc s
+                  :value (edn/edn new-opset)
+                  :dirty? false
+                  :opset new-opset))
+         state))
      (-peek-patches [this] (peek patches))
      (-pop-patches! [this] (set! patches (pop patches)))
 
@@ -202,7 +212,7 @@
              new-state (-state-from-patch this patch)]
          (assert (= new-value (:value new-state)) "Unsupported reference state")
          (-apply-state! this new-state)
-         (set! patches (conj patches patch))
+         (when patch (set! patches (conj patches patch)))
          (:value new-state)))
 
      ISwap

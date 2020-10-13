@@ -54,7 +54,7 @@
         (cond
           (map? initial-value)
           (ref/->ConvergentRef actor*
-                               (ref/->ConvergentState (opset/opset opset/root-id (opset/make-map)) nil false)
+                               (ref/->ConvergentState (opset/opset opset/root-id (opset/make-map)) {} false)
                                meta
                                validator
                                nil
@@ -62,7 +62,7 @@
 
           (vector? initial-value)
           (ref/->ConvergentRef actor*
-                               (ref/->ConvergentState (opset/opset opset/root-id (opset/make-list)) nil false)
+                               (ref/->ConvergentState (opset/opset opset/root-id (opset/make-list)) [] false)
                                meta
                                validator
                                nil
@@ -113,10 +113,6 @@
   [o]
   (satisfies? ref/IConvergent o))
 
-(defn patch?
-  [o]
-  (instance? converge.ref.Patch o))
-
 (defn set-actor!
   [cr actor]
   (ref/-set-actor! cr actor)
@@ -132,7 +128,7 @@
                 (convergent? other)
                 (ref/->Patch (opset other))
 
-                (patch? other)
+                (ref/patch? other)
                 other
 
                 :else
