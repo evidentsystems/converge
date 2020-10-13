@@ -106,7 +106,8 @@
 
 (defn set-actor!
   [cr actor]
-  (ref/-set-actor! cr actor))
+  (ref/-set-actor! cr actor)
+  cr)
 
 (defn opset
   [cr]
