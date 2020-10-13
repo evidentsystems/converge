@@ -1,19 +1,18 @@
-// Copyright 2020 Evident Systems LLC
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-
-//     http://www.apache.org/licenses/LICENSE-2.0
-
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 {
-  "private": true,
-  "license": "UNLICENSED",
+  "name": "converge",
+  "description": "A CRDT implemented as a ClojureScript atom-like reference type. Based on the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf) by Kleppmann and co-authors.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/evidentsystems/converge.git"
+  },
+  "version": "0.0.1-alpha",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
   "dependencies": {
     "uuid": "^8.3.0"
   },
