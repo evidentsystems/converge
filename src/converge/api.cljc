@@ -19,6 +19,7 @@
   (:refer-clojure :exclude [ref])
   (:require [converge.opset :as opset]
             [converge.ref :as ref]
+            [converge.edn :as edn]
             [converge.util :as util]))
 
 #?(:clj  (set! *warn-on-reflection* true)
@@ -143,6 +144,24 @@
                                 {:ref    cr
                                  :object other})))]
     (ref/-apply-state! cr (ref/-state-from-patch cr patch))
+    cr))
+
+(defn squash!
+  [cr other]
+  (let [spec-opset
+        (merge (opset cr)
+               (cond
+                 (convergent? other)
+                 (opset other)
+
+                 (ref/patch? other)
+                 (:ops other)
+
+                 :else
+                 (throw (ex-info "Cannot merge! this object into convergent reference"
+                                 {:ref    cr
+                                  :object other}))))]
+    (reset! cr (edn/edn spec-opset))
     cr))
 
 (defn peek-patches
