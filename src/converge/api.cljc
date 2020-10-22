@@ -151,7 +151,9 @@
 
 (defn pop-patches!
   [cr]
-  (ref/-pop-patches! cr))
+  (let [p (peek-patches cr)]
+    (ref/-pop-patches! cr)
+    p))
 
 (comment
 
