@@ -19,6 +19,7 @@
   (:refer-clojure :exclude [ref])
   (:require [converge.opset :as opset]
             [converge.ref :as ref]
+            [converge.edn :as edn]
             [converge.util :as util]))
 
 #?(:clj  (set! *warn-on-reflection* true)
@@ -58,10 +59,10 @@
                                 (opset/opset opset/root-id (opset/make-map))
                                 nil
                                 true)
+                               (util/queue)
                                meta
                                validator
-                               nil
-                               (util/queue))
+                               nil)
 
           (vector? initial-value)
           (ref/->ConvergentRef actor*
@@ -69,10 +70,10 @@
                                 (opset/opset opset/root-id (opset/make-list))
                                 nil
                                 true)
+                               (util/queue)
                                meta
                                validator
-                               nil
-                               (util/queue))
+                               nil)
 
           :else
           (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
@@ -109,10 +110,10 @@
         initial-action (get-in opset* [opset/root-id :action])
         r              (ref/->ConvergentRef actor*
                                             (ref/->ConvergentState opset* nil true)
+                                            (util/queue)
                                             meta
                                             validator
-                                            nil
-                                            (util/queue))]
+                                            nil)]
     @r
     r))
 
@@ -145,13 +146,33 @@
     (ref/-apply-state! cr (ref/-state-from-patch cr patch))
     cr))
 
+(defn squash!
+  [cr other]
+  (let [spec-opset
+        (merge (opset cr)
+               (cond
+                 (convergent? other)
+                 (opset other)
+
+                 (ref/patch? other)
+                 (:ops other)
+
+                 :else
+                 (throw (ex-info "Cannot merge! this object into convergent reference"
+                                 {:ref    cr
+                                  :object other}))))]
+    (reset! cr (edn/edn spec-opset))
+    cr))
+
 (defn peek-patches
   [cr]
   (ref/-peek-patches cr))
 
 (defn pop-patches!
   [cr]
-  (ref/-pop-patches! cr))
+  (let [p (peek-patches cr)]
+    (ref/-pop-patches! cr)
+    p))
 
 (comment
 

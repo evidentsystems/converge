@@ -14,6 +14,7 @@
 (ns converge.api-test
   (:require #?(:clj  [clojure.test :refer :all]
                :cljs [cljs.test :refer-macros [deftest is testing run-tests]])
+            [converge.ref :as ref]
             [converge.api :as convergent]))
 
 (def a {:empty-m {}
@@ -59,6 +60,28 @@
         d (convergent/ref-from-opset (convergent/opset c))]
       (swap! d assoc :b :another-key)
       (testing "merging another convergent ref"
-        (is (= @d @(convergent/merge! c d))))
+        (is (= @d @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+                                      d))))
       (testing "merging a patch"
-        (is (= @d @(convergent/merge! c (convergent/peek-patches d)))))))
+        (is (= @d @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+                                      (convergent/peek-patches d)))))))
+
+(deftest squashing
+  (let [c      (convergent/ref a)
+        d      (convergent/ref-from-opset (convergent/opset c))
+        _      (swap! d assoc
+                      :b :another-key
+                      :a :foo)
+        patch1 (convergent/pop-patches! d)
+        final  (swap! d dissoc :a)
+        patch2 (convergent/pop-patches! d)]
+    (testing "squashing another convergent ref"
+      (let [cr (convergent/ref-from-opset (convergent/opset c))]
+        (is (= final @(convergent/squash! cr d)))
+        (is (> (count (convergent/opset d))
+               (count (convergent/opset cr))))))
+    (testing "squashing a patch"
+      (let [cr (convergent/ref-from-opset (convergent/opset c))]
+        (is (= final @(convergent/squash! cr (ref/->Patch (merge (:ops patch1) (:ops patch2))))))
+        (is (> (count (convergent/opset d))
+               (count (convergent/opset cr))))))))

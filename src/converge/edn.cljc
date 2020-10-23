@@ -52,29 +52,36 @@
         next-list
         (recur next next-list)))))
 
-(defn object-index
+(defn entity-index
   [opset {:keys [elements list-links]}]
-  (let [index (reduce-kv (fn [agg _id {:keys [object key value]}]
+  (let [index (reduce-kv (fn [agg _id {:keys [entity attribute value]}]
                            (let [v (get-in opset [value :data :value]
                                            value)]
                              (cond-> agg
-                               ;; ensure empty collections are included in object-index
+                               ;; ensure empty collections are included in entity-index
                                (and (opset/id? v)
                                     (some-> opset (get v) :action #{:make-list :make-map})
                                     (empty? (get agg v)))
                                (assoc v {})
 
                                true
-                               (assoc-in [object key] v))))
+                               (assoc-in [entity attribute] v))))
                          {}
                          elements)]
-    (reduce-kv (fn [agg id object]
+    (reduce-kv (fn [agg id entity]
                  (let [op (get opset id)]
                    (if (= (:action op) :make-list)
-                     (assoc agg id (build-list id object list-links))
+                     (assoc agg id (build-list id entity list-links))
                      agg)))
                index
                index)))
+
+(defn root-entity
+  [opset]
+  (case (some-> opset first val :action)
+    :make-map  {}
+    :make-list []
+    (throw (ex-info "Invalid OpSet" {:opset opset}))))
 
 (defn edn
   [opset]
@@ -84,21 +91,15 @@
 
     (= (count opset) 1)
     (vary-meta
-     (case (some-> opset first val :action)
-       :make-map  {}
-       :make-list []
-       (throw (ex-info "Invalid OpSet" {:opset opset})))
+     (root-entity opset)
      assoc :converge/id opset/root-id)
 
     :else
     (let [interpretation (interpret/interpret opset)
-          index          (object-index opset interpretation)]
+          index          (entity-index opset interpretation)]
       (some-> (walk/prewalk #(replace-id-values % index)
                             index)
-              (get opset/root-id (case (some-> opset first val :action)
-                                   :make-map  {}
-                                   :make-list []
-                                   (throw (ex-info "Invalid OpSet" {:opset opset}))))
+              (get opset/root-id (root-entity opset))
               (vary-meta assoc :converge/id opset/root-id)))))
 
 (comment

@@ -33,9 +33,9 @@
       (recur (set/union e e2)))))
 
 
-(defrecord Element [#?@(:cljs [^clj object]
-                        :clj  [^Id object])
-                    key
+(defrecord Element [#?@(:cljs [^clj entity]
+                        :clj  [^Id entity])
+                    attribute
                     #?@(:cljs [^clj value]
                         :clj  [^Id value])])
 
@@ -46,7 +46,7 @@
 (defn ancestor
   [elements]
   (transitive-closure
-   (into #{} (map (juxt :object :value) elements))))
+   (into #{} (map (juxt :entity :value) elements))))
 
 (defmulti -interpret-op
   (fn [_agg _id {action :action :as op}] action)
@@ -58,31 +58,31 @@
 
 (defmethod -interpret-op :assign
   [{:keys [elements] :as agg} id {:keys [data] :as op}]
-  (let [{:keys [object key value]} data]
+  (let [{:keys [entity attribute value]} data]
     ;; Skip operations that would introduce a cycle from decendent
-    ;; (value) to ancestor (object), per Section 5.2
-    (if (contains? (ancestor elements) [value object])
+    ;; (value) to ancestor (entity), per Section 5.2
+    (if (contains? (ancestor elements) [value entity])
       agg
       (assoc agg
              :elements
              (assoc (into {}
                           (filter
                            (fn [[_id element]]
-                             (and (or (not= (:object element) object)
-                                      (not= (:key element)    key))
+                             (and (or (not= (:entity element)    entity)
+                                      (not= (:attribute element) attribute))
                                   (not= value (:value element))))
                            elements))
                     id
-                    (->Element object key value))))))
+                    (->Element entity attribute value))))))
 
 (defmethod -interpret-op :remove
   [{:keys [elements] :as agg} id {:keys [data] :as op}]
-  (let [{:keys [object key]} data]
+  (let [{:keys [entity attribute]} data]
     (assoc agg :elements (into {}
                                (filter
                                 (fn [[_id element]]
-                                  (or (not= (:object element) object)
-                                      (not= (:key element)    key)))
+                                  (or (not= (:entity element)    entity)
+                                      (not= (:attribute element) attribute)))
                                 elements)))))
 
 (defmethod -interpret-op :insert
