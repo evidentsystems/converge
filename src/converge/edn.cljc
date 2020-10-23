@@ -76,6 +76,13 @@
                index
                index)))
 
+(defn root-object
+  [opset]
+  (case (some-> opset first val :action)
+    :make-map  {}
+    :make-list []
+    (throw (ex-info "Invalid OpSet" {:opset opset}))))
+
 (defn edn
   [opset]
   (cond
@@ -84,10 +91,7 @@
 
     (= (count opset) 1)
     (vary-meta
-     (case (some-> opset first val :action)
-       :make-map  {}
-       :make-list []
-       (throw (ex-info "Invalid OpSet" {:opset opset})))
+     (root-object opset)
      assoc :converge/id opset/root-id)
 
     :else
@@ -95,10 +99,7 @@
           index          (object-index opset interpretation)]
       (some-> (walk/prewalk #(replace-id-values % index)
                             index)
-              (get opset/root-id (case (some-> opset first val :action)
-                                   :make-map  {}
-                                   :make-list []
-                                   (throw (ex-info "Invalid OpSet" {:opset opset}))))
+              (get opset/root-id (root-object opset))
               (vary-meta assoc :converge/id opset/root-id)))))
 
 (comment

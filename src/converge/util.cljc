@@ -70,12 +70,6 @@
   [o n]
   (some-> o meta :converge/insertions (safe-get n)))
 
-(defn get-id-in
-  [m ks]
-  (some-> m
-          (safe-get-in ks)
-          get-id))
-
 (defn queue
   [& elems]
   (into #?(:clj  clojure.lang.PersistentQueue/EMPTY
