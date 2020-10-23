@@ -71,10 +71,10 @@
 #?(:clj
    (deftype ConvergentRef [^:volatile-mutable actor
                            ^:volatile-mutable state
+                           ^:volatile-mutable patches
                            ^:volatile-mutable meta
                            ^:volatile-mutable validator
-                           ^:volatile-mutable watches
-                           ^:volatile-mutable patches]
+                           ^:volatile-mutable watches]
      IConvergent
      (-actor [this] actor)
      (-set-actor! [this new-actor] (set! actor new-actor))
@@ -156,10 +156,10 @@
    :cljs
    (deftype ConvergentRef [^:mutable actor
                            ^:mutable state
+                           ^:mutable patches
                            meta
                            validator
-                           ^:mutable watches
-                           ^:mutable patches]
+                           ^:mutable watches]
      IConvergent
      (-actor [this] actor)
      (-set-actor! [this new-actor] (set! actor new-actor))
@@ -222,7 +222,7 @@
      (-swap! [this f a b args] (-reset! this (apply f (:value state) a b args)))
 
      IWithMeta
-     (-with-meta [_ new-meta] (ConvergentRef. actor state new-meta validator watches patches))
+     (-with-meta [_ new-meta] (ConvergentRef. actor state patches new-meta validator watches))
 
      IMeta
      (-meta [_] meta)

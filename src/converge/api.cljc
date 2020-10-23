@@ -59,10 +59,10 @@
                                 (opset/opset opset/root-id (opset/make-map))
                                 nil
                                 true)
+                               (util/queue)
                                meta
                                validator
-                               nil
-                               (util/queue))
+                               nil)
 
           (vector? initial-value)
           (ref/->ConvergentRef actor*
@@ -70,10 +70,10 @@
                                 (opset/opset opset/root-id (opset/make-list))
                                 nil
                                 true)
+                               (util/queue)
                                meta
                                validator
-                               nil
-                               (util/queue))
+                               nil)
 
           :else
           (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
@@ -110,10 +110,10 @@
         initial-action (get-in opset* [opset/root-id :action])
         r              (ref/->ConvergentRef actor*
                                             (ref/->ConvergentState opset* nil true)
+                                            (util/queue)
                                             meta
                                             validator
-                                            nil
-                                            (util/queue))]
+                                            nil)]
     @r
     r))
 
