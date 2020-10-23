@@ -89,8 +89,8 @@
   (op :make-list))
 
 (defn make-value
-  [val]
-  (op :make-value {:value val}))
+  [value]
+  (op :make-value {:value value}))
 
 (defn insert
   [after]
@@ -98,14 +98,14 @@
   (op :insert {:after after}))
 
 (defn assign
-  [object k v]
-  (assert (id? object) "`object` must be an Id")
-  (op :assign {:object object :key k :value v}))
+  [entity attribute value]
+  (assert (id? entity) "`entity` must be an Id")
+  (op :assign {:entity entity :attribute attribute :value value}))
 
 (defn remove
-  [object k]
-  (assert (id? object) "`object` must be an Id")
-  (op :remove {:object object :key k}))
+  [entity attribute]
+  (assert (id? entity) "`entity` must be an Id")
+  (op :remove {:entity entity :attribute attribute}))
 
 (defn opset
   "An opset is a sorted map of Id -> Op"
@@ -204,26 +204,26 @@
 
 (defn insert-and-or-assign
   [[path _ new-value :as edit] old actor id]
-  (let [container    (or (util/safe-get-in old (butlast path))
+  (let [entity    (or (util/safe-get-in old (butlast path))
                          old)
-        container-id (util/get-id container)]
-    (if (map? container)
+        entity-id (util/get-id entity)]
+    (if (map? entity)
       (let [value-id  id
             assign-id (successor-id value-id)
             value-ops (value-to-ops new-value actor value-id (successor-id assign-id))]
         (apply vector
                (first value-ops)
-               [assign-id (assign container-id (last path) value-id)]
+               [assign-id (assign entity-id (last path) value-id)]
                (next value-ops)))
       (let [insert-id id
             value-id  (successor-id insert-id)
             assign-id (successor-id value-id)
             value-ops (value-to-ops new-value actor value-id (successor-id assign-id))
-            after-id  (util/get-insertion-id container (last path))]
+            after-id  (util/get-insertion-id entity (last path))]
         (apply vector
                [insert-id (insert after-id)]
                (first value-ops)
-               [assign-id (assign container-id insert-id value-id)]
+               [assign-id (assign entity-id insert-id value-id)]
                value-ops)))))
 
 (defmethod edit-to-ops :+
@@ -232,26 +232,26 @@
 
 (defmethod edit-to-ops :-
   [[path :as edit] old actor id]
-  (let [container    (util/safe-get-in old (butlast path))
-        container-id (util/get-id container)
-        key          (if (map? container)
-                       (last path)
-                       (util/get-insertion-id container (last path)))]
-    [[id (remove container-id key)]]))
+  (let [entity    (util/safe-get-in old (butlast path))
+        entity-id (util/get-id entity)
+        attribute (if (map? entity)
+                    (last path)
+                    (util/get-insertion-id entity (last path)))]
+    [[id (remove entity-id attribute)]]))
 
 (defmethod edit-to-ops :r
   [[path _ new-value :as edit] old actor id]
   (if (empty? old)
     (value-to-ops new-value actor root-id id)
     ;; TODO: Check for existing IDs?
-    (let [object    (util/safe-get-in old path)
-          object-id (util/get-id object)]
+    (let [entity    (util/safe-get-in old path)
+          entity-id (util/get-id entity)]
       (if (and (coll? new-value)
                (empty? new-value))
         (:ops
          (reduce (fn [{:keys [ops id] :as agg} k]
                    (-> agg
-                       (update :ops conj [id (remove object-id k)])
+                       (update :ops conj [id (remove entity-id k)])
                        (assoc :id (successor-id id))))
                  {:id  id
                   :ops []}
