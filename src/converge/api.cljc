@@ -58,6 +58,7 @@
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-map))
                                 nil
+                                edn/root-index
                                 true)
                                (util/queue)
                                meta
@@ -69,6 +70,7 @@
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-list))
                                 nil
+                                edn/root-index
                                 true)
                                (util/queue)
                                meta
@@ -109,7 +111,7 @@
         actor*         (or actor (util/uuid))
         initial-action (get-in opset* [opset/root-id :action])
         r              (ref/->ConvergentRef actor*
-                                            (ref/->ConvergentState opset* nil true)
+                                            (ref/->ConvergentState opset* nil edn/root-index true)
                                             (util/queue)
                                             meta
                                             validator
@@ -161,7 +163,7 @@
                  (throw (ex-info "Cannot merge! this object into convergent reference"
                                  {:ref    cr
                                   :object other}))))]
-    (reset! cr (edn/edn spec-opset))
+    (reset! cr (:value (edn/edn spec-opset)))
     cr))
 
 (defn peek-patches

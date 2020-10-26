@@ -21,7 +21,7 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defrecord ConvergentState [opset value ^boolean dirty?])
+(defrecord ConvergentState [opset value index ^boolean dirty?])
 
 ;; TODO: patch caches?
 (defrecord Patch [ops])
@@ -86,17 +86,19 @@
      (-make-patch
        [this new-value]
        (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-       (let [{:keys [value opset] :as s} state]
-         (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
+       (let [{:keys [opset value index] :as s} state]
+         (some->> new-value (opset/ops-from-diff opset actor value index) ->Patch)))
      (-state-from-patch [this patch]
        (if (patch? patch)
-         (let [{:keys [ops]}               patch
-               {:keys [value opset] :as s} state
-               new-opset                   (into opset ops)]
+         (let [{:keys [ops]}         patch
+               {:keys [opset] :as s} state
+               new-opset             (into opset ops)
+               {:keys [value index]} (edn/edn new-opset)]
            (assoc s
-                  :value (edn/edn new-opset)
-                  :dirty? false
-                  :opset new-opset))
+                  :opset new-opset
+                  :value value
+                  :index index
+                  :dirty? false))
          state))
      (-peek-patches [this] (peek patches))
      (-pop-patches! [this] (set! patches (pop patches)))
@@ -131,10 +133,11 @@
        (let [{:keys [dirty? value opset] :as s}
              state]
          (if dirty?
-           (let [value (edn/edn opset)]
+           (let [{:keys [value index]} (edn/edn opset)]
              (set! state
                    (assoc s
                           :value  value
+                          :index  index
                           :dirty? false))
              value)
            value)))
@@ -171,17 +174,19 @@
      (-make-patch
        [this new-value]
        (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-       (let [{:keys [value opset] :as s} state]
-         (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
+       (let [{:keys [opset value index] :as s} state]
+         (some->> new-value (opset/ops-from-diff opset actor value index) ->Patch)))
      (-state-from-patch [this patch]
        (if (patch? patch)
-         (let [{:keys [ops]}               patch
-               {:keys [value opset] :as s} state
-               new-opset                   (into opset ops)]
+         (let [{:keys [ops]}         patch
+               {:keys [opset] :as s} state
+               new-opset             (into opset ops)
+               {:keys [value index]} (edn/edn new-opset)]
            (assoc s
-                  :value (edn/edn new-opset)
-                  :dirty? false
-                  :opset new-opset))
+                  :opset new-opset
+                  :value value
+                  :index index
+                  :dirty? false))
          state))
      (-peek-patches [this] (peek patches))
      (-pop-patches! [this] (set! patches (pop patches)))
@@ -194,10 +199,11 @@
        (let [{:keys [dirty? value opset] :as s}
              state]
          (if dirty?
-           (let [value (edn/edn opset)]
+           (let [{:keys [value index]} (edn/edn opset)]
              (set! state
                    (assoc s
                           :value  value
+                          :index  index
                           :dirty? false))
              value)
            value)))
