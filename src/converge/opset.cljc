@@ -195,18 +195,19 @@
 
 (defmulti edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
-  (fn [edit _old-value _actor _id] (nth edit 1))
+  (fn [edit _old-value _index _actor _id] (nth edit 1))
   :default ::default)
 
 (defmethod edit-to-ops ::default
-  [edit _old _actor _id]
+  [edit _old _index _actor _id]
   (throw (ex-info "Unknown edit operation" {:edit edit})))
 
 (defn insert-and-or-assign
-  [[path _ new-value :as edit] old actor id]
-  (let [entity    (or (util/safe-get-in old (butlast path))
-                         old)
-        entity-id (util/get-id entity)]
+  [[path _ new-value :as edit] old index actor id]
+  (let [entity (util/safe-get-in old (util/safe-pop path))
+        {entity-id  :id
+         insertions :insertions}
+        (util/safe-get index (util/safe-pop path))]
     (if (map? entity)
       (let [value-id  id
             assign-id (successor-id value-id)
@@ -219,7 +220,7 @@
             value-id  (successor-id insert-id)
             assign-id (successor-id value-id)
             value-ops (value-to-ops new-value actor value-id (successor-id assign-id))
-            after-id  (util/get-insertion-id entity (last path))]
+            after-id  (util/safe-get insertions (last path))]
         (apply vector
                [insert-id (insert after-id)]
                (first value-ops)
@@ -227,25 +228,27 @@
                value-ops)))))
 
 (defmethod edit-to-ops :+
-  [edit old actor id]
-  (insert-and-or-assign edit old actor id))
+  [edit old index actor id]
+  (insert-and-or-assign edit old index actor id))
 
 (defmethod edit-to-ops :-
-  [[path :as edit] old actor id]
-  (let [entity    (util/safe-get-in old (butlast path))
-        entity-id (util/get-id entity)
+  [[path :as edit] old index actor id]
+  (let [entity    (util/safe-get-in old (util/safe-pop path))
+        {entity-id  :id
+         insertions :insertions}
+        (util/safe-get index (util/safe-pop path))
         attribute (if (map? entity)
                     (last path)
-                    (util/get-insertion-id entity (last path)))]
+                    (util/safe-get insertions (last path)))]
     [[id (remove entity-id attribute)]]))
 
 (defmethod edit-to-ops :r
-  [[path _ new-value :as edit] old actor id]
+  [[path _ new-value :as edit] old index actor id]
   (if (empty? old)
     (value-to-ops new-value actor root-id id)
     ;; TODO: Check for existing IDs?
     (let [entity    (util/safe-get-in old path)
-          entity-id (util/get-id entity)]
+          entity-id (util/safe-get-in index [path :id])]
       (if (and (coll? new-value)
                (empty? new-value))
         (:ops
@@ -256,10 +259,10 @@
                  {:id  id
                   :ops []}
                  (keys old)))
-        (insert-and-or-assign edit old actor id)))))
+        (insert-and-or-assign edit old index actor id)))))
 
 (defn ops-from-diff
-  [opset actor old-value new-value]
+  [opset actor old-value index new-value]
   (let [ops (some->> new-value
                      (editscript/diff old-value)
                      edit/get-edits
@@ -267,6 +270,7 @@
                                (let [new-ops (into ops
                                                    (edit-to-ops edit
                                                                 old-value
+                                                                index
                                                                 actor
                                                                 id))]
                                  (assoc agg
@@ -276,18 +280,6 @@
                               :id  (next-id opset actor)})
                      :ops)]
     (if (seq ops) ops)))
-
-(defn add-ops-from-diff
-  [opset actor old-value new-value]
-  (reduce (fn [agg edit]
-            (into agg
-                  (edit-to-ops edit
-                               old-value
-                               actor
-                               (next-id agg actor))))
-          opset
-          (edit/get-edits
-           (editscript/diff old-value new-value))))
 
 (comment
 
@@ -303,7 +295,7 @@
   (def o (atom (opset root-id (make-map))))
   (def i (make-id))
 
-  (swap! o add-ops-from-diff (:actor i) {} a)
+  (swap! o into (opset/ops-from-diff @o (:actor i) {} converge.edn/root-index a))
   (converge.edn/edn @o)
   (count @o)
   (editscript/diff {} a)
@@ -317,7 +309,7 @@
 
   (count @o)
 
-  (swap! o add-ops-from-diff (:actor i) (converge.edn/edn @o) b)
+  (swap! o into (ops-from-diff @o (:actor i) (:value (converge.edn/edn @o)) converge.edn/root-index b))
 
   (converge.edn/edn @o)
 
