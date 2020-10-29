@@ -56,6 +56,10 @@
   [agg _id _op]
   agg)
 
+(defmethod -interpret-op :snapshot
+  [agg id {{{:keys [elements list-links]} :interpretation} :data :as op}]
+  (assoc agg :elements elements :list-links list-links))
+
 (defmethod -interpret-op :assign
   [{:keys [elements] :as agg} id {:keys [data] :as op}]
   (let [{:keys [entity attribute value]} data]

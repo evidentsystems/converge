@@ -107,6 +107,11 @@
   (assert (id? entity) "`entity` must be an Id")
   (op :remove {:entity entity :attribute attribute}))
 
+(defn snapshot
+  [as-of interpretation]
+  (assert (id? as-of) "`as-of` must be an Id")
+  (op :snapshot {:as-of as-of :interpretation interpretation}))
+
 (defn opset
   "An opset is a sorted map of Id -> Op"
   ([]

@@ -18,6 +18,7 @@
   refs."
   (:refer-clojure :exclude [ref])
   (:require [converge.opset :as opset]
+            [converge.interpret :as interpret]
             [converge.ref :as ref]
             [converge.edn :as edn]
             [converge.util :as util]))
@@ -173,6 +174,27 @@
   (let [p (peek-patches cr)]
     (ref/-pop-patches! cr)
     p))
+
+(defn snapshot-ref
+  "Creates a new reference which is a snapshot of the given reference,
+  having a single `snapshot` operation in its opset."
+  [cr & {:keys [actor meta validator] :as options}]
+  (let [o  (opset cr)
+        a  (or actor (ref/-actor cr))
+        id (opset/latest-id o)
+        r  (ref/->ConvergentRef
+            a
+            (ref/->ConvergentState (opset/opset
+                                    (opset/successor-id id a)
+                                    (opset/snapshot id (interpret/interpret o)))
+                                   nil
+                                   true)
+            (util/queue)
+            meta
+            validator
+            nil)]
+    @r
+    r))
 
 (comment
 
