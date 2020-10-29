@@ -32,6 +32,8 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
+;;;; Identifiers
+
 (declare id?)
 
 (defrecord Id [^UUID actor ^long counter]
@@ -68,6 +70,18 @@
   ([{:keys [counter] :as i} actor]
    (make-id actor (inc counter))))
 
+(defn latest-id
+  [opset]
+  (some-> opset last key))
+
+(defn next-id
+  [opset actor]
+  (if-let [latest (latest-id opset)]
+    (successor-id latest actor)
+    root-id))
+
+;;;; Operations
+
 (defrecord Op [action data])
 
 (defn op
@@ -77,8 +91,6 @@
    (assert (keyword? action) "The `action` of an Op must be a keyword")
    (assert (or (nil? data) (map? data)) "The `data` of an Op, if provided, must be a map")
    (->Op action data)))
-
-;;;; Operations
 
 (defn make-map
   []
@@ -107,6 +119,13 @@
   (assert (id? entity) "`entity` must be an Id")
   (op :remove {:entity entity :attribute attribute}))
 
+(defn snapshot
+  [as-of interpretation]
+  (assert (id? as-of) "`as-of` must be an Id")
+  (op :snapshot {:as-of as-of :interpretation interpretation}))
+
+;;;; OpSets
+
 (defn opset
   "An opset is a sorted map of Id -> Op"
   ([]
@@ -114,15 +133,7 @@
   ([& id-ops]
    (apply avl/sorted-map id-ops)))
 
-(defn latest-id
-  [opset]
-  (some-> opset last key))
-
-(defn next-id
-  [opset actor]
-  (if-let [latest (latest-id opset)]
-    (successor-id latest actor)
-    root-id))
+;;;; Editscript to Operations
 
 (declare value-to-ops)
 (defn map-to-value
@@ -195,19 +206,18 @@
 
 (defmulti edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
-  (fn [edit _old-value _index _actor _id] (nth edit 1))
+  (fn [edit _old-value _actor _id] (nth edit 1))
   :default ::default)
 
 (defmethod edit-to-ops ::default
-  [edit _old _index _actor _id]
+  [edit _old _actor _id]
   (throw (ex-info "Unknown edit operation" {:edit edit})))
 
 (defn insert-and-or-assign
-  [[path _ new-value :as edit] old index actor id]
-  (let [entity (util/safe-get-in old (util/safe-pop path))
-        {entity-id  :id
-         insertions :insertions}
-        (util/safe-get index (util/safe-pop path))]
+  [[path _ new-value :as edit] old actor id]
+  (let [entity    (or (util/safe-get-in old (butlast path))
+                         old)
+        entity-id (util/get-id entity)]
     (if (map? entity)
       (let [value-id  id
             assign-id (successor-id value-id)
@@ -220,7 +230,7 @@
             value-id  (successor-id insert-id)
             assign-id (successor-id value-id)
             value-ops (value-to-ops new-value actor value-id (successor-id assign-id))
-            after-id  (util/safe-get insertions (last path))]
+            after-id  (util/get-insertion-id entity (last path))]
         (apply vector
                [insert-id (insert after-id)]
                (first value-ops)
@@ -228,27 +238,25 @@
                value-ops)))))
 
 (defmethod edit-to-ops :+
-  [edit old index actor id]
-  (insert-and-or-assign edit old index actor id))
+  [edit old actor id]
+  (insert-and-or-assign edit old actor id))
 
 (defmethod edit-to-ops :-
-  [[path :as edit] old index actor id]
-  (let [entity    (util/safe-get-in old (util/safe-pop path))
-        {entity-id  :id
-         insertions :insertions}
-        (util/safe-get index (util/safe-pop path))
+  [[path :as edit] old actor id]
+  (let [entity    (util/safe-get-in old (butlast path))
+        entity-id (util/get-id entity)
         attribute (if (map? entity)
                     (last path)
-                    (util/safe-get insertions (last path)))]
+                    (util/get-insertion-id entity (last path)))]
     [[id (remove entity-id attribute)]]))
 
 (defmethod edit-to-ops :r
-  [[path _ new-value :as edit] old index actor id]
+  [[path _ new-value :as edit] old actor id]
   (if (empty? old)
     (value-to-ops new-value actor root-id id)
     ;; TODO: Check for existing IDs?
     (let [entity    (util/safe-get-in old path)
-          entity-id (util/safe-get-in index [path :id])]
+          entity-id (util/get-id entity)]
       (if (and (coll? new-value)
                (empty? new-value))
         (:ops
@@ -259,10 +267,10 @@
                  {:id  id
                   :ops []}
                  (keys old)))
-        (insert-and-or-assign edit old index actor id)))))
+        (insert-and-or-assign edit old actor id)))))
 
 (defn ops-from-diff
-  [opset actor old-value index new-value]
+  [opset actor old-value new-value]
   (let [ops (some->> new-value
                      (editscript/diff old-value)
                      edit/get-edits
@@ -270,7 +278,6 @@
                                (let [new-ops (into ops
                                                    (edit-to-ops edit
                                                                 old-value
-                                                                index
                                                                 actor
                                                                 id))]
                                  (assoc agg
@@ -280,39 +287,3 @@
                               :id  (next-id opset actor)})
                      :ops)]
     (if (seq ops) ops)))
-
-(comment
-
-  (def a {:empty-m {}
-          :empty-l []
-          :a       :key
-          :another {:nested {:key [1 2 3]}}
-          :a-list  [:foo "bar" 'baz {:nested :inalist}]
-          :a-set   #{1 2 3 4 5}})
-
-  (def a {:foo :bar :baz :quux :a-list [:item2 :item1]})
-
-  (def o (atom (opset root-id (make-map))))
-  (def i (make-id))
-
-  (swap! o into (opset/ops-from-diff @o (:actor i) {} converge.edn/root-index a))
-  (converge.edn/edn @o)
-  (count @o)
-  (editscript/diff {} a)
-
-  (def b {:a       {:different-key :value}
-          :another {:nested {:key [2]}}
-          :a-list  [:foo :baz {:nested :outalist} :quux]
-          :a-set   #{1 2 4 5}
-          :b       {:a {:nested {:map :thingy}}}})
-  (def b {:baz :quux :a-list [:item2]})
-
-  (count @o)
-
-  (swap! o into (ops-from-diff @o (:actor i) (:value (converge.edn/edn @o)) converge.edn/root-index b))
-
-  (converge.edn/edn @o)
-
-  (editscript/diff a b)
-
-  )

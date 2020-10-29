@@ -48,16 +48,6 @@
   #?(:clj  (Object.)
      :cljs (js-obj)))
 
-(defn safe-pop
-  [v]
-  (try
-    (pop v)
-    (catch
-        #?(:clj  IllegalStateException
-           :cljs :default)
-        e
-      [])))
-
 (defn safe-get-in
   ([m ks]
    (safe-get-in m ks nil))
@@ -71,6 +61,14 @@
            not-found
            (recur sentinel m (next ks))))
        m))))
+
+(defn get-id
+  [o]
+  (some-> o meta :converge/id))
+
+(defn get-insertion-id
+  [o n]
+  (some-> o meta :converge/insertions (safe-get n)))
 
 (defn queue
   [& elems]

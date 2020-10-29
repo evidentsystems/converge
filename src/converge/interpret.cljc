@@ -56,6 +56,10 @@
   [agg _id _op]
   agg)
 
+(defmethod -interpret-op :snapshot
+  [agg id {{{:keys [elements list-links]} :interpretation} :data :as op}]
+  (assoc agg :elements elements :list-links list-links))
+
 (defmethod -interpret-op :assign
   [{:keys [elements] :as agg} id {:keys [data] :as op}]
   (let [{:keys [entity attribute value]} data]
@@ -99,7 +103,17 @@
 
 (defmethod -interpret-op :make-list
   [agg id _op]
-  (assoc-in agg [:list-links id] list-end-sigil))
+  (-> agg
+      (assoc-in [:list-links id] list-end-sigil)
+      (assoc-in [:elements id] [])))
+
+(defmethod -interpret-op :make-map
+  [agg id _op]
+  (assoc-in agg [:elements id] {}))
+
+(defmethod -interpret-op :make-value
+  [agg id op]
+  (assoc-in agg [:elements id] (-> op :data :value)))
 
 (defn interpret
   [opset]

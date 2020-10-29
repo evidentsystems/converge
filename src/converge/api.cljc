@@ -18,6 +18,7 @@
   refs."
   (:refer-clojure :exclude [ref])
   (:require [converge.opset :as opset]
+            [converge.interpret :as interpret]
             [converge.ref :as ref]
             [converge.edn :as edn]
             [converge.util :as util]))
@@ -58,7 +59,6 @@
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-map))
                                 nil
-                                edn/root-index
                                 true)
                                (util/queue)
                                meta
@@ -70,7 +70,6 @@
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-list))
                                 nil
-                                edn/root-index
                                 true)
                                (util/queue)
                                meta
@@ -111,7 +110,7 @@
         actor*         (or actor (util/uuid))
         initial-action (get-in opset* [opset/root-id :action])
         r              (ref/->ConvergentRef actor*
-                                            (ref/->ConvergentState opset* nil edn/root-index true)
+                                            (ref/->ConvergentState opset* nil true)
                                             (util/queue)
                                             meta
                                             validator
@@ -163,7 +162,7 @@
                  (throw (ex-info "Cannot merge! this object into convergent reference"
                                  {:ref    cr
                                   :object other}))))]
-    (reset! cr (:value (edn/edn spec-opset)))
+    (reset! cr (edn/edn spec-opset))
     cr))
 
 (defn peek-patches
@@ -176,56 +175,23 @@
     (ref/-pop-patches! cr)
     p))
 
-(comment
-
-  (require '[criterium.core :as criterium])
-
-  (def m (ref {}))
-  @m
-
-  (def v (ref []))
-  @v
-
-  (def a
-    {:empty-m {}
-     :empty-l []
-     :a       :key
-     :another {:nested {:key [1 2 3]}}
-     :a-list  [:foo "bar" 'baz {:nested :inalist}]
-     :a-set   #{1 2 3 4 5}})
-
-  (criterium/bench
-   (ref a))
-
-  (simple-benchmark [m a f ref] (f a) 1000)
-
-  (def c (ref a))
-  @c
-  (opset c)
-
-  (simple-benchmark [c (ref a) v (random-uuid)] (swap! c assoc :foo v) 1000)
-
-  (def b
-    {:empty-m {}
-     :empty-l []
-     :a       :nother
-     :another {:nested {:key    [1 2 3]
-                        :deeply :mcnested}}
-     :a-list  [:foo "bar" {:nested :inalist}]
-     :a-set   #{1 3 4 5}})
-
-  (def c (ref {}))
-  (reset! c b)
-  (reset! c {})
-
-  (swap! c assoc :foo 'bar :baz "quux")
-  (swap! c dissoc :foo)
-
-  (binding [*print-meta* true]
-    (prn @c))
-
-  (criterium/bench
-   (swap! c dissoc :a))
-  @c
-
-  )
+(defn snapshot-ref
+  "Creates a new reference which is a snapshot of the given reference,
+  having a single `snapshot` operation in its opset."
+  [cr & {:keys [actor meta validator] :as options}]
+  (let [o  (opset cr)
+        a  (or actor (ref/-actor cr))
+        id (opset/latest-id o)
+        r  (ref/->ConvergentRef
+            a
+            (ref/->ConvergentState (opset/opset
+                                    (opset/successor-id id a)
+                                    (opset/snapshot id (interpret/interpret o)))
+                                   nil
+                                   true)
+            (util/queue)
+            meta
+            validator
+            nil)]
+    @r
+    r))
