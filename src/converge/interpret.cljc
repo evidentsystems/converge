@@ -103,7 +103,17 @@
 
 (defmethod -interpret-op :make-list
   [agg id _op]
-  (assoc-in agg [:list-links id] list-end-sigil))
+  (-> agg
+      (assoc-in [:list-links id] list-end-sigil)
+      (assoc-in [:elements id] [])))
+
+(defmethod -interpret-op :make-map
+  [agg id _op]
+  (assoc-in agg [:elements id] {}))
+
+(defmethod -interpret-op :make-value
+  [agg id op]
+  (assoc-in agg [:elements id] (-> op :data :value)))
 
 (defn interpret
   [opset]

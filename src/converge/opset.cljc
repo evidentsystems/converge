@@ -32,6 +32,8 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
+;;;; Identifiers
+
 (declare id?)
 
 (defrecord Id [^UUID actor ^long counter]
@@ -68,6 +70,18 @@
   ([{:keys [counter] :as i} actor]
    (make-id actor (inc counter))))
 
+(defn latest-id
+  [opset]
+  (some-> opset last key))
+
+(defn next-id
+  [opset actor]
+  (if-let [latest (latest-id opset)]
+    (successor-id latest actor)
+    root-id))
+
+;;;; Operations
+
 (defrecord Op [action data])
 
 (defn op
@@ -77,8 +91,6 @@
    (assert (keyword? action) "The `action` of an Op must be a keyword")
    (assert (or (nil? data) (map? data)) "The `data` of an Op, if provided, must be a map")
    (->Op action data)))
-
-;;;; Operations
 
 (defn make-map
   []
@@ -112,6 +124,8 @@
   (assert (id? as-of) "`as-of` must be an Id")
   (op :snapshot {:as-of as-of :interpretation interpretation}))
 
+;;;; OpSets
+
 (defn opset
   "An opset is a sorted map of Id -> Op"
   ([]
@@ -119,15 +133,7 @@
   ([& id-ops]
    (apply avl/sorted-map id-ops)))
 
-(defn latest-id
-  [opset]
-  (some-> opset last key))
-
-(defn next-id
-  [opset actor]
-  (if-let [latest (latest-id opset)]
-    (successor-id latest actor)
-    root-id))
+;;;; Editscript to Operations
 
 (declare value-to-ops)
 (defn map-to-value
@@ -281,51 +287,3 @@
                               :id  (next-id opset actor)})
                      :ops)]
     (if (seq ops) ops)))
-
-(defn add-ops-from-diff
-  [opset actor old-value new-value]
-  (reduce (fn [agg edit]
-            (into agg
-                  (edit-to-ops edit
-                               old-value
-                               actor
-                               (next-id agg actor))))
-          opset
-          (edit/get-edits
-           (editscript/diff old-value new-value))))
-
-(comment
-
-  (def a {:empty-m {}
-          :empty-l []
-          :a       :key
-          :another {:nested {:key [1 2 3]}}
-          :a-list  [:foo "bar" 'baz {:nested :inalist}]
-          :a-set   #{1 2 3 4 5}})
-
-  (def a {:foo :bar :baz :quux :a-list [:item2 :item1]})
-
-  (def o (atom (opset root-id (make-map))))
-  (def i (make-id))
-
-  (swap! o add-ops-from-diff (:actor i) {} a)
-  (converge.edn/edn @o)
-  (count @o)
-  (editscript/diff {} a)
-
-  (def b {:a       {:different-key :value}
-          :another {:nested {:key [2]}}
-          :a-list  [:foo :baz {:nested :outalist} :quux]
-          :a-set   #{1 2 4 5}
-          :b       {:a {:nested {:map :thingy}}}})
-  (def b {:baz :quux :a-list [:item2]})
-
-  (count @o)
-
-  (swap! o add-ops-from-diff (:actor i) (converge.edn/edn @o) b)
-
-  (converge.edn/edn @o)
-
-  (editscript/diff a b)
-
-  )

@@ -13,145 +13,110 @@
 ;; limitations under the License.
 (ns converge.edn
   "API for interpreting an OpSet as EDN data."
-  (:require [clojure.walk :as walk]
+  (:require [clojure.zip :as zip]
             [converge.opset :as opset]
-            [converge.interpret :as interpret]))
+            [converge.interpret :as interpret]
+            [converge.util :as util]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defn replace-id-values
-  [this index]
-  (cond
-    (opset/id? this)
-    (if (:key? (meta this))
-      (vary-meta this dissoc :key?)
-      (vary-meta (get index this)
-                 assoc :converge/id this))
+(defn insertion-index
+  [list-links entity attribute]
+  (if-let [init-id (get list-links entity)]
+    (loop [id init-id
+           i  0]
+      (if (= id attribute)
+        i
+        (recur (get list-links id)
+               (inc i))))
+    []))
 
-    (map-entry? this)
-    (if (opset/id? (key this))
-      (update this 0 vary-meta assoc :key? true)
-      this)
+(defn list-insertions
+  [list-links entity]
+  (if-let [init-id (get list-links entity)]
+    (loop [id  init-id
+           ins []]
+      (if (= id interpret/list-end-sigil)
+        ins
+        (recur (get list-links id)
+               (conj ins id))))
+    []))
 
-    :else
-    this))
+(defn interpretation-zip
+  ([interpretation]
+   (interpretation-zip interpretation opset/root-id))
+  ([interpretation root-id]
+   (let [elements   (:elements interpretation)
+         list-links (:list-links interpretation)
+         grouped    (group-by :entity (vals elements))]
+     (zip/zipper
+      (fn [node] (-> node :children seq boolean))
+      (fn [node]
+        (for [{:keys [entity attribute value]}
+              (:children node)]
+          (let [v        (get elements value)
+                a        (if (opset/id? attribute)
+                           (insertion-index list-links entity attribute)
+                           attribute)
+                children (get grouped value)]
+            {:path       (conj (:path node) a)
+             :entity     value
+             :attribute  attribute
+             :value      v
+             :insertions (list-insertions list-links value)
+             :children   children})))
+      (constantly nil) ;; TODO: if we need to "mutate" the zipper itself
+      {:entity     root-id
+       :value      (get elements root-id)
+       :children   (get grouped root-id)
+       :insertions (list-insertions list-links root-id)
+       :path       []}))))
 
-(defn- build-list
-  [head-id list-map list-links]
-  (loop [prev head-id
-         list ^{:converge/insertions []} []]
-    (let [next      (get list-links prev)
-          element   (get list-map next)
-          next-list (if element
-                      (-> list
-                          (conj element)
-                          (vary-meta update :converge/insertions conj next))
-                      list)]
-      (if (= next interpret/list-end-sigil)
-        next-list
-        (recur next next-list)))))
+(defn assoc-resizing
+  ([vtr k v]
+   (assoc-resizing vtr k v 0))
+  ([vtr k v fill]
+   (let [vtr-n (count vtr)
+         vtr*  (if (> k vtr-n)
+                 (into vtr (take (- k vtr-n) (repeat fill)))
+                 vtr)]
+     (assoc vtr* k v))))
 
-(defn entity-index
-  [opset {:keys [elements list-links]}]
-  (let [index (reduce-kv (fn [agg _id {:keys [entity attribute value]}]
-                           (let [v (get-in opset [value :data :value]
-                                           value)]
-                             (cond-> agg
-                               ;; ensure empty collections are included in entity-index
-                               (and (opset/id? v)
-                                    (some-> opset (get v) :action #{:make-list :make-map})
-                                    (empty? (get agg v)))
-                               (assoc v {})
+(defn add-element
+  [return path value]
+  (let [attribute (peek path)]
+    (if attribute
+      (let [parent-path (pop path)
+            parent      (util/safe-get-in return parent-path)]
+        (if (sequential? parent)
+          (if (seq parent-path)
+            (update-in return parent-path (fnil assoc-resizing []) attribute value)
+            ((fnil assoc-resizing []) return attribute value))
+          (assoc-in return path value)))
+      value)))
 
-                               true
-                               (assoc-in [entity attribute] v))))
-                         {}
-                         elements)]
-    (reduce-kv (fn [agg id entity]
-                 (let [op (get opset id)]
-                   (if (= (:action op) :make-list)
-                     (assoc agg id (build-list id entity list-links))
-                     agg)))
-               index
-               index)))
+(defn assemble-values
+  [{:keys [list-links] :as interpretation}]
+  (loop [loc    (interpretation-zip interpretation opset/root-id)
+         return nil]
+    (if (zip/end? loc)
+      return
+      (let [{:keys [path entity insertions]
+             v     :value}
+            (zip/node loc)]
+        (recur (zip/next loc)
+               (add-element return
+                            path
+                            (cond-> v
+                              (sequential? v)
+                              (vary-meta assoc :converge/id entity :converge/insertions insertions)
 
-(defn root-entity
-  [opset]
-  (case (some-> opset first val :action)
-    :make-map  {}
-    :make-list []
-    (throw (ex-info "Invalid OpSet" {:opset opset}))))
+                              (map? v)
+                              (vary-meta assoc :converge/id entity))))))))
 
 (defn edn
   [opset]
-  (cond
-    (= (count opset) 0)
+  (if (= (count opset) 0)
     nil
-
-    (= (count opset) 1)
-    (vary-meta
-     (root-entity opset)
-     assoc :converge/id opset/root-id)
-
-    :else
-    (let [interpretation (interpret/interpret opset)
-          index          (entity-index opset interpretation)]
-      (some-> (walk/prewalk #(replace-id-values % index)
-                            index)
-              (get opset/root-id (root-entity opset))
-              (vary-meta assoc :converge/id opset/root-id)))))
-
-(comment
-
-  (do
-
-    (def id1 opset/root-id)
-    (def id2 (opset/make-id))
-    (def id3 (opset/successor-id id2))
-    (def id4 (opset/successor-id id3))
-    (def id5 (opset/successor-id id4))
-    (def id6 (opset/successor-id id5))
-    (def id7 (opset/successor-id id6))
-    (def id8 (opset/successor-id id7))
-    (def id9 (opset/successor-id id8))
-    (def id10 (opset/successor-id id9))
-    (def id11 (opset/successor-id id10))
-    (def id12 (opset/successor-id id11))
-    (def id13 (opset/successor-id id12))
-    (def id14 (opset/successor-id id13))
-    (def id15 (opset/successor-id id14))
-
-    )
-
-  (def o (atom (opset/opset id1 (opset/make-map))))
-
-  (do
-
-    (swap! o assoc id2  (opset/make-value :bar))
-    (swap! o assoc id3  (opset/assign id1 :foo id2))
-    (swap! o assoc id4  (opset/make-value :quux))
-    (swap! o assoc id5  (opset/assign id1 :baz id4))
-    (swap! o assoc id6  (opset/remove id1 :foo))
-    (swap! o assoc id7  (opset/make-list))
-    (swap! o assoc id8  (opset/assign id1 :a-list id7))
-    (swap! o assoc id9  (opset/insert id7))
-    (swap! o assoc id10 (opset/make-value :item1))
-    (swap! o assoc id11 (opset/assign id7 id9 id10))
-    (swap! o assoc id12 (opset/insert id7))
-    (swap! o assoc id13 (opset/make-value :item2))
-    (swap! o assoc id14 (opset/assign id7 id12 id13))
-    (swap! o assoc id15 (opset/remove id7 id9))
-
-    )
-
-  ;; => {:baz :quux :a-list [:item2]}
-
-  (binding [*print-meta* true]
-    (prn (edn @o)))
-
-  (meta (edn @o))
-
-  (def i (interpret/interpret @o))
-
-  )
+    (assemble-values (interpret/interpret opset))))
