@@ -105,6 +105,9 @@
   (let [c (convergent/ref a)
         d (convergent/ref-from-opset (convergent/opset c))]
     (swap! d assoc :b :another-key)
+    (testing "merging nil"
+      (is (= a @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+                                   nil))))
     (testing "merging another convergent ref"
       (is (= @d @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
                                     d))))

@@ -134,6 +134,9 @@
 (defn merge!
   [cr other]
   (let [patch (cond
+                (nil? other)
+                nil
+
                 (convergent? other)
                 (ref/->Patch (opset other))
 
@@ -144,7 +147,8 @@
                 (throw (ex-info "Cannot merge! this object into convergent reference"
                                 {:ref    cr
                                  :object other})))]
-    (ref/-apply-state! cr (ref/-state-from-patch cr patch))
+    (when patch
+      (ref/-apply-state! cr (ref/-state-from-patch cr patch)))
     cr))
 
 (defn squash!
