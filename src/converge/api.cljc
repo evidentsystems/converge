@@ -153,23 +153,23 @@
 
 (defn squash!
   [cr other]
-  (let [spec-opset
-        (merge (opset cr)
-               (cond
-                 (nil? other)
-                 nil
+  (let [additional-ops
+        (cond
+          (nil? other)
+          nil
 
-                 (convergent? other)
-                 (opset other)
+          (convergent? other)
+          (opset other)
 
-                 (ref/patch? other)
-                 (:ops other)
+          (ref/patch? other)
+          (:ops other)
 
-                 :else
-                 (throw (ex-info "Cannot merge! this object into convergent reference"
-                                 {:ref    cr
-                                  :object other}))))]
-    (reset! cr (edn/edn spec-opset))
+          :else
+          (throw (ex-info "Cannot merge! this object into convergent reference"
+                          {:ref    cr
+                           :object other})))]
+    (when-not (nil? additional-ops)
+      (reset! cr (edn/edn (merge (opset cr) additional-ops))))
     cr))
 
 (defn peek-patches
