@@ -156,6 +156,9 @@
   (let [spec-opset
         (merge (opset cr)
                (cond
+                 (nil? other)
+                 nil
+
                  (convergent? other)
                  (opset other)
 
