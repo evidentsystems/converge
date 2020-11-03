@@ -50,6 +50,8 @@
 (defprotocol IConvergent
   (-actor [this]
     "Returns the current actor of this convergent")
+  (-state [this]
+    "Returns the current state of this convergent")
   (-set-actor! [this actor]
     "Sets this ref's actor to the given value")
   (-opset [this]
@@ -77,6 +79,7 @@
                            ^:volatile-mutable watches]
      IConvergent
      (-actor [this] actor)
+     (-state [this] state)
      (-set-actor! [this new-actor] (set! actor new-actor))
      (-opset [this] (:opset state))
      (-apply-state! [this new-state]
@@ -162,6 +165,7 @@
                            ^:mutable watches]
      IConvergent
      (-actor [this] actor)
+     (-state [this] state)
      (-set-actor! [this new-actor] (set! actor new-actor))
      (-opset [this] (:opset state))
      (-apply-state! [this new-state]
