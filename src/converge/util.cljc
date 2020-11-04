@@ -14,7 +14,8 @@
 (ns converge.util
   "Utility functions"
   #?(:cljs (:refer-clojure :exclude [uuid]))
-  (:require #?@(:clj
+  (:require [clojure.string :as string]
+            #?@(:clj
                 [[clj-uuid :as uuid]]
                 :cljs
                 [[uuid :as uuid]])))
@@ -23,9 +24,27 @@
    :cljs (set! *warn-on-infer* true))
 
 (defn uuid
-  []
-  #?(:clj  (uuid/v4)
-     :cljs (random-uuid)))
+  ([]
+   #?(:clj  (uuid/v4)
+      :cljs (random-uuid)))
+  ([uuid-str]
+   (cond
+     (uuid? uuid-str)
+     uuid-str
+
+     (string/blank? uuid-str)
+     nil
+
+     (string? uuid-str)
+     #?(:clj
+        (java.util.UUID/fromString uuid-str)
+        :cljs
+        (if (uuid/validate uuid-str)
+          (cljs.core/uuid uuid-str)
+          (throw (ex-info "invalid UUID string" {:uuid-str uuid-str}))))
+
+     :else
+     (throw (ex-info "cannot make UUID from object" {:object uuid-str})))))
 
 (defn now
   []
