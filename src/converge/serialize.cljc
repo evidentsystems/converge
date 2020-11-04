@@ -6,9 +6,6 @@
             [converge.ref :as ref]
             [converge.util :as util]))
 
-(def read-uuid
-  util/uuid)
-
 (def read-id
   opset/map->Id)
 
