@@ -22,8 +22,8 @@
    :extra-deps
    {org.clojure/test.check      {:mvn/version "0.10.0"}
     org.clojure/tools.namespace {:mvn/version "1.0.0"}
-    eftest                      {:mvn/version "0.5.3"}
-    criterium                   {:mvn/version "0.4.6"}
+    eftest/eftest               {:mvn/version "0.5.3"}
+    criterium/criterium         {:mvn/version "0.4.6"}
     ;; Managed transitive eftest dep for Java 11
     org.clojure/core.rrb-vector {:mvn/version "0.1.1"}}}
 
