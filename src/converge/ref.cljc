@@ -110,8 +110,8 @@
        (let [patch     (-make-patch this new-value)
              new-state (-state-from-patch this patch)]
          (assert (= new-value (:value new-state)) "Unsupported reference state")
-         (-apply-state! this new-state)
          (when patch (set! patches (conj patches patch)))
+         (-apply-state! this new-state)
          (:value new-state)))
      (swap [this f]          (.reset this (f (:value state))))
      (swap [this f a]        (.reset this (f (:value state) a)))
@@ -215,8 +215,8 @@
        (let [patch     (-make-patch this new-value)
              new-state (-state-from-patch this patch)]
          (assert (= new-value (:value new-state)) "Unsupported reference state")
-         (-apply-state! this new-state)
          (when patch (set! patches (conj patches patch)))
+         (-apply-state! this new-state)
          (:value new-state)))
 
      ISwap
