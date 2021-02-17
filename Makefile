@@ -18,7 +18,7 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
-default: test
+default: ci
 
 # Dependencies
 
@@ -44,7 +44,7 @@ CLJ_REPL_ALIAS:=
 
 .PHONY: clj-dev
 clj-dev:
-	clojure -A:dev:test${CLJ_REPL_ALIAS}
+	clojure -M:dev:test${CLJ_REPL_ALIAS}
 
 node_modules/.yarn-integrity: yarn.lock package.json
 	yarn install
@@ -78,7 +78,7 @@ cljs-test: clean
 	bin/kaocha unit-cljs
 
 .PHONY: test
-test: cljs-test clj-test
+test: clj-test cljs-test
 
 .PHONY: cljs-ci
 cljs-ci: clean
@@ -87,6 +87,12 @@ cljs-ci: clean
 
 .PHONY: ci
 ci: clj-test cljs-ci
+
+target/dist/js/converge.js: deps.edn shadow-cljs.edn node_modules/.yarn-integrity src/
+	yarn shadow-cljs -A:test release lib
+
+.PHONY: build
+build: target/dist/js/converge.js
 
 # Project info
 

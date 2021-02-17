@@ -13,17 +13,17 @@
 ;; limitations under the License.
 {:deps {:aliases [:cljs]}
 
- ;; set an nrepl port for connection to a REPL.
- :nrepl {:port 9999}
+ :nrepl    {:port 9999}
+ :dev-http {8000 ["dev/public" "target"]}
 
  :builds
  {:lib  {:target     :browser
          :output-dir "target/dist/js"
          :asset-path "/dist/js"
-         :modules    {:main {:entries [converge.api]}}
+         :modules    {:converge {:entries [converge.api]}}
          :dev        {:closure-defines {"goog.DEBUG" true}}
-         :devtools   {:http-root "target"
-                      :http-port 8000}}
+         :devtools   {:open-file-command
+                      ["emacsclient" "-n" ["+%s:%s" :line :column] :file]}}
   :test {:target    :browser-test
          :runner-ns kaocha.cljs2.shadow-runner
          :test-dir  "target/test/js"

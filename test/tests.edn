@@ -22,4 +22,5 @@
              :kaocha/ns-patterns   ["-test$"]
              :kaocha/source-paths  ["src"]
              :kaocha/test-paths    ["test"]}]
+ :plugins  [:kaocha.plugin/profiling]
  :reporter [kaocha.report/dots]}
