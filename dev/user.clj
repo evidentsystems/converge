@@ -16,7 +16,7 @@
             [clojure.pprint :refer [pprint]]
             [clojure.spec.test.alpha :as stest]
             [clojure.tools.namespace.repl :refer [refresh]]
-            [eftest.runner :as eftest]))
+            [kaocha.repl :as kaocha]))
 
 (set! *warn-on-reflection* true)
 
@@ -24,7 +24,7 @@
 
 (defn test []
   (refresh)
-  (eftest/run-tests (eftest/find-tests "test") {:multithread? false}))
+  (kaocha/run :unit-clj {:config-file "test/tests.edn"}))
 
 (defn instrument
   []

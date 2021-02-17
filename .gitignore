@@ -1,3 +1,4 @@
+/bin
 /target
 /classes
 /checkouts
@@ -12,3 +13,4 @@
 
 node_modules/
 .shadow-cljs/
+yarn-error.log

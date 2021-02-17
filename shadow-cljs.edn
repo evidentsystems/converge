@@ -17,23 +17,19 @@
  :nrepl {:port 9999}
 
  :builds
- {:lib  {:target           :browser
-         :compiler-options {:infer-externs             :auto
-                            :cross-chunk-method-motion false}
-         :output-dir       "target/dist/js"
-         :asset-path       "/dist/js"
-         :modules          {:main {:entries [converge.api]}}
-         :dev              {:closure-defines {"goog.DEBUG" true}}
-         :release          {:compiler-options {:source-map                         true
-                                               :source-map-detail-level            :symbols
-                                               :source-map-include-sources-content false}}
-         :devtools         {:http-root "target"
-                            :http-port 8000}}
-  :test {:target   :browser-test
-         :test-dir "target/test/js"
-         :devtools {:http-port 8008
-                    :http-root "target"}}
+ {:lib  {:target     :browser
+         :output-dir "target/dist/js"
+         :asset-path "/dist/js"
+         :modules    {:main {:entries [converge.api]}}
+         :dev        {:closure-defines {"goog.DEBUG" true}}
+         :devtools   {:http-root "target"
+                      :http-port 8000}}
+  :test {:target    :browser-test
+         :runner-ns kaocha.cljs2.shadow-runner
+         :test-dir  "target/test/js"
+         :ns-regexp ".*-test$"
+         :devtools  {:http-port 8008
+                     :http-root "target/test/js"
+                     :preloads  [lambdaisland.chui.remote]}}
   :ci   {:target    :karma
-         :output-to "target/ci/js/ci.js"
-         :dev       {:closure-defins
-                     {"goog.DEBUG" true}}}}}
+         :output-to "target/ci/js/ci.js"}}}

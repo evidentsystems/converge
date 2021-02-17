@@ -15,31 +15,25 @@
  :aliases
  {:cljs
   {:extra-deps
-   {thheller/shadow-cljs {:mvn/version "2.11.4"}}}
+   {thheller/shadow-cljs {:mvn/version "2.11.18"}}}
 
   :dev
-  {:extra-paths ["dev" "test"]
+  {:extra-paths ["dev"]
    :extra-deps
-   {org.clojure/test.check      {:mvn/version "0.10.0"}
-    org.clojure/tools.namespace {:mvn/version "1.0.0"}
-    eftest/eftest               {:mvn/version "0.5.3"}
-    criterium/criterium         {:mvn/version "0.4.6"}
-    ;; Managed transitive eftest dep for Java 11
-    org.clojure/core.rrb-vector {:mvn/version "0.1.1"}}}
+   {org.clojure/tools.namespace {:mvn/version "1.0.0"}}}
 
   :test
   {:extra-paths ["test"]
-   :extra-deps  {org.clojure/test.check {:mvn/version "0.10.0"}}}
+   :extra-deps
+   {lambdaisland/kaocha        {:mvn/version "1.0.732"}
+    lambdaisland/kaocha-cljs2  {:mvn/version "0.0.35"}
+    criterium/criterium        {:mvn/version "0.4.6"}
+    org.clojure/test.check     {:mvn/version "1.1.0"}
+    com.cognitect/transit-clj  {:mvn/version "1.0.324"}
+    com.cognitect/transit-cljs {:mvn/version "0.8.264"}}}}
 
-  :runner
-  {:extra-deps {com.cognitect/test-runner
-                {:git/url "https://github.com/cognitect-labs/test-runner"
-                 :sha     "f7ef16dc3b8332b0d77bc0274578ad5270fbfedd"}}
-   :main-opts  ["-m" "cognitect.test-runner"
-                "-d" "test"]}}
-
- :deps {org.clojure/clojure    {:mvn/version "1.10.1"}
-        org.clojure/spec.alpha {:mvn/version "0.2.187"}
-        org.clojure/data.avl   {:mvn/version "0.1.0"}
-        juji/editscript        {:mvn/version "0.4.6"}
-        danlentz/clj-uuid      {:mvn/version "0.1.9"}}}
+ :deps
+ {org.clojure/clojure    {:mvn/version "1.10.2"}
+  org.clojure/data.avl   {:mvn/version "0.1.0"}
+  juji/editscript        {:mvn/version "0.4.6" #_"0.5.4"}
+  danlentz/clj-uuid      {:mvn/version "0.1.9"}}}

@@ -24,7 +24,9 @@ default: test
 
 .PHONY: bootstrap
 bootstrap:
-	brew install clojure tokei
+	-brew install clojure tokei
+	wget "https://github.com/lambdaisland/funnel/releases/download/v0.1.42/funnel.darwin-amd64" -O bin/funnel
+	chmod +x bin/funnel
 
 .PHONY: outdated
 outdated:
@@ -42,28 +44,49 @@ CLJ_REPL_ALIAS:=
 
 .PHONY: clj-dev
 clj-dev:
-	clojure -A:dev${CLJ_REPL_ALIAS}
+	clojure -A:dev:test${CLJ_REPL_ALIAS}
 
 node_modules/.yarn-integrity: yarn.lock package.json
 	yarn install
 
+.PHONY: shadow-start
+shadow-start:
+	yarn shadow-cljs -A:dev:test start
+
+.PHONY: shadow-stop
+shadow-stop:
+	yarn shadow-cljs -A:dev:test stop
+
 .PHONY: cljs-dev
-cljs-dev: node_modules/.yarn-integrity
-	yarn shadow-cljs -A:dev watch lib
+cljs-dev: node_modules/.yarn-integrity shadow-start
+	yarn shadow-cljs -A:dev:test watch lib
 
 # Tests
 
 .PHONY: clj-test
-clj-test:
-	clojure -A:test:runner
+clj-test: clean
+	bin/kaocha unit-clj
+
+.PHONY: cljs-test-harness
+cljs-test-harness: shadow-start
+	bin/funnel
 
 .PHONY: cljs-test
 cljs-test: clean
+	yarn shadow-cljs -A:test release test
+	open "http://localhost:8008"
+	bin/kaocha unit-cljs
+
+.PHONY: test
+test: cljs-test clj-test
+
+.PHONY: cljs-ci
+cljs-ci: clean
 	yarn shadow-cljs -A:test compile ci
 	yarn karma start --single-run
 
-.PHONY: test
-test: clj-test cljs-test
+.PHONY: ci
+ci: clj-test cljs-ci
 
 # Project info
 
