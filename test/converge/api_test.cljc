@@ -164,3 +164,36 @@
         (is (= @(convergent/squash! c cr) final))
         (is (> (count (convergent/opset c))
                initial-count))))))
+
+(comment ;; Clojure benchmarks
+
+  (require '[criterium.core :as criterium])
+
+  (criterium/bench @(convergent/ref a))
+
+  ;; Macbook Pro 02/17/2021
+  ;;                 Evaluation count : 84780 in 60 samples of 1413 calls.
+  ;;              Execution time mean : 716.656014 µs
+  ;;     Execution time std-deviation : 21.399499 µs
+  ;;    Execution time lower quantile : 702.140090 µs ( 2.5%)
+  ;;    Execution time upper quantile : 767.655602 µs (97.5%)
+  ;;                    Overhead used : 7.672645 ns
+
+  ;; Found 6 outliers in 60 samples (10.0000 %)
+  ;; 	low-severe	 4 (6.6667 %)
+  ;; 	low-mild	 2 (3.3333 %)
+  ;;  Variance from outliers : 17.3517 % Variance is moderately inflated by outliers
+
+  )
+
+(comment ;; ClojureScript benchmarks
+
+  (simple-benchmark
+   []
+   @(convergent/ref a)
+   10000)
+
+  ;; Macbook Pro, Chrome 02/17/2021
+  ;; [], (let [r (convergent/ref a)] (clojure.core/deref r)), 10000 runs, 15224 msecs
+
+  )
