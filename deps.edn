@@ -35,5 +35,5 @@
  :deps
  {org.clojure/clojure    {:mvn/version "1.10.2"}
   org.clojure/data.avl   {:mvn/version "0.1.0"}
-  juji/editscript        {:mvn/version "0.4.6" #_"0.5.4"}
+  juji/editscript        {:mvn/version "0.5.4"}
   danlentz/clj-uuid      {:mvn/version "0.1.9"}}}
