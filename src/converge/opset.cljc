@@ -260,13 +260,16 @@
       (if (and (coll? new-value)
                (empty? new-value))
         (:ops
-         (reduce (fn [{:keys [ops id] :as agg} k]
+         (reduce (fn [{:keys [ops id] :as agg} attribute]
                    (-> agg
-                       (update :ops conj [id (remove entity-id k)])
+                       (update :ops conj [id (remove entity-id attribute)])
                        (assoc :id (successor-id id))))
                  {:id  id
                   :ops []}
-                 (keys old)))
+                 (if (map? old)
+                   (keys old)
+                   (for [i (range (count old))]
+                     (util/get-insertion-id old i)))))
         (insert-and-or-assign edit old actor id)))))
 
 (defn ops-from-diff

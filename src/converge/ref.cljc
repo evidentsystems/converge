@@ -115,7 +115,10 @@
              [this new-value]
              (let [patch     (-make-patch this new-value)
                    new-state (-state-from-patch this patch)]
-               (assert (= new-value (:value new-state)) "Unsupported reference state")
+               (if-not (= new-value (:value new-state))
+                 (throw (ex-info "Unsupported reference state" {:new-value new-value
+                                                                :patch     patch
+                                                                :new-state new-state})))
                (when patch (set! patches (conj patches patch)))
                (-apply-state! this new-state)
                (:value new-state)))
@@ -187,7 +190,10 @@
         [this new-value]
         (let [patch     (-make-patch this new-value)
               new-state (-state-from-patch this patch)]
-          (assert (= new-value (:value new-state)) "Unsupported reference state")
+          (if-not (= new-value (:value new-state))
+            (throw (ex-info "Unsupported reference state" {:new-value new-value
+                                                           :patch     patch
+                                                           :new-state new-state})))
           (when patch (set! patches (conj patches patch)))
           (-apply-state! this new-state)
           (:value new-state)))
