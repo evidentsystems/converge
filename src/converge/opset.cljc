@@ -214,14 +214,14 @@
   (throw (ex-info "Unknown edit operation" {:edit edit})))
 
 (defn insert-and-or-assign
-  [[path _ new-value :as edit] old actor id]
+  [[path _ value :as edit] old actor id]
   (let [entity    (or (util/safe-get-in old (butlast path))
-                         old)
+                      old)
         entity-id (util/get-id entity)]
     (if (map? entity)
       (let [value-id  id
             assign-id (successor-id value-id)
-            value-ops (value-to-ops new-value actor value-id (successor-id assign-id))]
+            value-ops (value-to-ops value actor value-id (successor-id assign-id))]
         (apply vector
                (first value-ops)
                [assign-id (assign entity-id (last path) value-id)]
@@ -229,8 +229,9 @@
       (let [insert-id id
             value-id  (successor-id insert-id)
             assign-id (successor-id value-id)
-            value-ops (value-to-ops new-value actor value-id (successor-id assign-id))
-            after-id  (util/get-insertion-id entity (last path))]
+            value-ops (value-to-ops value actor value-id (successor-id assign-id))
+            after-id  (or (some->> path last dec (util/get-insertion-id entity))
+                          entity-id)]
         (apply vector
                [insert-id (insert after-id)]
                (first value-ops)
