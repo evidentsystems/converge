@@ -16,14 +16,8 @@
   `Op`(eration)s as per section 3.1 of the
   [OpSet paper](https://arxiv.org/pdf/1805.04263.pdf), and `OpSet`s or
   totally ordered maps of id -> op."
-  (:refer-clojure :exclude [remove #?(:cljs uuid)])
-  (:require #?@(:clj
-                [[clj-uuid :as uuid]]
-                :cljs
-                [[uuid :as uuid]])
-            [clojure.data :as data]
-            [clojure.data.avl :as avl]
-            [clojure.zip :as zip]
+  (:refer-clojure :exclude [remove])
+  (:require [clojure.data.avl :as avl]
             [editscript.core :as editscript]
             [editscript.edit :as edit]
             [converge.util :as util])
