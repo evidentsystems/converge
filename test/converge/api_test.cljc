@@ -31,6 +31,19 @@
         [:foo "bar" 'baz {:nested :inalist}]
         #{1 2 3 4 5}])
 
+(deftest all-editscript-cases
+  (let [a {:foo  [:bar [1 2 3] {:baz [1 2 3 4] :remove :me}]
+           :bar  {:a :b :c :d}
+           :baz  {}
+           :quux [2]}
+        b {:foo  [:bar :doh {:baz [1 3 5] :la {:foo [1 2 3]}}]
+           :bar  [1 2 3]
+           :baz  :quux
+           :quux [1 2]}
+        r (convergent/ref a)]
+    (reset! r b)
+    (is (= @r b))))
+
 (deftest convergent-ref-of-map
   (testing "Can initialize convergent ref with an empty map"
     (is (convergent/ref {})))

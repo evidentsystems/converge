@@ -68,8 +68,15 @@
           :baz  :quux
           :quux [1 2]})
 
+  (def r (converge.api/ref a))
+  @r
+  (reset! r b)
+
   (def a [{} [] :key {:nested {:key [1 2 3]}} [:foo "bar" 0 {:nested :inalist}] #{1 4 3 2 5}])
   (def b [{} [] :key {:nested {:key [1 2 3]}} [:foo "bar" {:nested :inalist}] #{1 4 3 2 5}])
+
+  (require '[editscript.core :as editscript]
+           '[editscript.edit :as edit])
 
   (def es
     (some->> b
