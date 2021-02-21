@@ -16,14 +16,8 @@
   `Op`(eration)s as per section 3.1 of the
   [OpSet paper](https://arxiv.org/pdf/1805.04263.pdf), and `OpSet`s or
   totally ordered maps of id -> op."
-  (:refer-clojure :exclude [remove #?(:cljs uuid)])
-  (:require #?@(:clj
-                [[clj-uuid :as uuid]]
-                :cljs
-                [[uuid :as uuid]])
-            [clojure.data :as data]
-            [clojure.data.avl :as avl]
-            [clojure.zip :as zip]
+  (:refer-clojure :exclude [remove])
+  (:require [clojure.data.avl :as avl]
             [editscript.core :as editscript]
             [editscript.edit :as edit]
             [converge.util :as util])
@@ -204,70 +198,116 @@
     :else
     [[value-id (make-value value)]]))
 
-(defmulti edit-to-ops
+(defmulti -edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
-  (fn [edit _old-value _actor _id] (nth edit 1))
-  :default ::default)
+  (fn [edit _old-value entity _actor _id]
+    [(if (map? entity) :map :list)
+     (nth edit 1)]))
 
-(defmethod edit-to-ops ::default
-  [edit _old _actor _id]
-  (throw (ex-info "Unknown edit operation" {:edit edit})))
+(defmethod -edit-to-ops :default
+  [edit _old entity _actor _id]
+  (throw
+   (ex-info "Unknown edit operation"
+            {:edit   edit
+             :entity entity})))
 
-(defn insert-and-or-assign
-  [[path _ new-value :as edit] old actor id]
-  (let [entity    (or (util/safe-get-in old (butlast path))
-                         old)
-        entity-id (util/get-id entity)]
-    (if (map? entity)
+(defmethod -edit-to-ops [:map :+]
+  [[path _ value] old entity actor id]
+  (let [entity-id (util/get-id entity)
+        value-id  id
+        assign-id (successor-id value-id)
+        value-ops (value-to-ops value actor value-id (successor-id assign-id))]
+    (apply vector
+           (first value-ops)
+           [assign-id (assign entity-id (last path) value-id)]
+           (next value-ops))))
+
+(defmethod -edit-to-ops [:list :+]
+  [[path _ value] old entity actor id]
+  (let [entity-id (util/get-id entity)
+        insert-id id
+        value-id  (successor-id insert-id)
+        assign-id (successor-id value-id)
+        value-ops (value-to-ops value actor value-id (successor-id assign-id))
+        after-id  (or (some->> path last dec (util/get-insertion-id entity))
+                      entity-id)]
+    (apply vector
+           [insert-id (insert after-id)]
+           (first value-ops)
+           [assign-id (assign entity-id insert-id value-id)]
+           value-ops)))
+
+(defmethod -edit-to-ops [:map :-]
+  [[path :as edit] old entity actor id]
+  [[id (remove (util/get-id entity) (last path))]])
+
+(defmethod -edit-to-ops [:list :-]
+  [[path :as edit] old entity actor id]
+  [[id (remove (util/get-id entity) (util/get-insertion-id entity (last path)))]])
+
+(defmethod -edit-to-ops [:map :r]
+  [[path _ value :as edit] old entity actor id]
+  (let [entity-id (util/get-id entity)]
+    (cond
+      (empty? old)
+      (value-to-ops value actor root-id id)
+
+      (and (coll? value)
+           (empty? value))
+      (:ops
+       (reduce (fn [{:keys [ops id] :as agg} attribute]
+                 (-> agg
+                     (update :ops conj [id (remove entity-id attribute)])
+                     (assoc :id (successor-id id))))
+               {:id  id
+                :ops []}
+               (keys old)))
+
+      :else
       (let [value-id  id
             assign-id (successor-id value-id)
-            value-ops (value-to-ops new-value actor value-id (successor-id assign-id))]
+            value-ops (value-to-ops value actor value-id (successor-id assign-id))]
         (apply vector
                (first value-ops)
                [assign-id (assign entity-id (last path) value-id)]
-               (next value-ops)))
-      (let [insert-id id
-            value-id  (successor-id insert-id)
+               (next value-ops))))))
+
+(defmethod -edit-to-ops [:list :r]
+  [[path _ value :as edit] old entity actor id]
+  (let [entity-id (util/get-id entity)]
+    (cond
+      (empty? old)
+      (value-to-ops value actor root-id id)
+
+      (and (coll? value)
+           (empty? value))
+      (:ops
+       (reduce (fn [{:keys [ops id] :as agg} attribute]
+                 (-> agg
+                     (update :ops conj [id (remove entity-id attribute)])
+                     (assoc :id (successor-id id))))
+               {:id  id
+                :ops []}
+               (for [i (range (count old))]
+                 (util/get-insertion-id old i))))
+
+      :else
+      (let [value-id  id
+            insert-id (util/get-insertion-id entity (last path))
             assign-id (successor-id value-id)
-            value-ops (value-to-ops new-value actor value-id (successor-id assign-id))
-            after-id  (util/get-insertion-id entity (last path))]
+            value-ops (value-to-ops value actor value-id (successor-id assign-id))]
         (apply vector
-               [insert-id (insert after-id)]
                (first value-ops)
                [assign-id (assign entity-id insert-id value-id)]
-               value-ops)))))
+               (next value-ops))))))
 
-(defmethod edit-to-ops :+
-  [edit old actor id]
-  (insert-and-or-assign edit old actor id))
-
-(defmethod edit-to-ops :-
+(defn edit-to-ops
   [[path :as edit] old actor id]
-  (let [entity    (util/safe-get-in old (butlast path))
-        entity-id (util/get-id entity)
-        attribute (if (map? entity)
-                    (last path)
-                    (util/get-insertion-id entity (last path)))]
-    [[id (remove entity-id attribute)]]))
-
-(defmethod edit-to-ops :r
-  [[path _ new-value :as edit] old actor id]
-  (if (empty? old)
-    (value-to-ops new-value actor root-id id)
-    ;; TODO: Check for existing IDs?
-    (let [entity    (util/safe-get-in old path)
-          entity-id (util/get-id entity)]
-      (if (and (coll? new-value)
-               (empty? new-value))
-        (:ops
-         (reduce (fn [{:keys [ops id] :as agg} k]
-                   (-> agg
-                       (update :ops conj [id (remove entity-id k)])
-                       (assoc :id (successor-id id))))
-                 {:id  id
-                  :ops []}
-                 (keys old)))
-        (insert-and-or-assign edit old actor id)))))
+  (-edit-to-ops edit
+                old
+                (util/safe-get-in old (butlast path))
+                actor
+                id))
 
 (defn ops-from-diff
   [opset actor old-value new-value]

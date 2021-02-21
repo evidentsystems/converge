@@ -70,185 +70,164 @@
     "Mutates this ref's queue of applied patches as with pop, and
     returns the queue's new value."))
 
-#?(:clj
-   (deftype ConvergentRef [^:volatile-mutable actor
-                           ^:volatile-mutable state
-                           ^:volatile-mutable patches
-                           ^:volatile-mutable meta
-                           ^:volatile-mutable validator
-                           ^:volatile-mutable watches]
-     IConvergent
-     (-actor [this] actor)
-     (-state [this] state)
-     (-set-actor! [this new-actor] (set! actor new-actor))
-     (-opset [this] (:opset state))
-     (-apply-state! [this new-state]
-       (let [old-value (:value state)]
-         (set! state new-state)
-         (notify-w this watches old-value (:value new-state))))
-     (-make-patch
-       [this new-value]
-       (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-       (let [{:keys [value opset] :as s} state]
-         (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
-     (-state-from-patch [this patch]
-       (if (patch? patch)
-         (let [{:keys [ops]}               patch
-               {:keys [value opset] :as s} state
-               new-opset                   (into opset ops)]
-           (assoc s
-                  :value (edn/edn new-opset)
-                  :dirty? false
-                  :opset new-opset))
-         state))
-     (-peek-patches [this] (peek patches))
-     (-pop-patches! [this] (set! patches (pop patches)))
+(deftype ConvergentRef #?(:clj  [^:volatile-mutable actor
+                                 ^:volatile-mutable state
+                                 ^:volatile-mutable patches
+                                 ^:volatile-mutable meta
+                                 ^:volatile-mutable validator
+                                 ^:volatile-mutable watches]
+                          :cljs [^:mutable actor
+                                 ^:mutable state
+                                 ^:mutable patches
+                                 meta
+                                 validator
+                                 ^:mutable watches])
 
-     IAtom
-     (reset
-       [this new-value]
-       (let [patch     (-make-patch this new-value)
-             new-state (-state-from-patch this patch)]
-         (assert (= new-value (:value new-state)) "Unsupported reference state")
-         (when patch (set! patches (conj patches patch)))
-         (-apply-state! this new-state)
-         (:value new-state)))
-     (swap [this f]          (.reset this (f (:value state))))
-     (swap [this f a]        (.reset this (f (:value state) a)))
-     (swap [this f a b]      (.reset this (f (:value state) a b)))
-     (swap [this f a b args] (.reset this (apply f (:value state) a b args)))
-     (compareAndSet
-       [this old-value new-value]
-       (if (= (.deref this) old-value)
-         (do (.reset this new-value) true)
-         false))
+  IConvergent
+  (-actor [this] actor)
+  (-state [this] state)
+  (-set-actor! [this new-actor] (set! actor new-actor))
+  (-opset [this] (:opset state))
+  (-apply-state! [this new-state]
+    (let [old-value (:value state)]
+      (set! state new-state)
+      (notify-w this watches old-value (:value new-state))))
+  (-make-patch
+    [this new-value]
+    (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
+    (let [{:keys [value opset] :as s} state]
+      (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
+  (-state-from-patch [this patch]
+    (if (patch? patch)
+      (let [{:keys [ops]}               patch
+            {:keys [value opset] :as s} state
+            new-opset                   (into opset ops)]
+        (assoc s
+               :value (edn/edn new-opset)
+               :dirty? false
+               :opset new-opset))
+      state))
+  (-peek-patches [this] (peek patches))
+  (-pop-patches! [this] (set! patches (pop patches)))
 
-     IReference
-     (meta [_] meta)
-     (alterMeta [this f args] (.resetMeta this (apply f meta args)))
-     (resetMeta [_ new-meta]  (set! meta new-meta))
+  #?@(:clj [IAtom
+            (reset
+             [this new-value]
+             (let [patch     (-make-patch this new-value)
+                   new-state (-state-from-patch this patch)]
+               (if-not (= new-value (:value new-state))
+                 (throw (ex-info "Unsupported reference state" {:new-value new-value
+                                                                :patch     patch
+                                                                :new-state new-state})))
+               (when patch (set! patches (conj patches patch)))
+               (-apply-state! this new-state)
+               (:value new-state)))
+            (swap [this f]          (.reset this (f (:value state))))
+            (swap [this f a]        (.reset this (f (:value state) a)))
+            (swap [this f a b]      (.reset this (f (:value state) a b)))
+            (swap [this f a b args] (.reset this (apply f (:value state) a b args)))
+            (compareAndSet
+             [this old-value new-value]
+             (if (= (.deref this) old-value)
+               (do (.reset this new-value) true)
+               false))
 
-     IRef
-     (deref
-       [this]
-       (let [{:keys [dirty? value opset] :as s}
-             state]
-         (if dirty?
-           (let [value (edn/edn opset)]
-             (set! state
-                   (assoc s
-                          :value  value
-                          :dirty? false))
-             value)
-           value)))
-     (setValidator
-       [_ f]
-       (assert (valid? f (:value state) (:value state)) "Validator rejected reference state")
-       (set! validator f))
-     (getValidator [_] validator)
-     (getWatches   [_] watches)
-     (addWatch
-       [this k callback]
-       (set! watches (assoc watches k callback))
-       this)
-     (removeWatch
-       [this k]
-       (set! watches (dissoc watches k))
-       this))
+            IReference
+            (meta [_] meta)
+            (alterMeta [this f args] (.resetMeta this (apply f meta args)))
+            (resetMeta [_ new-meta]  (set! meta new-meta))
 
-   :cljs
-   (deftype ConvergentRef [^:mutable actor
-                           ^:mutable state
-                           ^:mutable patches
-                           meta
-                           validator
-                           ^:mutable watches]
-     IConvergent
-     (-actor [this] actor)
-     (-state [this] state)
-     (-set-actor! [this new-actor] (set! actor new-actor))
-     (-opset [this] (:opset state))
-     (-apply-state! [this new-state]
-       (let [old-value (:value state)]
-         (set! state new-state)
-         (notify-w this watches old-value (:value new-state))))
-     (-make-patch
-       [this new-value]
-       (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-       (let [{:keys [value opset] :as s} state]
-         (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
-     (-state-from-patch [this patch]
-       (if (patch? patch)
-         (let [{:keys [ops]}               patch
-               {:keys [value opset] :as s} state
-               new-opset                   (into opset ops)]
-           (assoc s
-                  :value (edn/edn new-opset)
-                  :dirty? false
-                  :opset new-opset))
-         state))
-     (-peek-patches [this] (peek patches))
-     (-pop-patches! [this] (set! patches (pop patches)))
+            IRef
+            (deref
+             [this]
+             (let [{:keys [dirty? value opset] :as s}
+                   state]
+               (if dirty?
+                 (let [value (edn/edn opset)]
+                   (set! state
+                         (assoc s
+                                :value  value
+                                :dirty? false))
+                   value)
+                 value)))
+            (setValidator
+             [_ f]
+             (assert (valid? f (:value state) (:value state)) "Validator rejected reference state")
+             (set! validator f))
+            (getValidator [_] validator)
+            (getWatches   [_] watches)
+            (addWatch
+             [this k callback]
+             (set! watches (assoc watches k callback))
+             this)
+            (removeWatch
+             [this k]
+             (set! watches (dissoc watches k))
+             this)]
 
-     IAtom
+      :cljs
+      [IAtom
 
-     IDeref
-     (-deref
-       [this]
-       (let [{:keys [dirty? value opset] :as s}
-             state]
-         (if dirty?
-           (let [value (edn/edn opset)]
-             (set! state
-                   (assoc s
-                          :value  value
-                          :dirty? false))
-             value)
-           value)))
+       IDeref
+       (-deref
+        [this]
+        (let [{:keys [dirty? value opset] :as s}
+              state]
+          (if dirty?
+            (let [value (edn/edn opset)]
+              (set! state
+                    (assoc s
+                           :value  value
+                           :dirty? false))
+              value)
+            value)))
 
-     IEquiv
-     (-equiv [this other] (identical? this other))
+       IEquiv
+       (-equiv [this other] (identical? this other))
 
-     IReset
-     (-reset!
-       [this new-value]
-       (let [patch     (-make-patch this new-value)
-             new-state (-state-from-patch this patch)]
-         (assert (= new-value (:value new-state)) "Unsupported reference state")
-         (when patch (set! patches (conj patches patch)))
-         (-apply-state! this new-state)
-         (:value new-state)))
+       IReset
+       (-reset!
+        [this new-value]
+        (let [patch     (-make-patch this new-value)
+              new-state (-state-from-patch this patch)]
+          (if-not (= new-value (:value new-state))
+            (throw (ex-info "Unsupported reference state" {:new-value new-value
+                                                           :patch     patch
+                                                           :new-state new-state})))
+          (when patch (set! patches (conj patches patch)))
+          (-apply-state! this new-state)
+          (:value new-state)))
 
-     ISwap
-     (-swap! [this f]          (-reset! this (f (:value state))))
-     (-swap! [this f a]        (-reset! this (f (:value state) a)))
-     (-swap! [this f a b]      (-reset! this (f (:value state) a b)))
-     (-swap! [this f a b args] (-reset! this (apply f (:value state) a b args)))
+       ISwap
+       (-swap! [this f]          (-reset! this (f (:value state))))
+       (-swap! [this f a]        (-reset! this (f (:value state) a)))
+       (-swap! [this f a b]      (-reset! this (f (:value state) a b)))
+       (-swap! [this f a b args] (-reset! this (apply f (:value state) a b args)))
 
-     IWithMeta
-     (-with-meta [_ new-meta] (ConvergentRef. actor state patches new-meta validator watches))
+       IWithMeta
+       (-with-meta [_ new-meta] (ConvergentRef. actor state patches new-meta validator watches))
 
-     IMeta
-     (-meta [_] meta)
+       IMeta
+       (-meta [_] meta)
 
-     IPrintWithWriter
-     (-pr-writer [this writer opts]
-       (-write writer "#object[converge.ref.ConvergentRef ")
-       (pr-writer {:val (-deref this)} writer opts)
-       (-write writer "]"))
+       IPrintWithWriter
+       (-pr-writer [this writer opts]
+                   (-write writer "#object[converge.ref.ConvergentRef ")
+                   (pr-writer {:val (-deref this)} writer opts)
+                   (-write writer "]"))
 
-     IWatchable
-     (-notify-watches
-       [this old-value new-value]
-       (notify-w this watches old-value new-value))
-     (-add-watch
-       [this k callback]
-       (set! watches (assoc watches k callback))
-       this)
-     (-remove-watch
-       [this k]
-       (set! watches (dissoc watches k))
-       this)
+       IWatchable
+       (-notify-watches
+        [this old-value new-value]
+        (notify-w this watches old-value new-value))
+       (-add-watch
+        [this k callback]
+        (set! watches (assoc watches k callback))
+        this)
+       (-remove-watch
+        [this k]
+        (set! watches (dissoc watches k))
+        this)
 
-     IHash
-     (-hash [this] (goog/getUid this))))
+       IHash
+       (-hash [this] (goog/getUid this))]))

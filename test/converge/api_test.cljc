@@ -99,7 +99,7 @@
   (testing "Can remove a list element"
     (let [c (convergent/ref b)]
       (is (= (swap! c assoc 4 [:foo "bar" {:nested :inalist}])
-             (assoc a 4 [:foo "bar" {:nested :inalist}]))))))
+             (assoc b 4 [:foo "bar" {:nested :inalist}]))))))
 
 (deftest merging
   (let [c (convergent/ref a)
