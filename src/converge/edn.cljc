@@ -22,25 +22,29 @@
    :cljs (set! *warn-on-infer* true))
 
 (defn insertion-index
-  [list-links entity attribute]
+  [grouped list-links entity attribute]
   (if-let [init-id (get list-links entity)]
     (loop [id init-id
            i  0]
       (if (= id attribute)
         i
         (recur (get list-links id)
-               (inc i))))
+               (if (contains? grouped id)
+                 (inc i)
+                 i))))
     []))
 
 (defn list-insertions
-  [list-links entity]
+  [grouped list-links entity]
   (if-let [init-id (get list-links entity)]
     (loop [id  init-id
            ins []]
       (if (= id interpret/list-end-sigil)
         ins
         (recur (get list-links id)
-               (conj ins id))))
+               (if (contains? grouped id)
+                 (conj ins id)
+                 ins))))
     []))
 
 (defn interpretation-zip
@@ -49,7 +53,8 @@
   ([interpretation root-id]
    (let [elements   (:elements interpretation)
          list-links (:list-links interpretation)
-         grouped    (group-by :entity (vals elements))]
+         by-entity  (group-by :entity (vals elements))
+         by-attr    (group-by :attribute (vals elements))]
      (zip/zipper
       (fn [node] (-> node :children seq boolean))
       (fn [node]
@@ -57,25 +62,25 @@
               (:children node)]
           (let [v        (get elements value)
                 a        (if (opset/id? attribute)
-                           (insertion-index list-links entity attribute)
+                           (insertion-index by-attr list-links entity attribute)
                            attribute)
-                children (get grouped value)]
+                children (get by-entity value)]
             {:path       (conj (:path node) a)
              :entity     value
              :attribute  attribute
              :value      v
-             :insertions (list-insertions list-links value)
+             :insertions (list-insertions by-attr list-links value)
              :children   children})))
       (constantly nil) ;; TODO: if we need to "mutate" the zipper itself
       {:entity     root-id
        :value      (get elements root-id)
-       :children   (get grouped root-id)
-       :insertions (list-insertions list-links root-id)
+       :children   (get by-entity root-id)
+       :insertions (list-insertions by-attr list-links root-id)
        :path       []}))))
 
 (defn assoc-resizing
   ([vtr k v]
-   (assoc-resizing vtr k v 0))
+   (assoc-resizing vtr k v ::fill))
   ([vtr k v fill]
    (let [vtr-n (count vtr)
          vtr*  (if (> k vtr-n)
