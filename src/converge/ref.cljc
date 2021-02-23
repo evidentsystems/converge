@@ -84,20 +84,20 @@
                                  ^:mutable watches])
 
   IConvergent
-  (-actor [this] actor)
-  (-state [this] state)
-  (-set-actor! [this new-actor] (set! actor new-actor))
-  (-opset [this] (:opset state))
+  (-actor [_] actor)
+  (-state [_] state)
+  (-set-actor! [_ new-actor] (set! actor new-actor))
+  (-opset [_] (:opset state))
   (-apply-state! [this new-state]
     (let [old-value (:value state)]
       (set! state new-state)
       (notify-w this watches old-value (:value new-state))))
   (-make-patch
-    [this new-value]
+    [_ new-value]
     (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
     (let [{:keys [value opset] :as s} state]
       (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
-  (-state-from-patch [this patch]
+  (-state-from-patch [_ patch]
     (if (patch? patch)
       (let [{:keys [ops]}               patch
             {:keys [value opset] :as s} state
@@ -107,8 +107,8 @@
                :dirty? false
                :opset new-opset))
       state))
-  (-peek-patches [this] (peek patches))
-  (-pop-patches! [this] (set! patches (pop patches)))
+  (-peek-patches [_] (peek patches))
+  (-pop-patches! [_] (set! patches (pop patches)))
 
   #?@(:clj [IAtom
             (reset
@@ -119,7 +119,8 @@
                  (throw (ex-info "Unsupported reference state" {:new-value new-value
                                                                 :patch     patch
                                                                 :new-state new-state})))
-               (when patch (set! patches (conj patches patch)))
+               (if patch
+                 (set! patches (conj patches patch)))
                (-apply-state! this new-state)
                (:value new-state)))
             (swap [this f]          (.reset this (f (:value state))))
@@ -139,7 +140,7 @@
 
             IRef
             (deref
-             [this]
+             [_]
              (let [{:keys [dirty? value opset] :as s}
                    state]
                (if dirty?
@@ -170,7 +171,7 @@
 
        IDeref
        (-deref
-        [this]
+        [_]
         (let [{:keys [dirty? value opset] :as s}
               state]
           (if dirty?
@@ -194,7 +195,8 @@
             (throw (ex-info "Unsupported reference state" {:new-value new-value
                                                            :patch     patch
                                                            :new-state new-state})))
-          (when patch (set! patches (conj patches patch)))
+          (if patch
+            (set! patches (conj patches patch)))
           (-apply-state! this new-state)
           (:value new-state)))
 
