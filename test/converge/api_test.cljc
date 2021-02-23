@@ -183,9 +183,10 @@
 
   (require '[criterium.core :as criterium])
 
-  (criterium/bench @(convergent/ref a))
+  (criterium/bench
+   @(convergent/ref a))
 
-  ;; Macbook Pro 02/17/2021
+  ;; MacBook Pro 02/17/2021
   ;;                 Evaluation count : 84780 in 60 samples of 1413 calls.
   ;;              Execution time mean : 716.656014 µs
   ;;     Execution time std-deviation : 21.399499 µs
@@ -198,6 +199,27 @@
   ;; 	low-mild	 2 (3.3333 %)
   ;;  Variance from outliers : 17.3517 % Variance is moderately inflated by outliers
 
+  (def r (convergent/ref {}))
+  @r
+
+  (criterium/bench
+   (do
+     (swap! r assoc-in [:foo :bar :baz] :quux)
+     (swap! r update dissoc :foo)))
+
+  ;; MacBook Pro 02/22/2021
+  ;;                 Evaluation count : 7589040 in 60 samples of 126484 calls.
+  ;;              Execution time mean : 8.235078 µs
+  ;;     Execution time std-deviation : 340.978588 ns
+  ;;    Execution time lower quantile : 7.893320 µs ( 2.5%)
+  ;;    Execution time upper quantile : 8.986638 µs (97.5%)
+  ;;                    Overhead used : 8.008514 ns
+
+  ;; Found 2 outliers in 60 samples (3.3333 %)
+  ;; 	low-severe	 1 (1.6667 %)
+  ;; 	low-mild	 1 (1.6667 %)
+  ;;  Variance from outliers : 27.1139 % Variance is moderately inflated by outliers
+
   )
 
 (comment ;; ClojureScript benchmarks
@@ -209,5 +231,12 @@
 
   ;; Macbook Pro, Chrome 02/17/2021
   ;; [], (let [r (convergent/ref a)] (clojure.core/deref r)), 10000 runs, 15224 msecs
+
+  (simple-benchmark
+   [r (convergent/ref {})]
+   (do
+     (swap! r assoc-in [:foo :bar :baz] :quux)
+     (swap! r update dissoc :foo))
+   10000)
 
   )
