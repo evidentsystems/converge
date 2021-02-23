@@ -115,8 +115,12 @@
   [agg id op]
   (assoc-in agg [:elements id] (-> op :data :value)))
 
-(defn interpret
-  [opset]
-  (reduce-kv -interpret-op
-             (->Interpretation {} {})
-             opset))
+  (defn interpret
+    ([opset]
+     (reduce-kv -interpret-op
+                (->Interpretation {} {})
+                opset))
+    ([interpretation ops]
+     (reduce-kv -interpret-op
+                interpretation
+                ops)))

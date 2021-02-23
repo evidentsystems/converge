@@ -121,7 +121,9 @@
                               (vary-meta assoc :converge/id entity))))))))
 
 (defn edn
-  [opset]
-  (if (= (count opset) 0)
-    nil
-    (assemble-values (interpret/interpret opset))))
+  ([opset]
+   (if (= (count opset) 0)
+     nil
+     (assemble-values (interpret/interpret opset))))
+  ([interpretation ops]
+   (assemble-values (interpret/interpret interpretation ops))))

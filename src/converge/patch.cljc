@@ -212,19 +212,21 @@
 
 (defn make-patch
   [opset actor old-value new-value]
-  (let [ops (some->> new-value
+  (let [ ;; PERF: pass this in from cache?
+        interpretation
+        (interpret/interpret opset)
+
+        ops (some->> new-value
                      (editscript/diff old-value)
                      edit/get-edits
-                     (reduce (fn [{:keys [ops id] :as agg} edit]
-                               (let [new-ops (into ops
-                                                   (edit-to-ops edit
-                                                                old-value
-                                                                actor
-                                                                id))]
+                     (reduce (fn [{:keys [interp value id ops] :as agg} edit]
+                               (let [new-ops (into ops (edit-to-ops edit value actor id))]
                                  (assoc agg
-                                        :ops new-ops
-                                        :id  (opset/next-id new-ops actor))))
-                             {:ops (avl/sorted-map)
-                              :id  (opset/next-id opset actor)})
+                                        :value  (edn/edn interpretation new-ops)
+                                        :id     (opset/next-id new-ops actor)
+                                        :ops    new-ops)))
+                             {:value old-value
+                              :id    (opset/next-id opset actor)
+                              :ops   (avl/sorted-map)})
                      :ops)]
     (if (seq ops) (->Patch ops))))

@@ -55,34 +55,3 @@
                    (opset/make-id c 0) :foo
                    (opset/make-id c 1) :foo)]
         (is (= (opset/make-id c 3) (opset/next-id opset c)))))))
-
-(comment
-
-  (def a {:foo  [:bar [1 2 3] {:baz [1 2 3 4] :remove :me}]
-          :bar  {:a :b :c :d}
-          :baz  {}
-          :quux [2]})
-
-  (def b {:foo  [:bar :doh {:baz [1 3 5] :la {:foo [1 2 3]}}]
-          :bar  [1 2 3]
-          :baz  :quux
-          :quux [1 2]})
-
-  (def r (converge.api/ref a))
-  @r
-  (reset! r b)
-
-  (def a [{} [] :key {:nested {:key [1 2 3]}} [:foo "bar" 0 {:nested :inalist}] #{1 4 3 2 5}])
-  (def b [{} [] :key {:nested {:key [1 2 3]}} [:foo "bar" {:nested :inalist}] #{1 4 3 2 5}])
-
-  (require '[editscript.core :as editscript]
-           '[editscript.edit :as edit])
-
-  (def es
-    (some->> b
-             (editscript/diff a)
-             edit/get-edits))
-
-  (clojure.pprint/pprint es)
-
-  )
