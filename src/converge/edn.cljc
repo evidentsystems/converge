@@ -121,9 +121,6 @@
                               (vary-meta assoc :converge/id entity))))))))
 
 (defn edn
-  ([opset]
-   (if (= (count opset) 0)
-     nil
-     (assemble-values (interpret/interpret opset))))
-  ([interpretation ops]
-   (assemble-values (interpret/interpret interpretation ops))))
+  "Transforms an converge.interpret.Interpretation into an EDN value."
+  [interpretation]
+  (assemble-values interpretation))

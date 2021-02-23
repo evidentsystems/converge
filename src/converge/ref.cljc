@@ -15,6 +15,7 @@
   "Datatypes and functions implementing a serializable, Atom-like
   convergent reference type."
   (:require [converge.edn :as edn]
+            [converge.interpret :as interpret]
             [converge.opset :as opset]
             [converge.patch :as patch])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
@@ -22,7 +23,7 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defrecord ConvergentState [opset value ^boolean dirty?])
+(defrecord ConvergentState [opset interpretation value ^boolean dirty?])
 
 (defn notify-w
   [this watches old-value new-value]
@@ -93,13 +94,24 @@
       (patch/make-patch opset actor value new-value)))
   (-state-from-patch [_ patch]
     (if (patch/patch? patch)
-      (let [{:keys [ops]}               patch
-            {:keys [value opset] :as s} state
-            new-opset                   (into opset ops)]
-        (assoc s
-               :value (edn/edn new-opset)
-               :dirty? false
-               :opset new-opset))
+      (let [{:keys [ops]}
+            patch
+
+            {:keys [value interpretation opset]
+             :as   s}
+            state
+
+            new-opset
+            (into opset ops)
+
+            new-interpretation
+            (if interpretation
+              (interpret/interpret interpretation ops)
+              (interpret/interpret new-opset))]
+        (->ConvergentState new-opset
+                           new-interpretation
+                           (edn/edn new-interpretation)
+                           false))
       state))
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
@@ -135,12 +147,18 @@
             IRef
             (deref
              [_]
-             (let [{:keys [dirty? value opset] :as s}
+             (let [{:keys [opset interpretation value dirty?] :as s}
                    state]
                (if dirty?
-                 (let [value (edn/edn opset)]
+                 (let [new-interpretation
+                       (or interpretation
+                           (interpret/interpret opset))
+
+                       value
+                       (edn/edn new-interpretation)]
                    (set! state
                          (assoc s
+                                :interpretation new-interpretation
                                 :value  value
                                 :dirty? false))
                    value)
@@ -169,9 +187,15 @@
         (let [{:keys [dirty? value opset] :as s}
               state]
           (if dirty?
-            (let [value (edn/edn opset)]
+            (let [new-interpretation
+                  (or interpretation
+                      (interpret/interpret opset))
+
+                  value
+                  (edn/edn new-interpretation)]
               (set! state
                     (assoc s
+                           :interpretation new-interpretation
                            :value  value
                            :dirty? false))
               value)

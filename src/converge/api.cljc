@@ -60,6 +60,7 @@
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-map))
                                 nil
+                                nil
                                 true)
                                (util/queue)
                                meta
@@ -70,6 +71,7 @@
           (ref/->ConvergentRef actor*
                                (ref/->ConvergentState
                                 (opset/opset opset/root-id (opset/make-list))
+                                nil
                                 nil
                                 true)
                                (util/queue)
@@ -111,7 +113,7 @@
         actor*         (or actor (util/uuid))
         initial-action (get-in opset* [opset/root-id :action])
         r              (ref/->ConvergentRef actor*
-                                            (ref/->ConvergentState opset* nil true)
+                                            (ref/->ConvergentState opset* nil nil true)
                                             (util/queue)
                                             meta
                                             validator
@@ -174,7 +176,7 @@
                           {:ref    cr
                            :object other})))]
     (when-not (nil? additional-ops)
-      (reset! cr (edn/edn (merge (opset cr) additional-ops))))
+      (reset! cr (edn/edn (interpret/interpret (merge (opset cr) additional-ops)))))
     cr))
 
 (defn peek-patches
@@ -191,14 +193,19 @@
   "Creates a new reference which is a snapshot of the given reference,
   having a single `snapshot` operation in its opset."
   [cr & {:keys [actor meta validator] :as options}]
-  (let [o  (opset cr)
+  (let [{o :opset
+         i :interpretation}
+        (ref/-state cr)
+
         a  (or actor (ref/-actor cr))
         id (opset/latest-id o)
+        i  (interpret/interpret o)
         r  (ref/->ConvergentRef
             a
             (ref/->ConvergentState (opset/opset
                                     (opset/successor-id id a)
-                                    (opset/snapshot id (interpret/interpret o)))
+                                    (opset/snapshot id i))
+                                   i
                                    nil
                                    true)
             (util/queue)
