@@ -3,6 +3,7 @@
   (:require [clojure.data.avl :as avl]
             [converge.interpret :as interpret]
             [converge.opset :as opset]
+            [converge.patch :as patch]
             [converge.ref :as ref]
             [converge.util :as util]))
 
@@ -13,7 +14,7 @@
   opset/map->Op)
 
 (def read-patch
-  ref/map->Patch)
+  patch/map->Patch)
 
 (def read-element
   interpret/map->Element)

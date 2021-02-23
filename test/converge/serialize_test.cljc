@@ -49,7 +49,7 @@
         :cljs write-handlers)
   {converge.opset.Id                 (t/write-handler (constantly "converge/id") tagged-map-value)
    converge.opset.Op                 (t/write-handler (constantly "converge/op") tagged-map-value)
-   converge.ref.Patch                (t/write-handler (constantly "converge/patch") tagged-map-value)
+   converge.patch.Patch              (t/write-handler (constantly "converge/patch") tagged-map-value)
    converge.interpret.Element        (t/write-handler (constantly "converge/element") tagged-map-value)
    converge.interpret.Interpretation (t/write-handler (constantly "converge/interpretation") tagged-map-value)
    converge.ref.ConvergentState      (t/write-handler (constantly "converge/state") serialize/write-state)

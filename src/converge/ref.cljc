@@ -14,21 +14,15 @@
 (ns converge.ref
   "Datatypes and functions implementing a serializable, Atom-like
   convergent reference type."
-  (:require [converge.opset :as opset]
-            [converge.edn :as edn])
+  (:require [converge.edn :as edn]
+            [converge.opset :as opset]
+            [converge.patch :as patch])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
 (defrecord ConvergentState [opset value ^boolean dirty?])
-
-;; TODO: patch caches?
-(defrecord Patch [ops])
-
-(defn patch?
-  [o]
-  (instance? Patch o))
 
 (defn notify-w
   [this watches old-value new-value]
@@ -96,9 +90,9 @@
     [_ new-value]
     (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
     (let [{:keys [value opset] :as s} state]
-      (some->> new-value (opset/ops-from-diff opset actor value) ->Patch)))
+      (patch/make-patch opset actor value new-value)))
   (-state-from-patch [_ patch]
-    (if (patch? patch)
+    (if (patch/patch? patch)
       (let [{:keys [ops]}               patch
             {:keys [value opset] :as s} state
             new-opset                   (into opset ops)]

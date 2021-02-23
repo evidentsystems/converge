@@ -17,10 +17,11 @@
   functions for comparing, merging, and patching these convergent
   refs."
   (:refer-clojure :exclude [ref])
-  (:require [converge.opset :as opset]
+  (:require [converge.edn :as edn]
             [converge.interpret :as interpret]
+            [converge.opset :as opset]
+            [converge.patch :as patch]
             [converge.ref :as ref]
-            [converge.edn :as edn]
             [converge.util :as util]))
 
 #?(:clj  (set! *warn-on-reflection* true)
@@ -138,9 +139,9 @@
                 nil
 
                 (convergent? other)
-                (ref/->Patch (opset other))
+                (patch/->Patch (opset other))
 
-                (ref/patch? other)
+                (patch/patch? other)
                 other
 
                 :else
@@ -161,7 +162,7 @@
           (convergent? other)
           (opset other)
 
-          (ref/patch? other)
+          (patch/patch? other)
           (:ops other)
 
           :else

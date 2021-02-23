@@ -14,8 +14,9 @@
 (ns converge.api-test
   (:require #?(:clj  [clojure.test :refer :all]
                :cljs [cljs.test :refer-macros [deftest is testing run-tests]])
-            [converge.ref :as ref]
-            [converge.api :as convergent]))
+            [converge.api :as convergent]
+            [converge.patch :as patch]
+            [converge.ref :as ref]))
 
 (def a {:empty-m {}
         :empty-l []
@@ -164,7 +165,7 @@
                (count (convergent/opset cr))))))
     (testing "squashing a patch"
       (let [cr (convergent/ref-from-opset (convergent/opset c))]
-        (is (= final @(convergent/squash! cr (ref/->Patch (merge (:ops patch1) (:ops patch2))))))
+        (is (= final @(convergent/squash! cr (patch/->Patch (merge (:ops patch1) (:ops patch2))))))
         (is (> (count (convergent/opset d))
                (count (convergent/opset cr))))))
     (testing "squashing a snapshot ref"
