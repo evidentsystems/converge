@@ -123,6 +123,10 @@
   [o]
   (satisfies? ref/IConvergent o))
 
+(defn actor
+  [cr]
+  (ref/-actor cr))
+
 (defn set-actor!
   [cr actor]
   (ref/-set-actor! cr actor)
