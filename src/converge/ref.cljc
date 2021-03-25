@@ -116,67 +116,68 @@
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
 
-  #?@(:clj [IAtom
-            (reset
-             [this new-value]
-             (let [patch     (-make-patch this new-value)
-                   new-state (-state-from-patch this patch)]
-               (if-not (= new-value (:value new-state))
-                 (throw (ex-info "Unsupported reference state" {:new-value new-value
-                                                                :patch     patch
-                                                                :new-state new-state})))
-               (if patch
-                 (set! patches (conj patches patch)))
-               (-apply-state! this new-state)
-               (:value new-state)))
-            (swap [this f]          (.reset this (f (:value state))))
-            (swap [this f a]        (.reset this (f (:value state) a)))
-            (swap [this f a b]      (.reset this (f (:value state) a b)))
-            (swap [this f a b args] (.reset this (apply f (:value state) a b args)))
-            (compareAndSet
-             [this old-value new-value]
-             (if (= (.deref this) old-value)
-               (do (.reset this new-value) true)
-               false))
+  #?@(:clj
+      [IAtom
+       (reset
+        [this new-value]
+        (let [patch     (-make-patch this new-value)
+              new-state (-state-from-patch this patch)]
+          (if-not (= new-value (:value new-state))
+            (throw (ex-info "Unsupported reference state" {:new-value new-value
+                                                           :patch     patch
+                                                           :new-state new-state})))
+          (if patch
+            (set! patches (conj patches patch)))
+          (-apply-state! this new-state)
+          (:value new-state)))
+       (swap [this f]          (.reset this (f (:value state))))
+       (swap [this f a]        (.reset this (f (:value state) a)))
+       (swap [this f a b]      (.reset this (f (:value state) a b)))
+       (swap [this f a b args] (.reset this (apply f (:value state) a b args)))
+       (compareAndSet
+        [this old-value new-value]
+        (if (= (.deref this) old-value)
+          (do (.reset this new-value) true)
+          false))
 
-            IReference
-            (meta [_] meta)
-            (alterMeta [this f args] (.resetMeta this (apply f meta args)))
-            (resetMeta [_ new-meta]  (set! meta new-meta))
+       IReference
+       (meta [_] meta)
+       (alterMeta [this f args] (.resetMeta this (apply f meta args)))
+       (resetMeta [_ new-meta]  (set! meta new-meta))
 
-            IRef
-            (deref
-             [_]
-             (let [{:keys [opset interpretation value dirty?] :as s}
-                   state]
-               (if dirty?
-                 (let [new-interpretation
-                       (or interpretation
-                           (interpret/interpret opset))
+       IRef
+       (deref
+        [_]
+        (let [{:keys [opset interpretation value dirty?] :as s}
+              state]
+          (if dirty?
+            (let [new-interpretation
+                  (or interpretation
+                      (interpret/interpret opset))
 
-                       value
-                       (edn/edn new-interpretation)]
-                   (set! state
-                         (assoc s
-                                :interpretation new-interpretation
-                                :value  value
-                                :dirty? false))
-                   value)
-                 value)))
-            (setValidator
-             [_ f]
-             (assert (valid? f (:value state) (:value state)) "Validator rejected reference state")
-             (set! validator f))
-            (getValidator [_] validator)
-            (getWatches   [_] watches)
-            (addWatch
-             [this k callback]
-             (set! watches (assoc watches k callback))
-             this)
-            (removeWatch
-             [this k]
-             (set! watches (dissoc watches k))
-             this)]
+                  value
+                  (edn/edn new-interpretation)]
+              (set! state
+                    (assoc s
+                           :interpretation new-interpretation
+                           :value  value
+                           :dirty? false))
+              value)
+            value)))
+       (setValidator
+        [_ f]
+        (assert (valid? f (:value state) (:value state)) "Validator rejected reference state")
+        (set! validator f))
+       (getValidator [_] validator)
+       (getWatches   [_] watches)
+       (addWatch
+        [this k callback]
+        (set! watches (assoc watches k callback))
+        this)
+       (removeWatch
+        [this k]
+        (set! watches (dissoc watches k))
+        this)]
 
       :cljs
       [IAtom
