@@ -211,19 +211,19 @@
   (instance? Patch o))
 
 (defn make-patch
-  [opset actor old-value new-value]
+  [opset interpretation actor old-value new-value]
   (let [ ;; PERF: pass this in from cache?
-        interpretation
-        (interpret/interpret opset)
+        interp (or interpretation (interpret/interpret opset))
 
         ops
         (some->> new-value
                  (editscript/diff old-value)
                  edit/get-edits
                  (reduce (fn [{:keys [value id ops] :as agg} edit]
-                           (let [new-ops (into ops (edit-to-ops edit value actor id))]
+                           (let [new-ops    (into ops (edit-to-ops edit value actor id))
+                                 new-interp (interpret/interpret interp new-ops)]
                              (assoc agg
-                                    :value  (edn/edn (interpret/interpret interpretation new-ops))
+                                    :value  (edn/edn new-interp)
                                     :id     (opset/next-id new-ops actor)
                                     :ops    new-ops)))
                          {:value old-value

@@ -220,6 +220,41 @@
   ;; 	low-mild	 1 (1.6667 %)
   ;;  Variance from outliers : 27.1139 % Variance is moderately inflated by outliers
 
+
+  (def r (convergent/ref a))
+  @r
+
+  (criterium/bench
+   (do
+     (swap! r assoc-in [:foo :bar :baz] :quux)
+     (swap! r update dissoc :foo)))
+
+  ;; MacBook Pro 03/25/2021 before patch optimization
+  ;;                 Evaluation count : 31560 in 60 samples of 526 calls.
+  ;;              Execution time mean : 1.869336 ms
+  ;;     Execution time std-deviation : 156.857244 µs
+  ;;    Execution time lower quantile : 1.621887 ms ( 2.5%)
+  ;;    Execution time upper quantile : 2.221263 ms (97.5%)
+  ;;                    Overhead used : 8.250623 ns
+
+  ;; Found 2 outliers in 60 samples (3.3333 %)
+  ;; 	low-severe	 2 (3.3333 %)
+  ;;  Variance from outliers : 61.8498 % Variance is severely inflated by outliers
+
+
+  ;; MacBook Pro 02/22/2021 after patch optimization
+  ;;                 Evaluation count : 1902960 in 60 samples of 31716 calls.
+  ;;              Execution time mean : 33.085470 µs
+  ;;     Execution time std-deviation : 1.368126 µs
+  ;;    Execution time lower quantile : 30.987825 µs ( 2.5%)
+  ;;    Execution time upper quantile : 36.353521 µs (97.5%)
+  ;;                    Overhead used : 8.250623 ns
+
+  ;; Found 1 outliers in 60 samples (1.6667 %)
+  ;; 	low-severe	 1 (1.6667 %)
+  ;;  Variance from outliers : 27.1107 % Variance is moderately inflated by outliers
+
+
   )
 
 (comment ;; ClojureScript benchmarks
@@ -238,5 +273,15 @@
      (swap! r assoc-in [:foo :bar :baz] :quux)
      (swap! r update dissoc :foo))
    10000)
+
+  ;; Macbook Pro, Chrome 03/25/2021
+  ;; [r (convergent/ref {})], (do (swap! r assoc-in [:foo :bar :baz] :quux) (swap! r update dissoc :foo)), 10000 runs, 2022 msecs
+
+  (simple-benchmark
+   [r (convergent/ref a)]
+   (do
+     (swap! r assoc-in [:foo :bar :baz] :quux)
+     (swap! r update dissoc :foo))
+   1000)
 
   )
