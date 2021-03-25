@@ -185,7 +185,7 @@
        IDeref
        (-deref
         [_]
-        (let [{:keys [dirty? value opset] :as s}
+        (let [{:keys [opset interpretation value dirty?] :as s}
               state]
           (if dirty?
             (let [new-interpretation
