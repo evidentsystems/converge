@@ -46,7 +46,7 @@
 (defn ancestor
   [elements]
   (transitive-closure
-   (into #{} (map (juxt :entity :value) elements))))
+   (into #{} (map (juxt :entity :value)) elements)))
 
 (defmulti -interpret-op
   (fn [_agg _id {action :action :as op}] action)
@@ -74,8 +74,8 @@
                            (fn [[_id element]]
                              (and (or (not= (:entity element)    entity)
                                       (not= (:attribute element) attribute))
-                                  (not= value (:value element))))
-                           elements))
+                                  (not= value (:value element)))))
+                          elements)
                     id
                     (->Element entity attribute value))))))
 
@@ -86,8 +86,8 @@
                                (filter
                                 (fn [[_id element]]
                                   (or (not= (:entity element)    entity)
-                                      (not= (:attribute element) attribute)))
-                                elements)))))
+                                      (not= (:attribute element) attribute))))
+                               elements))))
 
 (defmethod -interpret-op :insert
   [{:keys [list-links] :as agg} id {{prev :after} :data :as op}]
