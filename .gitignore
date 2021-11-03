@@ -10,6 +10,8 @@
 /.nrepl-port
 .hgignore
 .hg/
+.clj-kondo/
+.lsp/
 
 node_modules/
 .shadow-cljs/
