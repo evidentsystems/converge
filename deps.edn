@@ -25,15 +25,15 @@
   :test
   {:extra-paths ["test"]
    :extra-deps
-   {lambdaisland/kaocha        {:mvn/version "1.0.732"}
+   {lambdaisland/kaocha        {:mvn/version "1.60.945"}
     lambdaisland/kaocha-cljs2  {:mvn/version "0.0.35"}
     criterium/criterium        {:mvn/version "0.4.6"}
     org.clojure/test.check     {:mvn/version "1.1.0"}
     com.cognitect/transit-clj  {:mvn/version "1.0.324"}
-    com.cognitect/transit-cljs {:mvn/version "0.8.264"}}}}
+    com.cognitect/transit-cljs {:mvn/version "0.8.269"}}}}
 
  :deps
- {org.clojure/clojure    {:mvn/version "1.10.2"}
+ {org.clojure/clojure    {:mvn/version "1.10.3"}
   org.clojure/data.avl   {:mvn/version "0.1.0"}
-  juji/editscript        {:mvn/version "0.5.4"}
+  juji/editscript        {:mvn/version "0.5.7"}
   danlentz/clj-uuid      {:mvn/version "0.1.9"}}}

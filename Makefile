@@ -30,7 +30,7 @@ bootstrap:
 
 .PHONY: outdated
 outdated:
-	clojure -R:cljs:dev:test -A:outdated
+	clojure -M:cljs:dev:test:outdated
 
 # Clean
 
@@ -74,7 +74,7 @@ cljs-test-harness: shadow-start
 .PHONY: cljs-test
 cljs-test: clean
 	yarn shadow-cljs -A:test release test
-	open "http://localhost:8008"
+#	open "http://localhost:8008"
 	bin/kaocha unit-cljs
 
 .PHONY: test
