@@ -16,30 +16,15 @@
   convergent reference type."
   (:require [converge.edn :as edn]
             [converge.interpret :as interpret]
-            [converge.opset :as opset]
             [converge.patch :as patch])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
+;;;; API
+
 (defrecord ConvergentState [opset interpretation value ^boolean dirty?])
-
-(defn notify-w
-  [this watches old-value new-value]
-  (doseq [[k w] watches]
-    (if w (w k this old-value new-value))))
-
-;; TODO: is it necessary to maintain consistent top-level type?
-(defn valid?
-  [validator old-value new-value]
-  (let [type-pred (if (or (map? old-value)
-                          (and (nil? old-value)
-                               (map? new-value)))
-                    map?
-                    sequential?)]
-    (and (type-pred new-value)
-         (if (ifn? validator) (validator new-value) true))))
 
 ;; TODO trim down to bare semantics, split other ops into different protocols
 (defprotocol IConvergent
@@ -64,6 +49,32 @@
   (-pop-patches! [this]
     "Mutates this ref's queue of applied patches as with pop, and
     returns the queue's new value."))
+
+;;;; Implementation
+
+(defn notify-w
+  [this watches old-value new-value]
+  (doseq [[k w] watches]
+    (when w (w k this old-value new-value))))
+
+;; TODO: is it necessary to maintain consistent top-level type?
+(defn valid?
+  [validator old-value new-value]
+  (let [type-pred (if (or (map? old-value)
+                          (and (nil? old-value)
+                               (map? new-value)))
+                    map?
+                    sequential?)]
+    (and (type-pred new-value)
+         (if (ifn? validator) (validator new-value) true))))
+
+(defn- validate-reset
+  [old-value new-value new-state patch]
+  (when-not (= new-value (:value new-state))
+    (throw (ex-info "Unsupported reference state" {:old-value old-value
+                                                   :new-value new-value
+                                                   :patch     patch
+                                                   :new-state new-state}))))
 
 (deftype ConvergentRef #?(:clj  [^:volatile-mutable actor
                                  ^:volatile-mutable state
@@ -121,12 +132,8 @@
         [this new-value]
         (let [patch     (-make-patch this new-value)
               new-state (-state-from-patch this patch)]
-          (if-not (= new-value (:value new-state))
-            (throw (ex-info "Unsupported reference state" {:new-value new-value
-                                                           :patch     patch
-                                                           :new-state new-state})))
-          (if patch
-            (set! patches (conj patches patch)))
+          (validate-reset (:value state) new-value new-state patch)
+          (when patch (set! patches (conj patches patch)))
           (-apply-state! this new-state)
           (:value new-state)))
        (swap [this f]          (.reset this (f (:value state))))
@@ -209,12 +216,8 @@
         [this new-value]
         (let [patch     (-make-patch this new-value)
               new-state (-state-from-patch this patch)]
-          (if-not (= new-value (:value new-state))
-            (throw (ex-info "Unsupported reference state" {:new-value new-value
-                                                           :patch     patch
-                                                           :new-state new-state})))
-          (if patch
-            (set! patches (conj patches patch)))
+          (validate-reset (:value state) new-value new-state patch)
+          (when patch (set! patches (conj patches patch)))
           (-apply-state! this new-state)
           (:value new-state)))
 
