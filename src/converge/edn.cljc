@@ -102,7 +102,7 @@
       value)))
 
 (defn assemble-values
-  [{:keys [list-links] :as interpretation}]
+  [interpretation]
   (loop [loc    (interpretation-zip interpretation opset/root-id)
          return nil]
     (if (zip/end? loc)
