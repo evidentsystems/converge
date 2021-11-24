@@ -59,7 +59,7 @@
 (defn successor-id
   ([id]
    (successor-id id (:actor id)))
-  ([{:keys [counter] :as i} actor]
+  ([{:keys [counter]} actor]
    (make-id actor (inc counter))))
 
 (defn latest-id

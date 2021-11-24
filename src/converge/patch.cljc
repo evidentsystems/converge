@@ -95,7 +95,7 @@
 (defmulti -edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
   (fn [edit _old-value entity _actor _id]
-    [(if (map? entity) :map :list)
+    [(edit/get-type entity)
      (nth edit 1)]))
 
 (defmethod -edit-to-ops :default
@@ -106,7 +106,7 @@
              :entity entity})))
 
 (defmethod -edit-to-ops [:map :+]
-  [[path _ value] old entity actor id]
+  [[path _ value] _old entity actor id]
   (let [entity-id (util/get-id entity)
         value-id  id
         assign-id (opset/successor-id value-id)
@@ -230,4 +230,4 @@
                           :id    (opset/next-id opset actor)
                           :ops   (avl/sorted-map)})
                  :ops)]
-    (if (seq ops) (->Patch ops))))
+    (when (seq ops) (->Patch ops))))

@@ -97,8 +97,7 @@
       (let [{:keys [ops]}
             patch
 
-            {:keys [value interpretation opset]
-             :as   s}
+            {:keys [interpretation opset]}
             state
 
             new-opset
