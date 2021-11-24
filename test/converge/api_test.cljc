@@ -12,11 +12,14 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 (ns converge.api-test
-  (:require #?(:clj  [clojure.test :refer :all]
-               :cljs [cljs.test :refer-macros [deftest is testing run-tests]])
+  (:require #?(:clj  [clojure.test :refer [deftest is testing]]
+               :cljs [cljs.test :refer-macros [deftest is testing]])
+            #?(:clj  [clojure.test.check.clojure-test :refer [defspec]]
+               :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
-            [converge.patch :as patch]
-            [converge.ref :as ref]))
+            [converge.patch :as patch]))
 
 (def a {:empty-m {}
         :empty-l []
@@ -178,6 +181,22 @@
         (is (= @(convergent/squash! c cr) final))
         (is (> (count (convergent/opset c))
                initial-count))))))
+
+(defspec generated-map 100
+  (prop/for-all
+   [a (gen/map gen/any gen/any)
+    b (gen/map gen/any gen/any)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-vector 100
+  (prop/for-all
+   [a (gen/vector gen/any)
+    b (gen/vector gen/any)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
 
 (comment ;; Clojure benchmarks
 

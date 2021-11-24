@@ -13,7 +13,7 @@
 ;; limitations under the License.
 (ns converge.serialize-test
   (:require #?(:clj  [clojure.test :refer :all]
-               :cljs [cljs.test :refer-macros [deftest is testing run-tests]])
+               :cljs [cljs.test :refer-macros [deftest is testing]])
             #?(:clj  [clojure.test.check.clojure-test :refer [defspec]]
                :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
             [clojure.test.check.generators :as gen]
@@ -121,12 +121,12 @@
           rt  (read-str (write-str ref))]
       (is (= b @ref @rt)))))
 
-#_(defspec transit-roundtrip 100
-    (prop/for-all
-     [v (gen/one-of [(gen/vector gen/any) (gen/map gen/any gen/any)])]
-     (let [ref (convergent/ref v)
-           rt  (read-str (write-str ref))]
-       (= v @ref @rt))))
+(defspec transit-roundtrip 100
+  (prop/for-all
+   [v (gen/one-of [(gen/vector gen/any) (gen/map gen/any gen/any)])]
+   (let [ref (convergent/ref v)
+         rt  (read-str (write-str ref))]
+     (= v @ref @rt))))
 
 (comment ;; Clojure benchmarks
 
