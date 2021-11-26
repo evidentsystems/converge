@@ -182,21 +182,23 @@
         (is (> (count (convergent/opset c))
                initial-count))))))
 
+;; TODO: re-enable this!
 #_(defspec generated-map 100
-  (prop/for-all
-   [a (gen/map gen/any gen/any)
-    b (gen/map gen/any gen/any)]
-   (let [ref (convergent/ref a)]
-     (reset! ref b)
-     (= @ref b))))
+    (prop/for-all
+     [a (gen/map gen/any gen/any)
+      b (gen/map gen/any gen/any)]
+     (let [ref (convergent/ref a)]
+       (reset! ref b)
+       (= @ref b))))
 
+;; TODO: re-enable this!
 #_(defspec generated-vector 100
-  (prop/for-all
-   [a (gen/vector gen/any)
-    b (gen/vector gen/any)]
-   (let [ref (convergent/ref a)]
-     (reset! ref b)
-     (= @ref b))))
+    (prop/for-all
+     [a (gen/vector gen/any)
+      b (gen/vector gen/any)]
+     (let [ref (convergent/ref a)]
+       (reset! ref b)
+       (= @ref b))))
 
 (comment ;; Clojure benchmarks
 
