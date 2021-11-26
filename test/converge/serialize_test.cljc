@@ -121,7 +121,7 @@
           rt  (read-str (write-str ref))]
       (is (= b @ref @rt)))))
 
-(defspec transit-roundtrip 100
+#_(defspec transit-roundtrip 100
   (prop/for-all
    [v (gen/one-of [(gen/vector gen/any) (gen/map gen/any gen/any)])]
    (let [ref (convergent/ref v)

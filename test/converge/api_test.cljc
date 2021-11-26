@@ -182,7 +182,7 @@
         (is (> (count (convergent/opset c))
                initial-count))))))
 
-(defspec generated-map 100
+#_(defspec generated-map 100
   (prop/for-all
    [a (gen/map gen/any gen/any)
     b (gen/map gen/any gen/any)]
@@ -190,7 +190,7 @@
      (reset! ref b)
      (= @ref b))))
 
-(defspec generated-vector 100
+#_(defspec generated-vector 100
   (prop/for-all
    [a (gen/vector gen/any)
     b (gen/vector gen/any)]

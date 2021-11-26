@@ -95,8 +95,8 @@
 (defmulti -edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
   (fn [edit _old-value entity _actor _id]
-    [(edit/get-type entity)
-     (nth edit 1)]))
+    [(nth edit 1)
+     (edit/get-type entity)]))
 
 (defmethod -edit-to-ops :default
   [edit _old entity _actor _id]
@@ -105,7 +105,7 @@
             {:edit   edit
              :entity entity})))
 
-(defmethod -edit-to-ops [:map :+]
+(defmethod -edit-to-ops [:+ :map]
   [[path _ value] _old entity actor id]
   (let [entity-id (util/get-id entity)
         value-id  id
@@ -116,8 +116,8 @@
            [assign-id (opset/assign entity-id (last path) value-id)]
            (next value-ops))))
 
-(defmethod -edit-to-ops [:list :+]
-  [[path _ value] old entity actor id]
+(defn add-to-sequence
+  [path value entity actor id]
   (let [entity-id (util/get-id entity)
         insert-id id
         value-id  (opset/successor-id insert-id)
@@ -131,16 +131,32 @@
            [assign-id (opset/assign entity-id insert-id value-id)]
            value-ops)))
 
-(defmethod -edit-to-ops [:map :-]
-  [[path :as edit] old entity actor id]
+(defmethod -edit-to-ops [:+ :vec]
+  [[path _ value] _old entity actor id]
+  (add-to-sequence path value entity actor id))
+
+(defmethod -edit-to-ops [:+ :lst]
+  [[path _ value] _old entity actor id]
+  (add-to-sequence path value entity actor id))
+
+(defmethod -edit-to-ops [:- :map]
+  [[path] _old entity _actor id]
   [[id (opset/remove (util/get-id entity) (last path))]])
 
-(defmethod -edit-to-ops [:list :-]
-  [[path :as edit] old entity actor id]
+(defn remove-from-sequence
+  [path entity id]
   [[id (opset/remove (util/get-id entity) (util/get-insertion-id entity (last path)))]])
 
-(defmethod -edit-to-ops [:map :r]
-  [[path _ value :as edit] old entity actor id]
+(defmethod -edit-to-ops [:- :vec]
+  [[path] _old entity _actor id]
+  (remove-from-sequence path entity id))
+
+(defmethod -edit-to-ops [:- :lst]
+  [[path] _old entity _actor id]
+  (remove-from-sequence path entity id))
+
+(defmethod -edit-to-ops [:r :map]
+  [[path _ value] old entity actor id]
   (let [entity-id (util/get-id entity)]
     (cond
       (empty? old)
@@ -166,8 +182,8 @@
                [assign-id (opset/assign entity-id (last path) value-id)]
                (next value-ops))))))
 
-(defmethod -edit-to-ops [:list :r]
-  [[path _ value :as edit] old entity actor id]
+(defn replace-in-sequence
+  [path value old entity actor id]
   (let [entity-id (util/get-id entity)]
     (cond
       (empty? old)
@@ -194,6 +210,14 @@
                (first value-ops)
                [assign-id (opset/assign entity-id insert-id value-id)]
                (next value-ops))))))
+
+(defmethod -edit-to-ops [:r :vec]
+  [[path _ value] old entity actor id]
+  (replace-in-sequence path value old entity actor id))
+
+(defmethod -edit-to-ops [:r :lst]
+  [[path _ value] old entity actor id]
+  (replace-in-sequence path value old entity actor id))
 
 (defn edit-to-ops
   [[path :as edit] old actor id]
