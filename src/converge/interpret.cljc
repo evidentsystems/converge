@@ -46,10 +46,12 @@
 (defn ancestor
   [elements]
   (transitive-closure
-   (into #{} (map (juxt :entity :value)) elements)))
+   (into #{}
+         (map (juxt :entity :value))
+         (vals elements))))
 
 (defmulti -interpret-op
-  (fn [_agg _id {action :action}] action)
+  (fn [_agg _id op] (:action op))
   :default ::default)
 
 (defmethod -interpret-op ::default
