@@ -192,14 +192,14 @@
 (defn snapshot-ref
   "Creates a new reference which is a snapshot of the given reference,
   having a single `snapshot` operation in its opset."
-  [cr & {:keys [actor meta validator] :as options}]
+  [cr & {:keys [actor meta validator] :as _options}]
   (let [{o :opset
-         i :interpretation}
+         i* :interpretation}
         (ref/-state cr)
 
         a  (or actor (ref/-actor cr))
         id (opset/latest-id o)
-        i  (interpret/interpret o)
+        i  (or i* (interpret/interpret o))
         r  (ref/->ConvergentRef
             a
             (ref/->ConvergentState (opset/opset
