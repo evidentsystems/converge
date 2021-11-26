@@ -49,19 +49,19 @@
    (into #{} (map (juxt :entity :value)) elements)))
 
 (defmulti -interpret-op
-  (fn [_agg _id {action :action :as op}] action)
+  (fn [_agg _id {action :action}] action)
   :default ::default)
 
 (defmethod -interpret-op ::default
   [agg _id _op]
   agg)
 
-(defmethod -interpret-op :snapshot
-  [agg id {{{:keys [elements list-links]} :interpretation} :data :as op}]
+(defmethod -interpret-op opset/SNAPSHOT
+  [agg _id {{{:keys [elements list-links]} :interpretation} :data}]
   (assoc agg :elements elements :list-links list-links))
 
-(defmethod -interpret-op :assign
-  [{:keys [elements] :as agg} id {:keys [data] :as op}]
+(defmethod -interpret-op opset/ASSIGN
+  [{:keys [elements] :as agg} id {:keys [data]}]
   (let [{:keys [entity attribute value]} data]
     ;; Skip operations that would introduce a cycle from decendent
     ;; (value) to ancestor (entity), per Section 5.2
@@ -79,8 +79,8 @@
                     id
                     (->Element entity attribute value))))))
 
-(defmethod -interpret-op :remove
-  [{:keys [elements] :as agg} id {:keys [data] :as op}]
+(defmethod -interpret-op opset/REMOVE
+  [{:keys [elements] :as agg} _id {:keys [data]}]
   (let [{:keys [entity attribute]} data]
     (assoc agg :elements (into {}
                                (filter
@@ -89,8 +89,8 @@
                                       (not= (:attribute element) attribute))))
                                elements))))
 
-(defmethod -interpret-op :insert
-  [{:keys [list-links] :as agg} id {{prev :after} :data :as op}]
+(defmethod -interpret-op opset/INSERT
+  [{:keys [list-links] :as agg} id {{prev :after} :data}]
   (let [next (get list-links prev)]
     (if next
       (assoc agg
@@ -101,17 +101,17 @@
                         id next)))
       agg)))
 
-(defmethod -interpret-op :make-list
+(defmethod -interpret-op opset/MAKE_LIST
   [agg id _op]
   (-> agg
       (assoc-in [:list-links id] list-end-sigil)
       (assoc-in [:elements id] [])))
 
-(defmethod -interpret-op :make-map
+(defmethod -interpret-op opset/MAKE_MAP
   [agg id _op]
   (assoc-in agg [:elements id] {}))
 
-(defmethod -interpret-op :make-value
+(defmethod -interpret-op opset/MAKE_VALUE
   [agg id op]
   (assoc-in agg [:elements id] (-> op :data :value)))
 

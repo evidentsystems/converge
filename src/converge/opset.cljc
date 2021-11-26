@@ -74,47 +74,65 @@
 
 ;;;; Operations
 
-(defrecord Op [action data])
+(def MAKE_MAP 0)
+(def MAKE_VECTOR 1)
+(def MAKE_SET 2)
+(def MAKE_LIST 3)
+(def MAKE_VALUE 4)
+(def INSERT 5)
+(def ASSIGN 6)
+(def REMOVE 7)
+(def SNAPSHOT 8)
+
+(defrecord Op [^long action data])
 
 (defn op
   ([action]
    (op action nil))
   ([action data]
-   (assert (keyword? action) "The `action` of an Op must be a keyword")
+   (assert (integer? action) "The `action` of an Op must be an integer")
    (assert (or (nil? data) (map? data)) "The `data` of an Op, if provided, must be a map")
    (->Op action data)))
 
 (defn make-map
   []
-  (op :make-map))
+  (op MAKE_MAP))
+
+(defn make-vector
+  []
+  (op MAKE_VECTOR))
+
+(defn make-set
+  []
+  (op MAKE_SET))
 
 (defn make-list
   []
-  (op :make-list))
+  (op MAKE_LIST))
 
 (defn make-value
   [value]
-  (op :make-value {:value value}))
+  (op MAKE_VALUE {:value value}))
 
 (defn insert
   [after]
   (assert (id? after) "`after` must be an Id")
-  (op :insert {:after after}))
+  (op INSERT {:after after}))
 
 (defn assign
   [entity attribute value]
   (assert (id? entity) "`entity` must be an Id")
-  (op :assign {:entity entity :attribute attribute :value value}))
+  (op ASSIGN {:entity entity :attribute attribute :value value}))
 
 (defn remove
   [entity attribute]
   (assert (id? entity) "`entity` must be an Id")
-  (op :remove {:entity entity :attribute attribute}))
+  (op REMOVE {:entity entity :attribute attribute}))
 
 (defn snapshot
   [as-of interpretation]
   (assert (id? as-of) "`as-of` must be an Id")
-  (op :snapshot {:as-of as-of :interpretation interpretation}))
+  (op SNAPSHOT {:as-of as-of :interpretation interpretation}))
 
 ;;;; OpSets
 
