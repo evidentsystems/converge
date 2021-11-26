@@ -15,6 +15,7 @@
   "Utility functions"
   #?(:cljs (:refer-clojure :exclude [uuid]))
   (:require [clojure.string :as string]
+            [editscript.edit :as edit]
             #?@(:clj
                 [[clj-uuid :as uuid]]
                 :cljs
@@ -52,16 +53,14 @@
    #?(:clj  (java.util.Date.)
       :cljs (js/Date.))))
 
+;; HT: https://github.com/juji-io/editscript/blob/ddb13130d16ae920d1ead8ae77b23c24a202e92e/src/editscript/patch.cljc#L18
 (defn safe-get
-  ([coll i]
-   (safe-get coll i nil))
-  ([coll i not-found]
-   (if (map? coll)
-     (get coll i not-found)
-     (try
-       (or (nth coll i) not-found)
-       (catch #?(:clj Exception
-                 :cljs :default) e not-found)))))
+  ([x p]
+   (safe-get x p nil))
+  ([x p not-found]
+   (case (edit/get-type x)
+     (:map :vec :set) (get x p not-found)
+     :lst             (nth x p not-found))))
 
 (def lookup-sentinel
   #?(:clj  (Object.)

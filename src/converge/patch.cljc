@@ -13,15 +13,17 @@
 ;; limitations under the License.
 (ns converge.patch
   (:require [clojure.data.avl :as avl]
-            [editscript.core :as editscript]
+            [editscript.core :as e]
             [editscript.edit :as edit]
             [converge.edn :as edn]
             [converge.interpret :as interpret]
             [converge.opset :as opset]
             [converge.util :as util]))
 
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
 
-;;;; Editscript to Operations
+;;;; Value to Ops
 
 (declare value-to-ops)
 (defn map-to-value
@@ -91,6 +93,8 @@
 
     :else
     [[value-id (opset/make-value value)]]))
+
+;;;; Edit to Ops
 
 (defmulti -edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
@@ -165,7 +169,7 @@
       (and (coll? value)
            (empty? value))
       (:ops
-       (reduce (fn [{:keys [ops id] :as agg} attribute]
+       (reduce (fn [{:keys [id] :as agg} attribute]
                  (-> agg
                      (update :ops conj [id (opset/remove entity-id attribute)])
                      (assoc :id (opset/successor-id id))))
@@ -192,7 +196,7 @@
       (and (coll? value)
            (empty? value))
       (:ops
-       (reduce (fn [{:keys [ops id] :as agg} attribute]
+       (reduce (fn [{:keys [id] :as agg} attribute]
                  (-> agg
                      (update :ops conj [id (opset/remove entity-id attribute)])
                      (assoc :id (opset/successor-id id))))
@@ -236,13 +240,12 @@
 
 (defn make-patch
   [opset interpretation actor old-value new-value]
-  (let [ ;; PERF: pass this in from cache?
-        interp (or interpretation (interpret/interpret opset))
+  (let [interp (or interpretation (interpret/interpret opset))
 
         ops
         (some->> new-value
-                 (editscript/diff old-value)
-                 edit/get-edits
+                 (e/diff old-value)
+                 e/get-edits
                  (reduce (fn [{:keys [value id ops] :as agg} edit]
                            (let [new-ops    (into ops (edit-to-ops edit value actor id))
                                  new-interp (interpret/interpret interp new-ops)]
