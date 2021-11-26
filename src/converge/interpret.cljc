@@ -58,36 +58,42 @@
 
 (defmethod -interpret-op opset/SNAPSHOT
   [agg _id {{{:keys [elements list-links]} :interpretation} :data}]
-  (assoc agg :elements elements :list-links list-links))
+  (assoc agg
+         :elements   (transient elements)
+         :list-links (transient list-links)))
 
 (defmethod -interpret-op opset/ASSIGN
   [{:keys [elements] :as agg} id {:keys [data]}]
-  (let [{:keys [entity attribute value]} data]
+  (let [{:keys [entity attribute value]} data
+
+        elements* (persistent! elements)]
     ;; Skip operations that would introduce a cycle from decendent
     ;; (value) to ancestor (entity), per Section 5.2
-    (if (contains? (ancestor elements) [value entity])
+    (if (contains? (ancestor elements*) [value entity])
       agg
       (assoc agg
              :elements
-             (assoc (into {}
-                          (filter
-                           (fn [[_id element]]
-                             (and (or (not= (:entity element)    entity)
-                                      (not= (:attribute element) attribute))
-                                  (not= value (:value element)))))
-                          elements)
-                    id
-                    (->Element entity attribute value))))))
+             (transient
+              (into {id (->Element entity attribute value)}
+                    (filter
+                     (fn [[_id element]]
+                       (and (or (not= (:entity element)    entity)
+                                (not= (:attribute element) attribute))
+                            (not= value (:value element)))))
+                    elements*))))))
 
 (defmethod -interpret-op opset/REMOVE
   [{:keys [elements] :as agg} _id {:keys [data]}]
   (let [{:keys [entity attribute]} data]
-    (assoc agg :elements (into {}
-                               (filter
-                                (fn [[_id element]]
-                                  (or (not= (:entity element)    entity)
-                                      (not= (:attribute element) attribute))))
-                               elements))))
+    (assoc agg
+           :elements
+           (transient
+            (into {}
+                  (filter
+                   (fn [[_id element]]
+                     (or (not= (:entity element)    entity)
+                         (not= (:attribute element) attribute))))
+                  (persistent! elements))))))
 
 (defmethod -interpret-op opset/INSERT
   [{:keys [list-links] :as agg} id {{prev :after} :data}]
@@ -96,31 +102,35 @@
       (assoc agg
              :list-links
              (-> list-links
-                 (dissoc prev)
-                 (assoc prev id
-                        id next)))
+                 (dissoc! prev)
+                 (assoc! prev id
+                         id next)))
       agg)))
 
 (defmethod -interpret-op opset/MAKE_LIST
   [agg id _op]
   (-> agg
-      (assoc-in [:list-links id] list-end-sigil)
-      (assoc-in [:elements id] [])))
+      (update :list-links assoc! id list-end-sigil)
+      (update :elements assoc! id [])))
 
 (defmethod -interpret-op opset/MAKE_MAP
   [agg id _op]
-  (assoc-in agg [:elements id] {}))
+  (update agg :elements assoc! id {}))
 
 (defmethod -interpret-op opset/MAKE_VALUE
   [agg id op]
-  (assoc-in agg [:elements id] (-> op :data :value)))
+  (update agg :elements assoc! id (-> op :data :value)))
 
 (defn interpret
   ([opset]
-   (reduce-kv -interpret-op
-              (->Interpretation {} {})
-              opset))
-  ([interpretation ops]
-   (reduce-kv -interpret-op
-              interpretation
-              ops)))
+   (interpret (->Interpretation {} {}) opset))
+  ([{:keys [elements list-links] :as _interpretation} ops]
+   (let [{elements*   :elements
+          list-links* :list-links}
+         (reduce-kv -interpret-op
+                    {:elements   (transient elements)
+                     :list-links (transient list-links)}
+                    ops)]
+     (->Interpretation
+      (persistent! elements*)
+      (persistent! list-links*)))))
