@@ -227,16 +227,18 @@
 
   (def r (convergent/ref {}))
   @r
+  (count (convergent/opset r))
+  (nth (convergent/opset r) 0)
 
   (criterium/bench
    (do
      (swap! r assoc-in [:foo :bar :baz] :quux)
-     (swap! r update dissoc :foo)))
+     (swap! r dissoc :foo)))
 
   (profiler/profile
    (dotimes [_ 10000]
      (swap! r assoc-in [:foo :bar :baz] :quux)
-     (swap! r update dissoc :foo)))
+     (swap! r dissoc :foo)))
 
   ;; MacBook Pro 02/22/2021
   ;;                 Evaluation count : 7589040 in 60 samples of 126484 calls.
@@ -257,12 +259,12 @@
   (criterium/bench
    (do
      (swap! r assoc-in [:foo :bar :baz] :quux)
-     (swap! r update dissoc :foo)))
+     (swap! r dissoc :foo)))
 
   (profiler/profile
    (dotimes [_ 10000]
      (swap! r assoc-in [:foo :bar :baz] :quux)
-     (swap! r update dissoc :foo)))
+     (swap! r dissoc :foo)))
 
   ;; MacBook Pro 03/25/2021 before patch optimization
   ;;                 Evaluation count : 31560 in 60 samples of 526 calls.

@@ -17,10 +17,15 @@
             [converge.core :as core]
             [converge.util :as util]
             [converge.opset.interpret :as interpret]
-            [converge.opset.ref :as ref]))
+            [converge.opset.ref :as opset]
+            [converge.editscript.ref :as editscript]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
+
+(defn read-avl-map
+  [v]
+  (into (avl/sorted-map) v))
 
 (def read-id
   core/map->Id)
@@ -39,13 +44,13 @@
 
 (defn read-opset-convergent-state
   [m]
-  (ref/map->OpsetConvergentState
+  (opset/map->OpsetConvergentState
    {:opset  (:opset m)
     :dirty? true}))
 
 (defn read-opset-convergent-ref
   [{:keys [state meta]}]
-  (ref/->OpsetConvergentRef
+  (opset/->OpsetConvergentRef
    (util/uuid)
    state
    (util/queue)
@@ -53,9 +58,25 @@
    nil
    nil))
 
-(defn read-avl-map
-  [v]
-  (into (avl/sorted-map) v))
+(defn read-editscript-convergent-state
+  [m]
+  (editscript/map->EditscriptConvergentState
+   {:opset  (:opset m)
+    :dirty? true}))
+
+(defn read-editscript-convergent-ref
+  [{:keys [state meta]}]
+  (editscript/->EditscriptConvergentRef
+   (util/uuid)
+   state
+   (util/queue)
+   meta
+   nil
+   nil))
+
+(defn write-avl-map
+  [m]
+  (into [] m))
 
 (defn write-state
   [state]
@@ -65,7 +86,3 @@
   [r]
   {:state (core/-state r)
    :meta  (meta r)})
-
-(defn write-avl-map
-  [m]
-  (into [] m))

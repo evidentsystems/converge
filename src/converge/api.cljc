@@ -19,14 +19,16 @@
   (:refer-clojure :exclude [ref])
   (:require [converge.core :as core]
             [converge.util :as util]
+            converge.opset.ref
+            converge.editscript.ref
+            ;; TODO: remove the following once squash/merge supports multiple backends
             [converge.opset.edn :as edn]
-            [converge.opset.interpret :as interpret]
-            [converge.opset.patch :as patch]))
+            [converge.opset.interpret :as interpret]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(def default-backend :opset)
+(def default-backend :editscript)
 
 ;; TODO: add note to docstring about our special top-level type
 ;; validation logic
@@ -108,6 +110,7 @@
   [cr]
   (core/-opset cr))
 
+;; TODO: support multiple backends
 (defn merge!
   [cr other]
   (let [patch (cond
@@ -128,6 +131,7 @@
       (core/-apply-state! cr (core/-state-from-patch cr patch)))
     cr))
 
+;; TODO: support multiple backends
 (defn squash!
   [cr other]
   (let [additional-ops

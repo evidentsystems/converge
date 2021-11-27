@@ -28,14 +28,16 @@
   (t/tagged-value "map" rec))
 
 (def read-handlers*
-  {"converge/id"          (t/read-handler serialize/read-id)
+  {"avl/map"              (t/read-handler serialize/read-avl-map)
+   "converge/id"          (t/read-handler serialize/read-id)
    "converge/op"          (t/read-handler serialize/read-operation)
    "converge/patch"       (t/read-handler serialize/read-patch)
    "opset/element"        (t/read-handler serialize/read-element)
    "opset/interpretation" (t/read-handler serialize/read-interpretation)
    "opset/state"          (t/read-handler serialize/read-opset-convergent-state)
    "opset/ref"            (t/read-handler serialize/read-opset-convergent-ref)
-   "avl/map"              (t/read-handler serialize/read-avl-map)})
+   "editscript/state"     (t/read-handler serialize/read-editscript-convergent-state)
+   "editscript/ref"       (t/read-handler serialize/read-editscript-convergent-ref)})
 
 (def read-handlers
   (merge #?(:clj
@@ -47,14 +49,20 @@
 
 (def #?(:clj  write-handlers*
         :cljs write-handlers)
-  {converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
+  {clojure.data.avl.AVLMap (t/write-handler (constantly "avl/map") serialize/write-avl-map)
+
+   converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
    converge.core.Op                        (t/write-handler (constantly "converge/op") tagged-map-value)
    converge.core.Patch                     (t/write-handler (constantly "converge/patch") tagged-map-value)
    converge.opset.interpret.Element        (t/write-handler (constantly "opset/element") tagged-map-value)
    converge.opset.interpret.Interpretation (t/write-handler (constantly "opset/interpretation") tagged-map-value)
    converge.opset.ref.OpsetConvergentState (t/write-handler (constantly "opset/state") serialize/write-state)
    converge.opset.ref.OpsetConvergentRef   (t/write-handler (constantly "opset/ref") serialize/write-ref)
-   clojure.data.avl.AVLMap                 (t/write-handler (constantly "avl/map") serialize/write-avl-map)})
+
+   converge.editscript.ref.EditscriptConvergentState
+   (t/write-handler (constantly "editscript/state") serialize/write-state)
+   converge.editscript.ref.EditscriptConvergentRef
+   (t/write-handler (constantly "editscript/ref") serialize/write-ref)})
 
 #?(:clj
    (def write-handlers
@@ -146,11 +154,9 @@
   ;;                    Overhead used : 7.672645 ns
 
   ;; Found 4 outliers in 60 samples (6.6667 %)
-  ;; 	low-severe	 2 (3.3333 %)
-  ;; 	low-mild	 2 (3.3333 %)
+  ;;  low-severe   2 (3.3333 %)
+  ;;  low-mild   2 (3.3333 %)
   ;;  Variance from outliers : 6.2885 % Variance is slightly inflated by outliers
-
-
   )
 
 (comment ;; ClojureScript benchmarks
@@ -162,5 +168,4 @@
 
   ;; Macbook Pro, Chrome 02/17/2021
   ;; [r (convergent/ref a)], (read-str (write-str r)), 10000 runs, 7310 msecs
-
   )
