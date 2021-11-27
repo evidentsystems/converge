@@ -83,14 +83,13 @@
 
 (defn value-to-ops
   [value actor value-id start-id]
-  (cond
-    (map? value)
-    (map-to-value value actor value-id start-id)
-
-    (sequential? value)
+  (case (util/get-type value)
+    (:lst :vec)
     (sequential-to-value value actor value-id start-id)
 
-    :else
+    :map
+    (map-to-value value actor value-id start-id)
+
     [[value-id (opset/make-value value)]]))
 
 ;;;; Edit to Ops

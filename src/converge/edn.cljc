@@ -113,12 +113,14 @@
         (recur (zip/next loc)
                (add-element return
                             path
-                            (cond-> v
-                              (sequential? v)
-                              (vary-meta assoc :converge/id entity :converge/insertions insertions)
+                            (case (util/get-type v)
+                              (:vec :lst)
+                              (vary-meta v assoc :converge/id entity :converge/insertions insertions)
 
-                              (map? v)
-                              (vary-meta assoc :converge/id entity))))))))
+                              :map
+                              (vary-meta v assoc :converge/id entity)
+
+                              v)))))))
 
 (defn edn
   "Transforms an converge.interpret.Interpretation into an EDN value."
