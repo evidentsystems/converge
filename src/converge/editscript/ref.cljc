@@ -22,20 +22,21 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
+(defn apply-patch
+  [value {:keys [action data]}]
+  (condp = action
+    ops/EDIT
+    (e/patch value (e/edits->script (:edits data)))
+
+    ops/SNAPSHOT
+    (:value data)
+
+    :else
+    value))
+
 (defn value-from-opset
   [opset]
-  (reduce (fn [agg {:keys [action data]}]
-            (condp = action
-              ops/EDIT
-              (e/patch agg (e/edits->script (:edits data)))
-
-              ops/SNAPSHOT
-              (:value data)
-
-              :else
-              agg))
-          nil
-          (vals opset)))
+  (reduce apply-patch nil (vals opset)))
 
 (defrecord EditscriptConvergentState [opset value ^boolean dirty?])
 
@@ -78,7 +79,9 @@
             new-opset
             (into (:opset state) ops)]
         (->EditscriptConvergentState new-opset
-                                     (value-from-opset new-opset)
+                                     (if (:dirty? state)
+                                       (value-from-opset new-opset)
+                                       (reduce apply-patch (:value state) (vals ops)))
                                      false))
       state))
   (-peek-patches [_] (peek patches))

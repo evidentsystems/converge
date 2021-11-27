@@ -256,10 +256,11 @@
   (def r (convergent/ref a))
   @r
 
-  (criterium/bench
-   (do
-     (swap! r assoc-in [:foo :bar :baz] :quux)
-     (swap! r dissoc :foo)))
+  (criterium/with-progress-reporting
+    (criterium/bench
+     (do
+       (swap! r assoc-in [:foo :bar :baz] :quux)
+       (swap! r dissoc :foo))))
 
   (profiler/profile
    (dotimes [_ 10000]
