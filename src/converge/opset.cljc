@@ -64,7 +64,7 @@
 
 (defn latest-id
   [opset]
-  (some-> opset last key))
+  (some-> opset util/last-indexed key))
 
 (defn next-id
   [opset actor]

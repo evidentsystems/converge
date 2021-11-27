@@ -90,9 +90,9 @@
 
 (defn add-element
   [return path value]
-  (let [attribute (peek path)]
+  (let [attribute (util/last-indexed path)]
     (if attribute
-      (let [parent-path (pop path)
+      (let [parent-path (util/safe-pop path)
             parent      (util/safe-get-in return parent-path)]
         (if (sequential? parent)
           (if (seq parent-path)

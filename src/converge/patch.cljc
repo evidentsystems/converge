@@ -40,12 +40,12 @@
                         (update :ops
                                 into
                                 (apply vector
-                                       (first value-ops)
+                                       (util/first-indexed value-ops)
                                        [assign-id (opset/assign map-id k value-id)]
                                        (next value-ops)))
                         (assoc :id (opset/successor-id
                                     (if (next value-ops)
-                                      (first (last value-ops))
+                                      (util/first-indexed (util/last-indexed value-ops))
                                       assign-id))))))
                 {:id  start-id
                  :ops initial-ops}
@@ -68,12 +68,12 @@
                              into
                              (apply vector
                                     [insert-id (opset/insert tail-id)]
-                                    (first value-ops)
+                                    (util/first-indexed value-ops)
                                     [assign-id (opset/assign list-id insert-id value-id)]
                                     (next value-ops)))
                      (assoc :id (opset/successor-id
                                  (if (next value-ops)
-                                   (first (last value-ops))
+                                   (util/first-indexed (util/last-indexed value-ops))
                                    assign-id))
                             :tail-id insert-id))))
              {:id      start-id
@@ -122,8 +122,8 @@
         assign-id (opset/successor-id value-id)
         value-ops (value-to-ops value actor value-id (opset/successor-id assign-id))]
     (apply vector
-           (first value-ops)
-           [assign-id (opset/assign entity-id (last path) value-id)]
+           (util/first-indexed value-ops)
+           [assign-id (opset/assign entity-id (util/last-indexed path) value-id)]
            (next value-ops))))
 
 (defn add-to-sequence
@@ -133,11 +133,11 @@
         value-id  (opset/successor-id insert-id)
         assign-id (opset/successor-id value-id)
         value-ops (value-to-ops value actor value-id (opset/successor-id assign-id))
-        after-id  (or (some->> path last dec (get-insertion-id entity))
+        after-id  (or (some->> path util/last-indexed dec (get-insertion-id entity))
                       entity-id)]
     (apply vector
            [insert-id (opset/insert after-id)]
-           (first value-ops)
+           (util/first-indexed value-ops)
            [assign-id (opset/assign entity-id insert-id value-id)]
            value-ops)))
 
@@ -151,11 +151,11 @@
 
 (defmethod -edit-to-ops [:- :map]
   [[path] _old entity _actor id]
-  [[id (opset/remove (get-id entity) (last path))]])
+  [[id (opset/remove (get-id entity) (util/last-indexed path))]])
 
 (defn remove-from-sequence
   [path entity id]
-  [[id (opset/remove (get-id entity) (get-insertion-id entity (last path)))]])
+  [[id (opset/remove (get-id entity) (get-insertion-id entity (util/last-indexed path)))]])
 
 (defmethod -edit-to-ops [:- :vec]
   [[path] _old entity _actor id]
@@ -188,8 +188,8 @@
             assign-id (opset/successor-id value-id)
             value-ops (value-to-ops value actor value-id (opset/successor-id assign-id))]
         (apply vector
-               (first value-ops)
-               [assign-id (opset/assign entity-id (last path) value-id)]
+               (util/first-indexed value-ops)
+               [assign-id (opset/assign entity-id (util/last-indexed path) value-id)]
                (next value-ops))))))
 
 (defn replace-in-sequence
@@ -213,11 +213,11 @@
 
       :else
       (let [value-id  id
-            insert-id (get-insertion-id entity (last path))
+            insert-id (get-insertion-id entity (util/last-indexed path))
             assign-id (opset/successor-id value-id)
             value-ops (value-to-ops value actor value-id (opset/successor-id assign-id))]
         (apply vector
-               (first value-ops)
+               (util/first-indexed value-ops)
                [assign-id (opset/assign entity-id insert-id value-id)]
                (next value-ops))))))
 
@@ -233,7 +233,7 @@
   [[path :as edit] old actor id]
   (-edit-to-ops edit
                 old
-                (util/safe-get-in old (butlast path))
+                (util/safe-get-in old (util/safe-pop path))
                 actor
                 id))
 

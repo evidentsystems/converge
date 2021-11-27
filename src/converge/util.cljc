@@ -76,6 +76,19 @@
            (recur sentinel m (next ks))))
        m))))
 
+(defn first-indexed
+  [indexed]
+  (nth indexed 0 nil))
+
+(defn last-indexed
+  [indexed]
+  (nth indexed (dec (count indexed)) nil))
+
+(defn safe-pop
+  [indexed]
+  (when-not (empty? indexed)
+    (pop indexed)))
+
 (defn queue
   [& elems]
   (into #?(:clj  clojure.lang.PersistentQueue/EMPTY
