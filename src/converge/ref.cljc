@@ -101,7 +101,7 @@
   (-make-patch
     [_ new-value]
     (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-    (let [{:keys [value opset interpretation] :as s} state]
+    (let [{:keys [value opset interpretation]} state]
       (patch/make-patch opset interpretation actor value new-value)))
   (-state-from-patch [_ patch]
     (if (patch/patch? patch)

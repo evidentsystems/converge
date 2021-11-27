@@ -48,7 +48,7 @@
   change. If the new state is unacceptable, the validate-fn should
   return false or throw an Error.  If either of these error conditions
   occur, then the value of the atom will not change."
-  [initial-value & {:keys [actor meta validator] :as options}]
+  [initial-value & {:keys [actor meta validator] :as _options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
   (let [actor* (or actor (util/uuid))
@@ -105,13 +105,12 @@
   change. If the new state is unacceptable, the validate-fn should
   return false or throw an Error.  If either of these error conditions
   occur, then the value of the atom will not change."
-  [opset & {:keys [actor meta validator] :as options}]
+  [opset & {:keys [actor meta validator] :as _options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
   ;; TODO: assertions ensuring valid opset
   (let [opset*         (into (opset/opset) opset)
         actor*         (or actor (util/uuid))
-        initial-action (get-in opset* [opset/root-id :action])
         r              (ref/->ConvergentRef actor*
                                             (ref/->ConvergentState opset* nil nil true)
                                             (util/queue)
