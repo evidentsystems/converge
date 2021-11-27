@@ -202,10 +202,15 @@
 
 (comment ;; Clojure benchmarks
 
-  (require '[criterium.core :as criterium])
+  (require '[criterium.core :as criterium]
+           '[clj-async-profiler.core :as profiler])
 
   (criterium/bench
    @(convergent/ref a))
+
+  (profiler/profile
+   (dotimes [_ 10000]
+     @(convergent/ref a)))
 
   ;; MacBook Pro 02/17/2021
   ;;                 Evaluation count : 84780 in 60 samples of 1413 calls.
@@ -228,6 +233,11 @@
      (swap! r assoc-in [:foo :bar :baz] :quux)
      (swap! r update dissoc :foo)))
 
+  (profiler/profile
+   (dotimes [_ 10000]
+     (swap! r assoc-in [:foo :bar :baz] :quux)
+     (swap! r update dissoc :foo)))
+
   ;; MacBook Pro 02/22/2021
   ;;                 Evaluation count : 7589040 in 60 samples of 126484 calls.
   ;;              Execution time mean : 8.235078 µs
@@ -241,12 +251,16 @@
   ;; 	low-mild	 1 (1.6667 %)
   ;;  Variance from outliers : 27.1139 % Variance is moderately inflated by outliers
 
-
   (def r (convergent/ref a))
   @r
 
   (criterium/bench
    (do
+     (swap! r assoc-in [:foo :bar :baz] :quux)
+     (swap! r update dissoc :foo)))
+
+  (profiler/profile
+   (dotimes [_ 10000]
      (swap! r assoc-in [:foo :bar :baz] :quux)
      (swap! r update dissoc :foo)))
 
@@ -262,7 +276,6 @@
   ;; 	low-severe	 2 (3.3333 %)
   ;;  Variance from outliers : 61.8498 % Variance is severely inflated by outliers
 
-
   ;; MacBook Pro 02/22/2021 after patch optimization
   ;;                 Evaluation count : 1902960 in 60 samples of 31716 calls.
   ;;              Execution time mean : 33.085470 µs
@@ -274,8 +287,6 @@
   ;; Found 1 outliers in 60 samples (1.6667 %)
   ;; 	low-severe	 1 (1.6667 %)
   ;;  Variance from outliers : 27.1107 % Variance is moderately inflated by outliers
-
-
   )
 
 (comment ;; ClojureScript benchmarks
