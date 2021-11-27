@@ -28,14 +28,14 @@
   (t/tagged-value "map" rec))
 
 (def read-handlers*
-  {"converge/id"             (t/read-handler serialize/read-id)
-   "converge/op"             (t/read-handler serialize/read-operation)
-   "converge/patch"          (t/read-handler serialize/read-patch)
-   "converge/element"        (t/read-handler serialize/read-element)
-   "converge/interpretation" (t/read-handler serialize/read-interpretation)
-   "converge/state"          (t/read-handler serialize/read-state)
-   "converge/ref"            (t/read-handler serialize/read-ref)
-   "avl/map"                 (t/read-handler serialize/read-avl-map)})
+  {"converge/id"          (t/read-handler serialize/read-id)
+   "opset/op"             (t/read-handler serialize/read-operation)
+   "opset/patch"          (t/read-handler serialize/read-patch)
+   "opset/element"        (t/read-handler serialize/read-element)
+   "opset/interpretation" (t/read-handler serialize/read-interpretation)
+   "opset/state"          (t/read-handler serialize/read-opset-convergent-state)
+   "opset/ref"            (t/read-handler serialize/read-opset-convergent-ref)
+   "avl/map"              (t/read-handler serialize/read-avl-map)})
 
 (def read-handlers
   (merge #?(:clj
@@ -47,14 +47,14 @@
 
 (def #?(:clj  write-handlers*
         :cljs write-handlers)
-  {converge.opset.Id                 (t/write-handler (constantly "converge/id") tagged-map-value)
-   converge.opset.Op                 (t/write-handler (constantly "converge/op") tagged-map-value)
-   converge.patch.Patch              (t/write-handler (constantly "converge/patch") tagged-map-value)
-   converge.interpret.Element        (t/write-handler (constantly "converge/element") tagged-map-value)
-   converge.interpret.Interpretation (t/write-handler (constantly "converge/interpretation") tagged-map-value)
-   converge.ref.ConvergentState      (t/write-handler (constantly "converge/state") serialize/write-state)
-   converge.ref.ConvergentRef        (t/write-handler (constantly "converge/ref") serialize/write-ref)
-   clojure.data.avl.AVLMap           (t/write-handler (constantly "avl/map") serialize/write-avl-map)})
+  {converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
+   converge.opset.ops.Op                   (t/write-handler (constantly "opset/op") tagged-map-value)
+   converge.opset.patch.Patch              (t/write-handler (constantly "opset/patch") tagged-map-value)
+   converge.opset.interpret.Element        (t/write-handler (constantly "opset/element") tagged-map-value)
+   converge.opset.interpret.Interpretation (t/write-handler (constantly "opset/interpretation") tagged-map-value)
+   converge.opset.ref.OpsetConvergentState (t/write-handler (constantly "opset/state") serialize/write-state)
+   converge.opset.ref.OpsetConvergentRef   (t/write-handler (constantly "opset/ref") serialize/write-ref)
+   clojure.data.avl.AVLMap                 (t/write-handler (constantly "avl/map") serialize/write-avl-map)})
 
 #?(:clj
    (def write-handlers

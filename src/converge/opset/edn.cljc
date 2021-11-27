@@ -11,12 +11,12 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
-(ns converge.edn
+(ns converge.opset.edn
   "API for interpreting an OpSet as EDN data."
   (:require [clojure.zip :as zip]
-            [converge.opset :as opset]
-            [converge.interpret :as interpret]
-            [converge.util :as util]))
+            [converge.core :as core]
+            [converge.util :as util]
+            [converge.opset.interpret :as interpret]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
@@ -49,7 +49,7 @@
 
 (defn interpretation-zip
   ([interpretation]
-   (interpretation-zip interpretation opset/root-id))
+   (interpretation-zip interpretation core/root-id))
   ([interpretation root-id]
    (let [elements   (:elements interpretation)
          list-links (:list-links interpretation)
@@ -61,7 +61,7 @@
         (for [{:keys [entity attribute value]}
               (:children node)]
           (let [v        (get elements value)
-                a        (if (opset/id? attribute)
+                a        (if (core/id? attribute)
                            (insertion-index by-attr list-links entity attribute)
                            attribute)
                 children (get by-entity value)]
@@ -103,7 +103,7 @@
 
 (defn assemble-values
   [interpretation]
-  (loop [loc    (interpretation-zip interpretation opset/root-id)
+  (loop [loc    (interpretation-zip interpretation core/root-id)
          return nil]
     (if (zip/end? loc)
       return

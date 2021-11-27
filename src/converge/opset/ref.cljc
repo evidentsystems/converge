@@ -11,51 +11,17 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
-(ns converge.ref
-  "Datatypes and functions implementing a serializable, Atom-like
-  convergent reference type."
-  (:require [converge.edn :as edn]
-            [converge.interpret :as interpret]
-            [converge.patch :as patch])
+(ns converge.opset.ref
+  (:require [converge.core :as core]
+            [converge.util :as util]
+            [converge.opset.ops :as ops]
+            [converge.opset.edn :as edn]
+            [converge.opset.interpret :as interpret]
+            [converge.opset.patch :as patch])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
-
-;;;; API
-
-(defrecord ConvergentState [opset interpretation value ^boolean dirty?])
-
-;; TODO trim down to bare semantics, split other ops into different protocols
-(defprotocol IConvergent
-  (-actor [this]
-    "Returns the current actor of this convergent")
-  (-state [this]
-    "Returns the current state of this convergent")
-  (-set-actor! [this actor]
-    "Sets this ref's actor to the given value")
-  (-opset [this]
-    "Returns this convergent's opset")
-  (-make-patch [this new-value]
-    "Returns a Patch representing the changes necessary to reset from
-    the current value to the provided value.")
-  (-state-from-patch [this patch]
-    "Returns a new ConvergentState that is the result of applying the
-    given patch to the current state.")
-  (-apply-state! [this state]
-    "Sets this ref's state to the given value and notifies watches. USE WITH CAUTION!")
-  (-peek-patches [this]
-    "Returns the next patch from this ref's queue of applied patches.")
-  (-pop-patches! [this]
-    "Mutates this ref's queue of applied patches as with pop, and
-    returns the queue's new value."))
-
-;;;; Implementation
-
-(defn notify-w
-  [this watches old-value new-value]
-  (doseq [[k w] watches]
-    (when w (w k this old-value new-value))))
 
 ;; TODO: is it necessary to maintain consistent top-level type?
 (defn valid?
@@ -68,28 +34,22 @@
     (and (type-pred new-value)
          (if (ifn? validator) (validator new-value) true))))
 
-(defn- validate-reset
-  [old-value new-value new-state patch]
-  (when-not (= new-value (:value new-state))
-    (throw (ex-info "Unsupported reference state" {:old-value old-value
-                                                   :new-value new-value
-                                                   :patch     patch
-                                                   :new-state new-state}))))
+(defrecord OpsetConvergentState [opset interpretation value ^boolean dirty?])
 
-(deftype ConvergentRef #?(:clj  [^:volatile-mutable actor
-                                 ^:volatile-mutable state
-                                 ^:volatile-mutable patches
-                                 ^:volatile-mutable meta
-                                 ^:volatile-mutable validator
-                                 ^:volatile-mutable watches]
-                          :cljs [^:mutable actor
-                                 ^:mutable state
-                                 ^:mutable patches
-                                 meta
-                                 validator
-                                 ^:mutable watches])
+(deftype OpsetConvergentRef #?(:clj  [^:volatile-mutable actor
+                                      ^:volatile-mutable state
+                                      ^:volatile-mutable patches
+                                      ^:volatile-mutable meta
+                                      ^:volatile-mutable validator
+                                      ^:volatile-mutable watches]
+                               :cljs [^:mutable actor
+                                      ^:mutable state
+                                      ^:mutable patches
+                                      meta
+                                      validator
+                                      ^:mutable watches])
 
-  IConvergent
+  core/ConvergentRef
   (-actor [_] actor)
   (-state [_] state)
   (-set-actor! [_ new-actor] (set! actor new-actor))
@@ -97,7 +57,7 @@
   (-apply-state! [this new-state]
     (let [old-value (:value state)]
       (set! state new-state)
-      (notify-w this watches old-value (:value new-state))))
+      (core/notify-w this watches old-value (:value new-state))))
   (-make-patch
     [_ new-value]
     (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
@@ -118,10 +78,10 @@
             (if interpretation
               (interpret/interpret interpretation ops)
               (interpret/interpret new-opset))]
-        (->ConvergentState new-opset
-                           new-interpretation
-                           (edn/edn new-interpretation)
-                           false))
+        (->OpsetConvergentState new-opset
+                                new-interpretation
+                                (edn/edn new-interpretation)
+                                false))
       state))
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
@@ -130,11 +90,11 @@
       [IAtom
        (reset
         [this new-value]
-        (let [patch     (-make-patch this new-value)
-              new-state (-state-from-patch this patch)]
-          (validate-reset (:value state) new-value new-state patch)
+        (let [patch     (core/-make-patch this new-value)
+              new-state (core/-state-from-patch this patch)]
+          (core/validate-reset (:value state) new-value new-state patch)
           (when patch (set! patches (conj patches patch)))
-          (-apply-state! this new-state)
+          (core/-apply-state! this new-state)
           (:value new-state)))
        (swap [this f]          (.reset this (f (:value state))))
        (swap [this f a]        (.reset this (f (:value state) a)))
@@ -214,11 +174,11 @@
        IReset
        (-reset!
         [this new-value]
-        (let [patch     (-make-patch this new-value)
-              new-state (-state-from-patch this patch)]
-          (validate-reset (:value state) new-value new-state patch)
+        (let [patch     (core/-make-patch this new-value)
+              new-state (core/-state-from-patch this patch)]
+          (core/validate-reset (:value state) new-value new-state patch)
           (when patch (set! patches (conj patches patch)))
-          (-apply-state! this new-state)
+          (core/-apply-state! this new-state)
           (:value new-state)))
 
        ISwap
@@ -228,21 +188,21 @@
        (-swap! [this f a b args] (-reset! this (apply f (:value state) a b args)))
 
        IWithMeta
-       (-with-meta [_ new-meta] (ConvergentRef. actor state patches new-meta validator watches))
+       (-with-meta [_ new-meta] (OpsetConvergentRef. actor state patches new-meta validator watches))
 
        IMeta
        (-meta [_] meta)
 
        IPrintWithWriter
        (-pr-writer [this writer opts]
-                   (-write writer "#object[converge.ref.ConvergentRef ")
+                   (-write writer "#object[converge.ref.OpsetConvergentRef ")
                    (pr-writer {:val (-deref this)} writer opts)
                    (-write writer "]"))
 
        IWatchable
        (-notify-watches
         [this old-value new-value]
-        (notify-w this watches old-value new-value))
+        (core/notify-w this watches old-value new-value))
        (-add-watch
         [this k callback]
         (set! watches (assoc watches k callback))
@@ -254,3 +214,64 @@
 
        IHash
        (-hash [this] (goog/getUid this))]))
+
+(defmethod core/make-ref :opset
+  [{:keys [initial-value actor meta validator]}]
+  (cond
+    (map? initial-value)
+    (->OpsetConvergentRef actor
+                          (->OpsetConvergentState
+                           (core/opset core/root-id (ops/make-map))
+                           nil
+                           nil
+                           true)
+                          (util/queue)
+                          meta
+                          validator
+                          nil)
+
+    (vector? initial-value)
+    (->OpsetConvergentRef actor
+                         (->OpsetConvergentState
+                          (core/opset core/root-id (ops/make-list))
+                          nil
+                          nil
+                          true)
+                         (util/queue)
+                         meta
+                         validator
+                         nil)
+
+    :else
+    (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
+                    {:initial-value initial-value}))))
+
+(defmethod core/make-ref-from-ops :opset
+  [{:keys [ops actor meta validator]}]
+  (->OpsetConvergentRef actor
+                       (->OpsetConvergentState ops nil nil true)
+                       (util/queue)
+                       meta
+                       validator
+                       nil))
+
+(defmethod core/make-snapshot-ref :opset
+  [{:keys [actor meta validator]
+    {o :opset
+     i* :interpretation}
+    :state}]
+  (let [id (core/latest-id o)
+
+        i  (or i* (interpret/interpret o))]
+    (->OpsetConvergentRef
+     actor
+     (->OpsetConvergentState (core/opset
+                              (core/successor-id id actor)
+                              (ops/snapshot id i))
+                             i
+                             nil
+                             true)
+     (util/queue)
+     meta
+     validator
+     nil)))

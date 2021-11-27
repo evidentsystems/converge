@@ -19,7 +19,7 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
-            [converge.patch :as patch]))
+            [converge.opset.patch :as patch]))
 
 (def a {:empty-m {}
         :empty-l []
