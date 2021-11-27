@@ -115,9 +115,9 @@
                 nil
 
                 (convergent? other)
-                (patch/->Patch (opset other))
+                (core/->Patch (opset other))
 
-                (patch/patch? other)
+                (core/patch? other)
                 other
 
                 :else
@@ -138,7 +138,7 @@
           (convergent? other)
           (opset other)
 
-          (patch/patch? other)
+          (core/patch? other)
           (:ops other)
 
           :else

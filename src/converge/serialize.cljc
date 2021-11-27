@@ -17,8 +17,6 @@
             [converge.core :as core]
             [converge.util :as util]
             [converge.opset.interpret :as interpret]
-            [converge.opset.ops :as ops]
-            [converge.opset.patch :as patch]
             [converge.opset.ref :as ref]))
 
 #?(:clj  (set! *warn-on-reflection* true)
@@ -28,10 +26,10 @@
   core/map->Id)
 
 (def read-operation
-  ops/map->Op)
+  core/map->Op)
 
 (def read-patch
-  patch/map->Patch)
+  core/map->Patch)
 
 (def read-element
   interpret/map->Element)

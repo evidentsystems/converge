@@ -29,8 +29,8 @@
 
 (def read-handlers*
   {"converge/id"          (t/read-handler serialize/read-id)
-   "opset/op"             (t/read-handler serialize/read-operation)
-   "opset/patch"          (t/read-handler serialize/read-patch)
+   "converge/op"          (t/read-handler serialize/read-operation)
+   "converge/patch"       (t/read-handler serialize/read-patch)
    "opset/element"        (t/read-handler serialize/read-element)
    "opset/interpretation" (t/read-handler serialize/read-interpretation)
    "opset/state"          (t/read-handler serialize/read-opset-convergent-state)
@@ -48,8 +48,8 @@
 (def #?(:clj  write-handlers*
         :cljs write-handlers)
   {converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
-   converge.opset.ops.Op                   (t/write-handler (constantly "opset/op") tagged-map-value)
-   converge.opset.patch.Patch              (t/write-handler (constantly "opset/patch") tagged-map-value)
+   converge.core.Op                        (t/write-handler (constantly "converge/op") tagged-map-value)
+   converge.core.Patch                     (t/write-handler (constantly "converge/patch") tagged-map-value)
    converge.opset.interpret.Element        (t/write-handler (constantly "opset/element") tagged-map-value)
    converge.opset.interpret.Interpretation (t/write-handler (constantly "opset/interpretation") tagged-map-value)
    converge.opset.ref.OpsetConvergentState (t/write-handler (constantly "opset/state") serialize/write-state)

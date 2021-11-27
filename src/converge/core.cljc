@@ -136,3 +136,22 @@
    (avl/sorted-map))
   ([& id-ops]
    (apply avl/sorted-map id-ops)))
+
+(defrecord Op [^long action data])
+
+(defn op
+  ([action]
+   (op action nil))
+  ([action data]
+   (assert (integer? action) "The `action` of an Op must be an integer")
+   (assert (or (nil? data) (map? data)) "The `data` of an Op, if provided, must be a map")
+   (->Op action data)))
+
+;;;; Patch
+
+;; TODO: patch caches?
+(defrecord Patch [ops])
+
+(defn patch?
+  [o]
+  (instance? Patch o))

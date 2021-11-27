@@ -64,7 +64,7 @@
     (let [{:keys [value opset interpretation]} state]
       (patch/make-patch opset interpretation actor value new-value)))
   (-state-from-patch [_ patch]
-    (if (patch/patch? patch)
+    (if (core/patch? patch)
       (let [{:keys [ops]}
             patch
 

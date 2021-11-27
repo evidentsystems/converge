@@ -238,13 +238,6 @@
                 actor
                 id))
 
-;; TODO: patch caches?
-(defrecord Patch [ops])
-
-(defn patch?
-  [o]
-  (instance? Patch o))
-
 (defn make-patch
   [opset interpretation actor old-value new-value]
   (let [interp (or interpretation (interpret/interpret opset))
@@ -264,4 +257,4 @@
                           :id    (core/next-id opset actor)
                           :ops   (avl/sorted-map)})
                  :ops)]
-    (when (seq ops) (->Patch ops))))
+    (when (seq ops) (core/->Patch ops))))
