@@ -96,6 +96,14 @@
 
 ;;;; Edit to Ops
 
+(defn get-id
+  [o]
+  (some-> o meta :converge/id))
+
+(defn get-insertion-id
+  [o n]
+  (some-> o meta :converge/insertions (util/safe-get n)))
+
 (defmulti -edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
   (fn [edit _old-value entity _actor _id]
@@ -111,7 +119,7 @@
 
 (defmethod -edit-to-ops [:+ :map]
   [[path _ value] _old entity actor id]
-  (let [entity-id (util/get-id entity)
+  (let [entity-id (get-id entity)
         value-id  id
         assign-id (opset/successor-id value-id)
         value-ops (value-to-ops value actor value-id (opset/successor-id assign-id))]
@@ -122,12 +130,12 @@
 
 (defn add-to-sequence
   [path value entity actor id]
-  (let [entity-id (util/get-id entity)
+  (let [entity-id (get-id entity)
         insert-id id
         value-id  (opset/successor-id insert-id)
         assign-id (opset/successor-id value-id)
         value-ops (value-to-ops value actor value-id (opset/successor-id assign-id))
-        after-id  (or (some->> path last dec (util/get-insertion-id entity))
+        after-id  (or (some->> path last dec (get-insertion-id entity))
                       entity-id)]
     (apply vector
            [insert-id (opset/insert after-id)]
@@ -145,11 +153,11 @@
 
 (defmethod -edit-to-ops [:- :map]
   [[path] _old entity _actor id]
-  [[id (opset/remove (util/get-id entity) (last path))]])
+  [[id (opset/remove (get-id entity) (last path))]])
 
 (defn remove-from-sequence
   [path entity id]
-  [[id (opset/remove (util/get-id entity) (util/get-insertion-id entity (last path)))]])
+  [[id (opset/remove (get-id entity) (get-insertion-id entity (last path)))]])
 
 (defmethod -edit-to-ops [:- :vec]
   [[path] _old entity _actor id]
@@ -161,7 +169,7 @@
 
 (defmethod -edit-to-ops [:r :map]
   [[path _ value] old entity actor id]
-  (let [entity-id (util/get-id entity)]
+  (let [entity-id (get-id entity)]
     (cond
       (empty? old)
       (value-to-ops value actor opset/root-id id)
@@ -188,7 +196,7 @@
 
 (defn replace-in-sequence
   [path value old entity actor id]
-  (let [entity-id (util/get-id entity)]
+  (let [entity-id (get-id entity)]
     (cond
       (empty? old)
       (value-to-ops value actor opset/root-id id)
@@ -203,11 +211,11 @@
                {:id  id
                 :ops []}
                (for [i (range (count old))]
-                 (util/get-insertion-id old i))))
+                 (get-insertion-id old i))))
 
       :else
       (let [value-id  id
-            insert-id (util/get-insertion-id entity (last path))
+            insert-id (get-insertion-id entity (last path))
             assign-id (opset/successor-id value-id)
             value-ops (value-to-ops value actor value-id (opset/successor-id assign-id))]
         (apply vector

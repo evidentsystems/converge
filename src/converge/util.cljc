@@ -47,12 +47,6 @@
      :else
      (throw (ex-info "cannot make UUID from object" {:object uuid-str})))))
 
-(defn now
-  []
-  (inst-ms
-   #?(:clj  (java.util.Date.)
-      :cljs (js/Date.))))
-
 ;; HT: https://github.com/juji-io/editscript/blob/ddb13130d16ae920d1ead8ae77b23c24a202e92e/src/editscript/patch.cljc#L18
 (defn safe-get
   ([x p]
@@ -79,14 +73,6 @@
            not-found
            (recur sentinel m (next ks))))
        m))))
-
-(defn get-id
-  [o]
-  (some-> o meta :converge/id))
-
-(defn get-insertion-id
-  [o n]
-  (some-> o meta :converge/insertions (safe-get n)))
 
 (defn queue
   [& elems]
