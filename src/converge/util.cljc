@@ -47,12 +47,14 @@
      :else
      (throw (ex-info "cannot make UUID from object" {:object uuid-str})))))
 
+(def get-type edit/get-type)
+
 ;; HT: https://github.com/juji-io/editscript/blob/ddb13130d16ae920d1ead8ae77b23c24a202e92e/src/editscript/patch.cljc#L18
 (defn safe-get
   ([x p]
    (safe-get x p nil))
   ([x p not-found]
-   (case (edit/get-type x)
+   (case (get-type x)
      (:map :vec :set) (get x p not-found)
      :lst             (nth x p not-found))))
 

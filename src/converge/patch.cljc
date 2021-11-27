@@ -14,7 +14,6 @@
 (ns converge.patch
   (:require [clojure.data.avl :as avl]
             [editscript.core :as e]
-            [editscript.edit :as edit]
             [converge.edn :as edn]
             [converge.interpret :as interpret]
             [converge.opset :as opset]
@@ -108,7 +107,7 @@
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
   (fn [edit _old-value entity _actor _id]
     [(nth edit 1)
-     (edit/get-type entity)]))
+     (util/get-type entity)]))
 
 (defmethod -edit-to-ops :default
   [edit _old entity _actor _id]
