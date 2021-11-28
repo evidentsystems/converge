@@ -128,16 +128,16 @@
 
 (deftest merging
   (let [c (convergent/ref a)
-        d (convergent/ref-from-opset (convergent/opset c))]
+        d (convergent/ref-from-ops (convergent/log c))]
     (swap! d assoc :b :another-key)
     (testing "merging nil"
-      (is (= a @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+      (is (= a @(convergent/merge! (convergent/ref-from-ops (convergent/log c))
                                    nil))))
     (testing "merging another convergent ref"
-      (is (= @d @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+      (is (= @d @(convergent/merge! (convergent/ref-from-ops (convergent/log c))
                                     d))))
     (testing "merging a patch"
-      (is (= @d @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+      (is (= @d @(convergent/merge! (convergent/ref-from-ops (convergent/log c))
                                     (convergent/peek-patches d)))))
     ;; TODO: merging a snapshot ref, with subsequent operations
     ))
@@ -147,7 +147,7 @@
     (testing "snapshotting another convergent ref"
       (let [cr (convergent/snapshot-ref c)]
         (is (= @c @cr))
-        (is (= 1 (count (convergent/opset cr))))))
+        (is (= 1 (count (convergent/log cr))))))
     (testing "adding some values to a snapshot ref"
       (let [cr (convergent/snapshot-ref c)]
         (swap! cr
@@ -158,11 +158,11 @@
                       :b :another-key
                       :a :foo)
                @cr))
-        (is (< 1 (count (convergent/opset cr))))))))
+        (is (< 1 (count (convergent/log cr))))))))
 
 (deftest squashing
   (let [c      (convergent/ref a)
-        d      (convergent/ref-from-opset (convergent/opset c))
+        d      (convergent/ref-from-ops (convergent/log c))
         _      (swap! d assoc
                       :b :another-key
                       :a :foo)
@@ -170,24 +170,24 @@
         final  (swap! d dissoc :a)
         patch2 (convergent/pop-patches! d)]
     (testing "squashing another convergent ref"
-      (let [cr (convergent/ref-from-opset (convergent/opset c))]
+      (let [cr (convergent/ref-from-ops (convergent/log c))]
         (is (= @(convergent/squash! cr d) final))
-        (is (> (count (convergent/opset d))
-               (count (convergent/opset cr))))))
+        (is (> (count (convergent/log d))
+               (count (convergent/log cr))))))
     (testing "squashing a patch"
-      (let [cr (convergent/ref-from-opset (convergent/opset c))]
+      (let [cr (convergent/ref-from-ops (convergent/log c))]
         (is (= final @(convergent/squash! cr (core/->Patch (merge (:ops patch1) (:ops patch2))))))
-        (is (> (count (convergent/opset d))
-               (count (convergent/opset cr))))))
+        (is (> (count (convergent/log d))
+               (count (convergent/log cr))))))
     (testing "squashing a snapshot ref"
-      (let [initial-count (count (convergent/opset c))
+      (let [initial-count (count (convergent/log c))
             cr            (convergent/snapshot-ref c)]
         (swap! cr assoc
                :b :another-key
                :a :foo)
         (swap! cr dissoc :a)
         (is (= @(convergent/squash! c cr) final))
-        (is (> (count (convergent/opset c))
+        (is (> (count (convergent/log c))
                initial-count))))))
 
 (defspec generated-map 100
@@ -257,8 +257,8 @@
 
   (def r (convergent/ref {}))
   @r
-  (count (convergent/opset r))
-  (nth (convergent/opset r) 0)
+  (count (convergent/log r))
+  (nth (convergent/log r) 0)
 
   (criterium/bench
    (do

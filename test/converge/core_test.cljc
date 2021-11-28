@@ -9,36 +9,36 @@
         b (util/uuid)
         c (util/uuid)]
     (testing "latest-id with absolute max counter"
-      (let [opset (core/opset
-                   (core/make-id a 0) :foo
-                   (core/make-id b 0) :foo
-                   (core/make-id b 1) :foo
-                   (core/make-id b 2) :foo
-                   (core/make-id c 0) :foo
-                   (core/make-id c 1) :foo)]
-        (is (= (core/make-id b 2) (core/latest-id opset)))))
+      (let [ops (core/log
+                 (core/make-id a 0) :foo
+                 (core/make-id b 0) :foo
+                 (core/make-id b 1) :foo
+                 (core/make-id b 2) :foo
+                 (core/make-id c 0) :foo
+                 (core/make-id c 1) :foo)]
+        (is (= (core/make-id b 2) (core/latest-id ops)))))
     (testing "latest-id with tie for max counter"
-      (let [opset (core/opset
-                   (core/make-id a 0) :foo
-                   (core/make-id b 0) :foo
-                   (core/make-id b 1) :foo
-                   (core/make-id b 2) :foo
-                   (core/make-id c 0) :foo
-                   (core/make-id c 1) :foo
-                   (core/make-id c 2) :foo)]
+      (let [ops (core/log
+                 (core/make-id a 0) :foo
+                 (core/make-id b 0) :foo
+                 (core/make-id b 1) :foo
+                 (core/make-id b 2) :foo
+                 (core/make-id c 0) :foo
+                 (core/make-id c 1) :foo
+                 (core/make-id c 2) :foo)]
         (is (= (last (sort
                       [(core/make-id c 2)
                        (core/make-id b 2)]))
-               (core/latest-id opset)))))
-    (testing "next-id on empty opset"
-      (let [opset (core/opset)]
-        (is (= core/root-id (core/next-id opset a)))))
-    (testing "next-id on non-empty opset"
-      (let [opset (core/opset
-                   (core/make-id a 0) :foo
-                   (core/make-id b 0) :foo
-                   (core/make-id b 1) :foo
-                   (core/make-id b 2) :foo
-                   (core/make-id c 0) :foo
-                   (core/make-id c 1) :foo)]
-        (is (= (core/make-id c 3) (core/next-id opset c)))))))
+               (core/latest-id ops)))))
+    (testing "next-id on empty log"
+      (let [ops (core/log)]
+        (is (= core/root-id (core/next-id ops a)))))
+    (testing "next-id on non-empty log"
+      (let [ops (core/log
+                 (core/make-id a 0) :foo
+                 (core/make-id b 0) :foo
+                 (core/make-id b 1) :foo
+                 (core/make-id b 2) :foo
+                 (core/make-id c 0) :foo
+                 (core/make-id c 1) :foo)]
+        (is (= (core/make-id c 3) (core/next-id ops c)))))))

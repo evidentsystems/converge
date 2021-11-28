@@ -64,5 +64,5 @@
   (core/op REMOVE {:entity entity :attribute attribute}))
 
 (defn snapshot
-  [opset-hash interpretation]
-  (core/op SNAPSHOT {:opset-hash opset-hash :interpretation interpretation}))
+  [log-hash interpretation]
+  (core/op SNAPSHOT {:log-hash log-hash :interpretation interpretation}))

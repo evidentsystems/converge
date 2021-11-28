@@ -31,8 +31,8 @@
     "Returns the current state (an instance of ConvergentState) of this convergent ref")
   (-set-actor! [this actor]
     "Sets this ref's actor to the given value")
-  (-opset [this]
-    "Returns this convergent ref's opset")
+  (-log [this]
+    "Returns this convergent ref's log")
   (-make-patch [this new-value]
     "Returns a Patch representing the changes necessary to reset from
     the current value to the provided value.")
@@ -121,19 +121,19 @@
    (make-id actor (inc counter))))
 
 (defn latest-id
-  [opset]
-  (some-> opset util/last-indexed key))
+  [log]
+  (some-> log util/last-indexed key))
 
 (defn next-id
-  [opset actor]
-  (if-let [latest (latest-id opset)]
+  [log actor]
+  (if-let [latest (latest-id log)]
     (successor-id latest actor)
     root-id))
 
-;;;; OpSets
+;;;; Operation Log
 
-(defn opset
-  "An opset is a sorted map of Id -> Op"
+(defn log
+  "An opseration log is a sorted map of Id -> Op"
   ([]
    (avl/sorted-map))
   ([& id-ops]
@@ -160,4 +160,4 @@
 
 ;;;; State
 
-(defrecord ConvergentState [opset cache value ^boolean dirty?])
+(defrecord ConvergentState [log cache value ^boolean dirty?])

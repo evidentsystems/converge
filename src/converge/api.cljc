@@ -57,8 +57,8 @@
     (reset! r initial-value)
     r))
 
-(defn ref-from-opset
-  "Creates and returns a ConvergentRef from the given `opset` and zero
+(defn ref-from-ops
+  "Creates and returns a ConvergentRef from the given `ops` and zero
   or more options (in any order):
 
   :actor a UUID
@@ -76,15 +76,15 @@
   change. If the new state is unacceptable, the validate-fn should
   return false or throw an Error.  If either of these error conditions
   occur, then the value of the atom will not change."
-  [opset & {:keys [actor backend] :as options}]
+  [ops & {:keys [actor backend] :as options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
-  ;; TODO: assertions ensuring valid opset
+  ;; TODO: assertions ensuring valid operation ops
   (let [r (core/make-ref-from-ops
            (assoc options
                   :actor (or actor (util/uuid))
                   :backend (or backend default-backend)
-                  :ops (into (core/opset) opset)))]
+                  :ops (into (core/log) ops)))]
     @r
     r))
 
@@ -101,9 +101,9 @@
   (core/-set-actor! cr actor)
   cr)
 
-(defn opset
+(defn log
   [cr]
-  (core/-opset cr))
+  (core/-log cr))
 
 ;; TODO: Docstring, noting that source ops must come from ref with same backend
 (defn merge!
@@ -113,7 +113,7 @@
                 nil
 
                 (= (type cr) (type other))
-                (core/->Patch (opset other))
+                (core/->Patch (log other))
 
                 (core/patch? other)
                 other
@@ -134,7 +134,7 @@
           nil
 
           (convergent? other)
-          (opset other)
+          (log other)
 
           (core/patch? other)
           (:ops other)
@@ -144,7 +144,7 @@
                           {:ref    cr
                            :object other})))]
     (when-not (nil? additional-ops)
-      (reset! cr (core/-value-from-ops cr (merge (opset cr) additional-ops))))
+      (reset! cr (core/-value-from-ops cr (merge (log cr) additional-ops))))
     cr))
 
 (defn peek-patches
@@ -159,7 +159,7 @@
 
 (defn snapshot-ref
   "Creates a new reference which is a snapshot of the given reference,
-  having a single `snapshot` operation in its opset."
+  having a single `snapshot` operation in its log."
     [cr & {:keys [actor backend] :as options}]
     (let [r  (core/make-snapshot-ref
               (assoc options

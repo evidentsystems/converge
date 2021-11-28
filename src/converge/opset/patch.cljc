@@ -239,8 +239,8 @@
                 id))
 
 (defn make-patch
-  [opset interpretation actor old-value new-value]
-  (let [interp (or interpretation (interpret/interpret opset))
+  [log interpretation actor old-value new-value]
+  (let [interp (or interpretation (interpret/interpret log))
 
         ops
         (some->> new-value
@@ -254,7 +254,7 @@
                                     :id     (core/next-id new-ops actor)
                                     :ops    new-ops)))
                          {:value old-value
-                          :id    (core/next-id opset actor)
+                          :id    (core/next-id log actor)
                           :ops   (avl/sorted-map)})
                  :ops)]
     (when (seq ops) (core/->Patch ops))))

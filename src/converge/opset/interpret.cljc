@@ -58,7 +58,7 @@
   [agg _id _op]
   agg)
 
-;; TODO: test opset hash prior to this id matches hash stored in this op
+;; TODO: test opset log hash prior to this id matches hash stored in this op
 (defmethod -interpret-op ops/SNAPSHOT
   [agg _id {{{:keys [elements list-links]} :interpretation} :data}]
   (assoc agg
@@ -125,8 +125,8 @@
   (update agg :elements assoc! id (-> op :data :value)))
 
 (defn interpret
-  ([opset]
-   (interpret (->Interpretation {} {}) opset))
+  ([opset-log]
+   (interpret (->Interpretation {} {}) opset-log))
   ([{:keys [elements list-links] :as _interpretation} ops]
    (let [{elements*   :elements
           list-links* :list-links}

@@ -25,5 +25,5 @@
   (core/op EDIT {:edits edits}))
 
 (defn snapshot
-  [opset-hash value]
-  (core/op SNAPSHOT {:opset-hash opset-hash :value value}))
+  [log-hash value]
+  (core/op SNAPSHOT {:log-hash log-hash :value value}))

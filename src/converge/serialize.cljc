@@ -45,7 +45,7 @@
 (defn read-state
   [m]
   (core/map->ConvergentState
-   {:opset  (:opset m)
+   {:log    (:log m)
     :dirty? true}))
 
 (defn read-opset-convergent-ref
@@ -74,7 +74,7 @@
 
 (defn write-state
   [state]
-  {:opset (:opset state)})
+  {:log (:log state)})
 
 (defn write-ref
   [r]

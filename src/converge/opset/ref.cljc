@@ -53,7 +53,7 @@
   (-actor [_] actor)
   (-state [_] state)
   (-set-actor! [_ new-actor] (set! actor new-actor))
-  (-opset [_] (:opset state))
+  (-log [_] (:log state))
   (-apply-state! [this new-state]
     (let [old-value (:value state)]
       (set! state new-state)
@@ -61,27 +61,27 @@
   (-make-patch
     [_ new-value]
     (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-    (let [{:keys [value opset]
+    (let [{:keys [value log]
            interpretation :cache}
           state]
-      (patch/make-patch opset interpretation actor value new-value)))
+      (patch/make-patch log interpretation actor value new-value)))
   (-state-from-patch [_ patch]
     (if (core/patch? patch)
       (let [{:keys [ops]}
             patch
 
-            {:keys [opset]
+            {:keys [log]
              interpretation :cache}
             state
 
-            new-opset
-            (into opset ops)
+            new-log
+            (into log ops)
 
             new-interpretation
             (if interpretation
               (interpret/interpret interpretation ops)
-              (interpret/interpret new-opset))]
-        (core/->ConvergentState new-opset
+              (interpret/interpret new-log))]
+        (core/->ConvergentState new-log
                                 new-interpretation
                                 (edn/edn new-interpretation)
                                 false))
@@ -121,14 +121,14 @@
        IRef
        (deref
         [_]
-        (let [{:keys [opset value dirty?]
+        (let [{:keys [log value dirty?]
                interpretation :cache
                :as s}
               state]
           (if dirty?
             (let [new-interpretation
                   (or interpretation
-                      (interpret/interpret opset))
+                      (interpret/interpret log))
 
                   value
                   (edn/edn new-interpretation)]
@@ -160,14 +160,14 @@
        IDeref
        (-deref
         [_]
-        (let [{:keys [opset value dirty?]
+        (let [{:keys [log value dirty?]
                interpretation :cache
                :as s}
               state]
           (if dirty?
             (let [new-interpretation
                   (or interpretation
-                      (interpret/interpret opset))
+                      (interpret/interpret log))
 
                   value
                   (edn/edn new-interpretation)]
@@ -206,7 +206,7 @@
 
        IPrintWithWriter
        (-pr-writer [this writer opts]
-                   (-write writer "#object[converge.ref.OpsetConvergentRef ")
+                   (-write writer "#object[converge.opset.ref.OpsetConvergentRef ")
                    (pr-writer {:val (-deref this)} writer opts)
                    (-write writer "]"))
 
@@ -232,7 +232,7 @@
     (map? initial-value)
     (->OpsetConvergentRef actor
                           (core/->ConvergentState
-                           (core/opset core/root-id (ops/make-map))
+                           (core/log core/root-id (ops/make-map))
                            nil
                            nil
                            true)
@@ -244,7 +244,7 @@
     (vector? initial-value)
     (->OpsetConvergentRef actor
                           (core/->ConvergentState
-                           (core/opset core/root-id (ops/make-list))
+                           (core/log core/root-id (ops/make-list))
                            nil
                            nil
                            true)
@@ -268,18 +268,18 @@
 
 (defmethod core/make-snapshot-ref :opset
   [{:keys [actor meta validator]
-    {o  :opset
-     i* :cache}
+    {log             :log
+     interpretation* :cache}
     :state}]
-  (let [id (core/latest-id o)
+  (let [id (core/latest-id log)
 
-        i (or i* (interpret/interpret o))]
+        interpretation (or interpretation* (interpret/interpret log))]
     (->OpsetConvergentRef
      actor
-     (core/->ConvergentState (core/opset
+     (core/->ConvergentState (core/log
                               (core/successor-id id actor)
-                              (ops/snapshot (hash o) i))
-                             i
+                              (ops/snapshot (hash log) interpretation))
+                             interpretation
                              nil
                              true)
      (util/queue)

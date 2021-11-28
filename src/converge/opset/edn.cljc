@@ -12,7 +12,7 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 (ns converge.opset.edn
-  "API for interpreting an OpSet as EDN data."
+  "API for converting an OpSet interpretation as EDN data."
   (:require [clojure.zip :as zip]
             [converge.core :as core]
             [converge.util :as util]

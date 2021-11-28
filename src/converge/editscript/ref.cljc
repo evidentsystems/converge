@@ -28,7 +28,7 @@
     ops/EDIT
     (e/patch value (e/edits->script (:edits data)))
 
-    ;; TODO: ensure hash of opset prior to this op matches opset hash stored in the op
+    ;; TODO: ensure hash of operation log prior to this op matches log hash stored in the op
     ops/SNAPSHOT
     (:value data)
 
@@ -56,7 +56,7 @@
   (-actor [_] actor)
   (-state [_] state)
   (-set-actor! [_ new-actor] (set! actor new-actor))
-  (-opset [_] (:opset state))
+  (-log [_] (:log state))
   (-apply-state! [this new-state]
     (let [old-value (:value state)]
       (set! state new-state)
@@ -68,19 +68,19 @@
     (let [edits (e/get-edits (e/diff (:value state) new-value {:str-diff? true}))]
       (when (pos? (count edits))
         (core/->Patch (avl/sorted-map
-                       (core/next-id (:opset state) actor)
+                       (core/next-id (:log state) actor)
                        (ops/edit edits))))))
   (-state-from-patch [_ patch]
     (if (core/patch? patch)
       (let [{:keys [ops]}
             patch
 
-            new-opset
-            (into (:opset state) ops)]
-        (core/->ConvergentState new-opset
+            new-log
+            (into (:log state) ops)]
+        (core/->ConvergentState new-log
                                 nil
                                 (if (:dirty? state)
-                                  (value-from-ops new-opset)
+                                  (value-from-ops new-log)
                                   (reduce apply-patch (:value state) (vals ops)))
                                 false))
       state))
@@ -117,10 +117,10 @@
        ;; TODO: refactor this out, and only do these impls in one place
        (deref
         [_]
-        (let [{:keys [opset value dirty?] :as s}
+        (let [{:keys [log value dirty?] :as s}
               state]
           (if dirty?
-            (let [new-value (value-from-ops opset)]
+            (let [new-value (value-from-ops log)]
               (set! state
                     (assoc s
                            :value  new-value
@@ -150,10 +150,10 @@
        ;; TODO: refactor this out, and only do these impls in one place
        (-deref
         [_]
-        (let [{:keys [opset value dirty?] :as s}
+        (let [{:keys [log value dirty?] :as s}
               state]
           (if dirty?
-            (let [new-value (value-from-ops opset)]
+            (let [new-value (value-from-ops log)]
               (set! state
                     (assoc s
                            :value  new-value
@@ -181,14 +181,14 @@
        (-swap! [this f a b args] (-reset! this (apply f (:value state) a b args)))
 
        IWithMeta
-       (-with-meta [_ new-meta] (OpsetConvergentRef. actor state patches new-meta validator watches))
+       (-with-meta [_ new-meta] (EditscriptConvergentRef. actor state patches new-meta validator watches))
 
        IMeta
        (-meta [_] meta)
 
        IPrintWithWriter
        (-pr-writer [this writer opts]
-                   (-write writer "#object[converge.ref.OpsetConvergentRef ")
+                   (-write writer "#object[converge.editscript.ref.EditscriptConvergentRef ")
                    (pr-writer {:val (-deref this)} writer opts)
                    (-write writer "]"))
 
@@ -212,7 +212,7 @@
   [{:keys [initial-value actor meta validator]}]
   (->EditscriptConvergentRef actor
                              (core/->ConvergentState
-                              (core/opset core/root-id (ops/snapshot (hash (core/opset)) initial-value))
+                              (core/log core/root-id (ops/snapshot (hash (core/log)) initial-value))
                               nil
                               nil
                               true)
@@ -232,15 +232,14 @@
 
 (defmethod core/make-snapshot-ref :editscript
   [{:keys [actor meta validator]
-    {o :opset
-     v :value}
+    {:keys [log value]}
     :state}]
-  (let [id (core/latest-id o)]
+  (let [id (core/latest-id log)]
     (->EditscriptConvergentRef
      actor
-     (core/->ConvergentState (core/opset
+     (core/->ConvergentState (core/log
                               (core/successor-id id actor)
-                              (ops/snapshot (hash o) v))
+                              (ops/snapshot (hash log) value))
                              nil
                              nil
                              true)
