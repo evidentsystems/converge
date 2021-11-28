@@ -32,11 +32,10 @@
    "converge/id"          (t/read-handler serialize/read-id)
    "converge/op"          (t/read-handler serialize/read-operation)
    "converge/patch"       (t/read-handler serialize/read-patch)
+   "converge/state"       (t/read-handler serialize/read-state)
    "opset/element"        (t/read-handler serialize/read-element)
    "opset/interpretation" (t/read-handler serialize/read-interpretation)
-   "opset/state"          (t/read-handler serialize/read-opset-convergent-state)
    "opset/ref"            (t/read-handler serialize/read-opset-convergent-ref)
-   "editscript/state"     (t/read-handler serialize/read-editscript-convergent-state)
    "editscript/ref"       (t/read-handler serialize/read-editscript-convergent-ref)})
 
 (def read-handlers
@@ -54,13 +53,11 @@
    converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
    converge.core.Op                        (t/write-handler (constantly "converge/op") tagged-map-value)
    converge.core.Patch                     (t/write-handler (constantly "converge/patch") tagged-map-value)
+   converge.core.ConvergentState           (t/write-handler (constantly "converge/state") serialize/write-state)
    converge.opset.interpret.Element        (t/write-handler (constantly "opset/element") tagged-map-value)
    converge.opset.interpret.Interpretation (t/write-handler (constantly "opset/interpretation") tagged-map-value)
-   converge.opset.ref.OpsetConvergentState (t/write-handler (constantly "opset/state") serialize/write-state)
    converge.opset.ref.OpsetConvergentRef   (t/write-handler (constantly "opset/ref") serialize/write-ref)
 
-   converge.editscript.ref.EditscriptConvergentState
-   (t/write-handler (constantly "editscript/state") serialize/write-state)
    converge.editscript.ref.EditscriptConvergentRef
    (t/write-handler (constantly "editscript/ref") serialize/write-ref)})
 

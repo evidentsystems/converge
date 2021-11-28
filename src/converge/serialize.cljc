@@ -42,9 +42,9 @@
 (def read-interpretation
   interpret/map->Interpretation)
 
-(defn read-opset-convergent-state
+(defn read-state
   [m]
-  (opset/map->OpsetConvergentState
+  (core/map->ConvergentState
    {:opset  (:opset m)
     :dirty? true}))
 
@@ -57,12 +57,6 @@
    meta
    nil
    nil))
-
-(defn read-editscript-convergent-state
-  [m]
-  (editscript/map->EditscriptConvergentState
-   {:opset  (:opset m)
-    :dirty? true}))
 
 (defn read-editscript-convergent-ref
   [{:keys [state meta]}]

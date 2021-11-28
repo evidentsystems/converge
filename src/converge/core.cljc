@@ -26,13 +26,13 @@
 ;; TODO trim down to bare semantics, split other ops into different protocols
 (defprotocol ConvergentRef
   (-actor [this]
-    "Returns the current actor of this convergent")
+    "Returns the current actor of this convergent ref")
   (-state [this]
-    "Returns the current state of this convergent")
+    "Returns the current state (an instance of ConvergentState) of this convergent ref")
   (-set-actor! [this actor]
     "Sets this ref's actor to the given value")
   (-opset [this]
-    "Returns this convergent's opset")
+    "Returns this convergent ref's opset")
   (-make-patch [this new-value]
     "Returns a Patch representing the changes necessary to reset from
     the current value to the provided value.")
@@ -45,7 +45,9 @@
     "Returns the next patch from this ref's queue of applied patches.")
   (-pop-patches! [this]
     "Mutates this ref's queue of applied patches as with pop, and
-    returns the queue's new value."))
+    returns the queue's new value.")
+  (-value-from-ops [this ops]
+    "Generates a value from the provided ops, not relying on any internal state."))
 
 (defmulti make-ref :backend :default ::default)
 
@@ -155,3 +157,7 @@
 (defn patch?
   [o]
   (instance? Patch o))
+
+;;;; State
+
+(defrecord ConvergentState [opset cache value ^boolean dirty?])

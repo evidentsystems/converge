@@ -20,18 +20,13 @@
   (:require [converge.core :as core]
             [converge.util :as util]
             converge.opset.ref
-            converge.editscript.ref
-            ;; TODO: remove the following once squash/merge supports multiple backends
-            [converge.opset.edn :as edn]
-            [converge.opset.interpret :as interpret]))
+            converge.editscript.ref))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
 (def default-backend :editscript)
 
-;; TODO: add note to docstring about our special top-level type
-;; validation logic
 (defn ref
   "Creates and returns a ConvergentRef with an initial value of `x` and
   zero or more options (in any order):
@@ -131,7 +126,6 @@
       (core/-apply-state! cr (core/-state-from-patch cr patch)))
     cr))
 
-;; TODO: support multiple backends
 (defn squash!
   [cr other]
   (let [additional-ops
@@ -146,11 +140,11 @@
           (:ops other)
 
           :else
-          (throw (ex-info "Cannot merge! this object into convergent reference"
+          (throw (ex-info "Cannot squash! this object into convergent reference"
                           {:ref    cr
                            :object other})))]
     (when-not (nil? additional-ops)
-      (reset! cr (edn/edn (interpret/interpret (merge (opset cr) additional-ops)))))
+      (reset! cr (core/-value-from-ops cr (merge (opset cr) additional-ops))))
     cr))
 
 (defn peek-patches

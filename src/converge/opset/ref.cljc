@@ -24,6 +24,8 @@
    :cljs (set! *warn-on-infer* true))
 
 ;; TODO: is it necessary to maintain consistent top-level type?
+;; TODO: add note to docstring about our special top-level type
+;; validation logic
 (defn valid?
   [validator old-value new-value]
   (let [type-pred (if (or (map? old-value)
@@ -33,8 +35,6 @@
                     sequential?)]
     (and (type-pred new-value)
          (if (ifn? validator) (validator new-value) true))))
-
-(defrecord OpsetConvergentState [opset interpretation value ^boolean dirty?])
 
 (deftype OpsetConvergentRef #?(:clj  [^:volatile-mutable actor
                                       ^:volatile-mutable state
@@ -61,14 +61,17 @@
   (-make-patch
     [_ new-value]
     (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-    (let [{:keys [value opset interpretation]} state]
+    (let [{:keys [value opset]
+           interpretation :cache}
+          state]
       (patch/make-patch opset interpretation actor value new-value)))
   (-state-from-patch [_ patch]
     (if (core/patch? patch)
       (let [{:keys [ops]}
             patch
 
-            {:keys [interpretation opset]}
+            {:keys [opset]
+             interpretation :cache}
             state
 
             new-opset
@@ -78,13 +81,17 @@
             (if interpretation
               (interpret/interpret interpretation ops)
               (interpret/interpret new-opset))]
-        (->OpsetConvergentState new-opset
+        (core/->ConvergentState new-opset
                                 new-interpretation
                                 (edn/edn new-interpretation)
                                 false))
       state))
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
+  (-value-from-ops [_ ops]
+    (-> ops
+        interpret/interpret
+        edn/edn))
 
   #?@(:clj
       [IAtom
@@ -114,7 +121,9 @@
        IRef
        (deref
         [_]
-        (let [{:keys [opset interpretation value dirty?] :as s}
+        (let [{:keys [opset value dirty?]
+               interpretation :cache
+               :as s}
               state]
           (if dirty?
             (let [new-interpretation
@@ -125,7 +134,7 @@
                   (edn/edn new-interpretation)]
               (set! state
                     (assoc s
-                           :interpretation new-interpretation
+                           :cache new-interpretation
                            :value  value
                            :dirty? false))
               value)
@@ -151,7 +160,9 @@
        IDeref
        (-deref
         [_]
-        (let [{:keys [opset interpretation value dirty?] :as s}
+        (let [{:keys [opset value dirty?]
+               interpretation :cache
+               :as s}
               state]
           (if dirty?
             (let [new-interpretation
@@ -162,7 +173,7 @@
                   (edn/edn new-interpretation)]
               (set! state
                     (assoc s
-                           :interpretation new-interpretation
+                           :cache new-interpretation
                            :value  value
                            :dirty? false))
               value)
@@ -220,7 +231,7 @@
   (cond
     (map? initial-value)
     (->OpsetConvergentRef actor
-                          (->OpsetConvergentState
+                          (core/->ConvergentState
                            (core/opset core/root-id (ops/make-map))
                            nil
                            nil
@@ -232,15 +243,15 @@
 
     (vector? initial-value)
     (->OpsetConvergentRef actor
-                         (->OpsetConvergentState
-                          (core/opset core/root-id (ops/make-list))
-                          nil
-                          nil
-                          true)
-                         (util/queue)
-                         meta
-                         validator
-                         nil)
+                          (core/->ConvergentState
+                           (core/opset core/root-id (ops/make-list))
+                           nil
+                           nil
+                           true)
+                          (util/queue)
+                          meta
+                          validator
+                          nil)
 
     :else
     (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
@@ -249,23 +260,23 @@
 (defmethod core/make-ref-from-ops :opset
   [{:keys [ops actor meta validator]}]
   (->OpsetConvergentRef actor
-                       (->OpsetConvergentState ops nil nil true)
-                       (util/queue)
-                       meta
-                       validator
-                       nil))
+                        (core/->ConvergentState ops nil nil true)
+                        (util/queue)
+                        meta
+                        validator
+                        nil))
 
 (defmethod core/make-snapshot-ref :opset
   [{:keys [actor meta validator]
-    {o :opset
-     i* :interpretation}
+    {o  :opset
+     i* :cache}
     :state}]
   (let [id (core/latest-id o)
 
-        i  (or i* (interpret/interpret o))]
+        i (or i* (interpret/interpret o))]
     (->OpsetConvergentRef
      actor
-     (->OpsetConvergentState (core/opset
+     (core/->ConvergentState (core/opset
                               (core/successor-id id actor)
                               (ops/snapshot id i))
                              i

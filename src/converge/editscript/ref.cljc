@@ -38,8 +38,6 @@
   [opset]
   (reduce apply-patch nil (vals opset)))
 
-(defrecord EditscriptConvergentState [opset value ^boolean dirty?])
-
 (deftype EditscriptConvergentRef #?(:clj  [^:volatile-mutable actor
                                            ^:volatile-mutable state
                                            ^:volatile-mutable patches
@@ -66,7 +64,7 @@
     [_ new-value]
     (when (ifn? validator)
       (assert (validator new-value) "Validator rejected reference state"))
-    (let [edits (e/get-edits (e/diff (:value state) new-value))]
+    (let [edits (e/get-edits (e/diff (:value state) new-value {:str-diff? true}))]
       (when (pos? (count edits))
         (core/->Patch (avl/sorted-map
                        (core/next-id (:opset state) actor)
@@ -78,14 +76,17 @@
 
             new-opset
             (into (:opset state) ops)]
-        (->EditscriptConvergentState new-opset
-                                     (if (:dirty? state)
-                                       (value-from-opset new-opset)
-                                       (reduce apply-patch (:value state) (vals ops)))
-                                     false))
+        (core/->ConvergentState new-opset
+                                nil
+                                (if (:dirty? state)
+                                  (value-from-opset new-opset)
+                                  (reduce apply-patch (:value state) (vals ops)))
+                                false))
       state))
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
+  (-value-from-ops [_ ops]
+    (value-from-opset ops))
 
   #?@(:clj
       [IAtom
@@ -210,8 +211,9 @@
 (defmethod core/make-ref :editscript
   [{:keys [initial-value actor meta validator]}]
   (->EditscriptConvergentRef actor
-                             (->EditscriptConvergentState
+                             (core/->ConvergentState
                               (core/opset core/root-id (ops/snapshot core/root-id initial-value))
+                              nil
                               nil
                               true)
                              (util/queue)
@@ -222,7 +224,7 @@
 (defmethod core/make-ref-from-ops :editscript
   [{:keys [ops actor meta validator]}]
   (->EditscriptConvergentRef actor
-                             (->EditscriptConvergentState ops nil true)
+                             (core/->ConvergentState ops nil nil true)
                              (util/queue)
                              meta
                              validator
@@ -236,11 +238,12 @@
   (let [id (core/latest-id o)]
     (->EditscriptConvergentRef
      actor
-     (->EditscriptConvergentState (core/opset
-                                   (core/successor-id id actor)
-                                   (ops/snapshot id v))
-                                  nil
-                                  true)
+     (core/->ConvergentState (core/opset
+                              (core/successor-id id actor)
+                              (ops/snapshot id v))
+                             nil
+                             nil
+                             true)
      (util/queue)
      meta
      validator
