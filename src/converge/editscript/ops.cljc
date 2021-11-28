@@ -17,13 +17,13 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(def ^:const EDIT 0)
-(def ^:const SNAPSHOT 1)
+(def ^:const EDIT 20)
+(def ^:const SNAPSHOT 21)
 
 (defn edit
   [edits]
   (core/op EDIT {:edits edits}))
 
 (defn snapshot
-  [as-of value]
-  (core/op SNAPSHOT {:as-of as-of :value value}))
+  [opset-hash value]
+  (core/op SNAPSHOT {:opset-hash opset-hash :value value}))

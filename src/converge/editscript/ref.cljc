@@ -28,6 +28,7 @@
     ops/EDIT
     (e/patch value (e/edits->script (:edits data)))
 
+    ;; TODO: ensure hash of opset prior to this op matches opset hash stored in the op
     ops/SNAPSHOT
     (:value data)
 
@@ -212,7 +213,7 @@
   [{:keys [initial-value actor meta validator]}]
   (->EditscriptConvergentRef actor
                              (core/->ConvergentState
-                              (core/opset core/root-id (ops/snapshot core/root-id initial-value))
+                              (core/opset core/root-id (ops/snapshot (hash (core/opset)) initial-value))
                               nil
                               nil
                               true)
@@ -240,7 +241,7 @@
      actor
      (core/->ConvergentState (core/opset
                               (core/successor-id id actor)
-                              (ops/snapshot id v))
+                              (ops/snapshot (hash o) v))
                              nil
                              nil
                              true)

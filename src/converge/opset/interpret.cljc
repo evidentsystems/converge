@@ -58,6 +58,7 @@
   [agg _id _op]
   agg)
 
+;; TODO: test opset hash prior to this id matches hash stored in this op
 (defmethod -interpret-op ops/SNAPSHOT
   [agg _id {{{:keys [elements list-links]} :interpretation} :data}]
   (assoc agg

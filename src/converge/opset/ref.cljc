@@ -278,7 +278,7 @@
      actor
      (core/->ConvergentState (core/opset
                               (core/successor-id id actor)
-                              (ops/snapshot id i))
+                              (ops/snapshot (hash o) i))
                              i
                              nil
                              true)

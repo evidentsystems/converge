@@ -64,6 +64,5 @@
   (core/op REMOVE {:entity entity :attribute attribute}))
 
 (defn snapshot
-  [as-of interpretation]
-  (assert (core/id? as-of) "`as-of` must be an Id")
-  (core/op SNAPSHOT {:as-of as-of :interpretation interpretation}))
+  [opset-hash interpretation]
+  (core/op SNAPSHOT {:opset-hash opset-hash :interpretation interpretation}))
