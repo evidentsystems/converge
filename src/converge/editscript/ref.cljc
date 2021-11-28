@@ -35,9 +35,9 @@
     :else
     value))
 
-(defn value-from-opset
-  [opset]
-  (reduce apply-patch nil (vals opset)))
+(defn value-from-ops
+  [ops]
+  (reduce apply-patch nil (vals ops)))
 
 (deftype EditscriptConvergentRef #?(:clj  [^:volatile-mutable actor
                                            ^:volatile-mutable state
@@ -80,14 +80,13 @@
         (core/->ConvergentState new-opset
                                 nil
                                 (if (:dirty? state)
-                                  (value-from-opset new-opset)
+                                  (value-from-ops new-opset)
                                   (reduce apply-patch (:value state) (vals ops)))
                                 false))
       state))
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
-  (-value-from-ops [_ ops]
-    (value-from-opset ops))
+  (-value-from-ops [_ ops] (value-from-ops ops))
 
   #?@(:clj
       [IAtom
@@ -121,7 +120,7 @@
         (let [{:keys [opset value dirty?] :as s}
               state]
           (if dirty?
-            (let [new-value (value-from-opset opset)]
+            (let [new-value (value-from-ops opset)]
               (set! state
                     (assoc s
                            :value  new-value
@@ -154,7 +153,7 @@
         (let [{:keys [opset value dirty?] :as s}
               state]
           (if dirty?
-            (let [new-value (value-from-opset opset)]
+            (let [new-value (value-from-ops opset)]
               (set! state
                     (assoc s
                            :value  new-value
