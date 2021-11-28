@@ -105,14 +105,14 @@
   [cr]
   (core/-opset cr))
 
-;; TODO: support multiple backends
+;; TODO: Docstring, noting that source ops must come from ref with same backend
 (defn merge!
   [cr other]
   (let [patch (cond
                 (nil? other)
                 nil
 
-                (convergent? other)
+                (= (type cr) (type other))
                 (core/->Patch (opset other))
 
                 (core/patch? other)
