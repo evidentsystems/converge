@@ -81,7 +81,11 @@
   (testing "Can remove a list element"
     (let [c (convergent/ref a)]
       (is (= (swap! c assoc :a-list [:foo "bar" {:nested :inalist}])
-             (assoc a :a-list [:foo "bar" {:nested :inalist}]))))))
+             (assoc a :a-list [:foo "bar" {:nested :inalist}])))))
+  (testing "Can update a string element"
+    (let [c (convergent/ref a)]
+      (is (= (swap! c update-in [:a-list 1] str " baz")
+             (update-in a [:a-list 1] str " baz"))))))
 
 (deftest convergent-ref-of-vector
   (testing "Can initialize convergent ref with an empty vector"
@@ -116,7 +120,11 @@
   (testing "Can remove a list element"
     (let [c (convergent/ref b)]
       (is (= (swap! c assoc 4 [:foo "bar" {:nested :inalist}])
-             (assoc b 4 [:foo "bar" {:nested :inalist}]))))))
+             (assoc b 4 [:foo "bar" {:nested :inalist}])))))
+  (testing "Can update a string element"
+    (let [c (convergent/ref a)]
+      (is (= (swap! c update-in [4 1] str " baz")
+             (update-in a [4 1] str " baz"))))))
 
 (deftest merging
   (let [c (convergent/ref a)
@@ -182,23 +190,45 @@
         (is (> (count (convergent/opset c))
                initial-count))))))
 
-;; TODO: re-enable this!
-#_(defspec generated-map 100
-    (prop/for-all
-     [a (gen/map gen/any gen/any)
-      b (gen/map gen/any gen/any)]
-     (let [ref (convergent/ref a)]
-       (reset! ref b)
-       (= @ref b))))
+(defspec generated-map 100
+  (prop/for-all
+   [a (gen/map gen/any-equatable gen/any-equatable)
+    b (gen/map gen/any-equatable gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
 
-;; TODO: re-enable this!
-#_(defspec generated-vector 100
-    (prop/for-all
-     [a (gen/vector gen/any)
-      b (gen/vector gen/any)]
-     (let [ref (convergent/ref a)]
-       (reset! ref b)
-       (= @ref b))))
+(defspec generated-vector 100
+  (prop/for-all
+   [a (gen/vector gen/any-equatable)
+    b (gen/vector gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-set 100
+  (prop/for-all
+   [a (gen/set gen/any-equatable)
+    b (gen/set gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-list 100
+  (prop/for-all
+   [a (gen/list gen/any-equatable)
+    b (gen/list gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-any-container 100
+  (prop/for-all
+   [a (gen/container-type gen/any-equatable)
+    b (gen/container-type gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
 
 (comment ;; Clojure benchmarks
 
@@ -232,6 +262,7 @@
 
   (criterium/bench
    (do
+     (swap! r update-in [:a-list 1] str " baz")
      (swap! r assoc-in [:foo :bar :baz] :quux)
      (swap! r dissoc :foo)))
 
@@ -255,10 +286,12 @@
 
   (def r (convergent/ref a))
   @r
+  (convergent/peek-patches r)
 
   (criterium/with-progress-reporting
     (criterium/bench
      (do
+       (swap! r update-in [:a-list 1] str " baz")
        (swap! r assoc-in [:foo :bar :baz] :quux)
        (swap! r dissoc :foo))))
 

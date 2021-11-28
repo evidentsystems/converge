@@ -129,13 +129,16 @@
           rt  (read-str (write-str ref))]
       (is (= b @ref @rt)))))
 
-;; TODO: re-enable this!
-#_(defspec transit-roundtrip 100
-    (prop/for-all
-     [v (gen/one-of [(gen/vector gen/any) (gen/map gen/any gen/any)])]
-     (let [ref (convergent/ref v)
-           rt  (read-str (write-str ref))]
-       (= v @ref @rt))))
+(defspec transit-roundtrip 100
+  (prop/for-all
+   [v (gen/one-of [(gen/vector gen/any-equatable)
+                   (gen/map gen/any-equatable gen/any-equatable)
+                   (gen/set gen/any-equatable)
+                   (gen/list gen/any-equatable)
+                   (gen/container-type gen/any-equatable)])]
+   (let [ref (convergent/ref v)
+         rt  (read-str (write-str ref))]
+     (= v @ref @rt))))
 
 (comment ;; Clojure benchmarks
 
