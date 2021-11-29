@@ -18,7 +18,19 @@ operations.
 Convergent references and the patches they generate also serialize,
 e.g. via Transit/Fressian, for storage and transmission.
 
-## Editscript Backend
+## Status
+
+> :warning:
+
+Converge is pre-alpha quality software. Its API and implementation are
+changing rapidly. Use at your own risk!
+
+Evident Systems is using Converge in [oNote](https://onote.com) to
+support real-time and async/repository-based collaboration.
+
+## Backends
+
+### Editscript Backend
 
 The default backend is based on Editscript diff/snapshot operations,
 which are given a total order via Lamport timestamps.  This
@@ -29,7 +41,7 @@ provide results that violate end user expectations.  In particular,
 removed elements may reappear due to a subsequent update from a remote
 actor.
 
-## OpSets backend
+### OpSets backend
 
 The OpSets backend is based on the [OpSets
 paper](https://arxiv.org/pdf/1805.04263.pdf) by [Martin
