@@ -1,24 +1,52 @@
 # Converge
 
 This library provides a convergent reference type for Clojure and
-ClojureScript, based on the [OpSets
-paper](https://arxiv.org/pdf/1805.04263.pdf) by [Martin
-Kleppmann](https://github.com/ept) and co-authors.  Its local
-modification and access API resembles the behavior of an Atom
-(i.e. `swap!`, `reset!`, and `deref`).  However, it also has API
-functions for applying patches from the local actor or from remote
+ClojureScript, with support for various pluggable backends
+implementing different convergence algorithms. Its local modification
+and access API resembles the behavior of an Atom (i.e. `swap!`,
+`reset!`, and `deref`).  However, it also has API functions for
+accessing and applying patches from the local actor to/from remote
 actors, and for a converging merge with a remote convergent ref.
 
-The current value of the ref is available as usual via `deref` (or
-`@`), but the convergent ref itself prints as EDN and serializes for
-storage of historical changes to e.g. Transit.
+The main guarantee provided by this reference type is that local
+swap!/reset! operations and patching/merging between various
+distributed actors will converge: that is, two convergent references
+with the same underlying log of operations will have the same value,
+regardless of the order in which these references received these
+operations.
+
+Convergent references and the patches they generate also serialize,
+e.g. via Transit/Fressian, for storage and transmission.
+
+## Editscript Backend
+
+The default backend is based on Editscript diff/snapshot operations,
+which are given a total order via Lamport timestamps.  This
+implementation is more efficient (in time and space) than the OpSets
+backend, and provides the convergence guarantee described above.
+However, relative to the OpSets backend, the Editscript algorithm may
+provide results that violate end user expectations.  In particular,
+removed elements may reappear due to a subsequent update from a remote
+actor.
+
+## OpSets backend
+
+The OpSets backend is based on the [OpSets
+paper](https://arxiv.org/pdf/1805.04263.pdf) by [Martin
+Kleppmann](https://github.com/ept) and co-authors.  It is a
+well-designed algorithm whose behavior conforms to end user
+expectations, especially in real-time applications, however it is
+somewhat less efficient (in time and space) than the Editscript
+backend.
 
 ## Usage
 
 ``` clj
 (require '[converge.api :as convergent])
 
-(def c (convergent/ref {:my :value}))
+(def c (convergent/ref {:my :value})) ;; Defaults to :editscript backend
+;; or to select another backend:
+(def c (convergent/ref {:my :value} {:backend :opset}))
 @c
 ; => {:my :value}
 
