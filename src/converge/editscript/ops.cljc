@@ -11,9 +11,19 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
-(ns converge.opset-test
-  (:require #?(:clj  [clojure.test :refer [deftest is testing]]
-               :cljs [cljs.test :refer-macros [deftest is testing]])
-            [converge.util  :as util]
-            [converge.core :as core]))
+(ns converge.editscript.ops
+  (:require [converge.core :as core]))
 
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
+
+(def ^:const EDIT 20)
+(def ^:const SNAPSHOT 21)
+
+(defn edit
+  [edits]
+  (core/op EDIT {:edits edits}))
+
+(defn snapshot
+  [log-hash value]
+  (core/op SNAPSHOT {:log-hash log-hash :value value}))

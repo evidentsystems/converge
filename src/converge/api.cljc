@@ -17,18 +17,16 @@
   functions for comparing, merging, and patching these convergent
   refs."
   (:refer-clojure :exclude [ref])
-  (:require [converge.edn :as edn]
-            [converge.interpret :as interpret]
-            [converge.opset :as opset]
-            [converge.patch :as patch]
-            [converge.ref :as ref]
-            [converge.util :as util]))
+  (:require [converge.core :as core]
+            [converge.util :as util]
+            converge.opset.ref
+            converge.editscript.ref))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-;; TODO: add note to docstring about our special top-level type
-;; validation logic
+(def default-backend :editscript)
+
 (defn ref
   "Creates and returns a ConvergentRef with an initial value of `x` and
   zero or more options (in any order):
@@ -48,46 +46,19 @@
   change. If the new state is unacceptable, the validate-fn should
   return false or throw an Error.  If either of these error conditions
   occur, then the value of the atom will not change."
-  [initial-value & {:keys [actor meta validator] :as options}]
+  [initial-value & {:keys [actor backend] :as options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
-  (let [actor* (or actor (util/uuid))
-
-        r
-        (cond
-          (map? initial-value)
-          (ref/->ConvergentRef actor*
-                               (ref/->ConvergentState
-                                (opset/opset opset/root-id (opset/make-map))
-                                nil
-                                nil
-                                true)
-                               (util/queue)
-                               meta
-                               validator
-                               nil)
-
-          (vector? initial-value)
-          (ref/->ConvergentRef actor*
-                               (ref/->ConvergentState
-                                (opset/opset opset/root-id (opset/make-list))
-                                nil
-                                nil
-                                true)
-                               (util/queue)
-                               meta
-                               validator
-                               nil)
-
-          :else
-          (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
-                          {:initial-value initial-value})))]
+  (let [r (core/make-ref (assoc options
+                                :actor (or actor (util/uuid))
+                                :backend (or backend default-backend)
+                                :initial-value initial-value))]
     @r
     (reset! r initial-value)
     r))
 
-(defn ref-from-opset
-  "Creates and returns a ConvergentRef from the given `opset` and zero
+(defn ref-from-ops
+  "Creates and returns a ConvergentRef from the given `ops` and zero
   or more options (in any order):
 
   :actor a UUID
@@ -105,49 +76,46 @@
   change. If the new state is unacceptable, the validate-fn should
   return false or throw an Error.  If either of these error conditions
   occur, then the value of the atom will not change."
-  [opset & {:keys [actor meta validator] :as options}]
+  [ops & {:keys [actor backend] :as options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
-  ;; TODO: assertions ensuring valid opset
-  (let [opset*         (into (opset/opset) opset)
-        actor*         (or actor (util/uuid))
-        initial-action (get-in opset* [opset/root-id :action])
-        r              (ref/->ConvergentRef actor*
-                                            (ref/->ConvergentState opset* nil nil true)
-                                            (util/queue)
-                                            meta
-                                            validator
-                                            nil)]
+  ;; TODO: assertions ensuring valid operation ops
+  (let [r (core/make-ref-from-ops
+           (assoc options
+                  :actor (or actor (util/uuid))
+                  :backend (or backend default-backend)
+                  :ops (into (core/log) ops)))]
     @r
     r))
 
 (defn convergent?
   [o]
-  (satisfies? ref/IConvergent o))
+  (satisfies? core/ConvergentRef o))
 
 (defn actor
   [cr]
-  (ref/-actor cr))
+  (core/-actor cr))
 
 (defn set-actor!
   [cr actor]
-  (ref/-set-actor! cr actor)
+  (core/-set-actor! cr actor)
   cr)
 
-(defn opset
+(defn log
   [cr]
-  (ref/-opset cr))
+  (core/-log cr))
 
+;; TODO: Docstring, noting that source ops must come from ref with same backend
 (defn merge!
   [cr other]
   (let [patch (cond
                 (nil? other)
                 nil
 
-                (convergent? other)
-                (patch/->Patch (opset other))
+                (= (type cr) (type other))
+                (core/->Patch (log other))
 
-                (patch/patch? other)
+                (core/patch? other)
                 other
 
                 :else
@@ -155,7 +123,7 @@
                                 {:ref    cr
                                  :object other})))]
     (when patch
-      (ref/-apply-state! cr (ref/-state-from-patch cr patch)))
+      (core/-apply-state! cr (core/-state-from-patch cr patch)))
     cr))
 
 (defn squash!
@@ -166,51 +134,37 @@
           nil
 
           (convergent? other)
-          (opset other)
+          (log other)
 
-          (patch/patch? other)
+          (core/patch? other)
           (:ops other)
 
           :else
-          (throw (ex-info "Cannot merge! this object into convergent reference"
+          (throw (ex-info "Cannot squash! this object into convergent reference"
                           {:ref    cr
                            :object other})))]
     (when-not (nil? additional-ops)
-      (reset! cr (edn/edn (interpret/interpret (merge (opset cr) additional-ops)))))
+      (reset! cr (core/-value-from-ops cr (merge (log cr) additional-ops))))
     cr))
 
 (defn peek-patches
   [cr]
-  (ref/-peek-patches cr))
+  (core/-peek-patches cr))
 
 (defn pop-patches!
   [cr]
   (let [p (peek-patches cr)]
-    (ref/-pop-patches! cr)
+    (core/-pop-patches! cr)
     p))
 
 (defn snapshot-ref
   "Creates a new reference which is a snapshot of the given reference,
-  having a single `snapshot` operation in its opset."
-  [cr & {:keys [actor meta validator] :as options}]
-  (let [{o :opset
-         i :interpretation}
-        (ref/-state cr)
-
-        a  (or actor (ref/-actor cr))
-        id (opset/latest-id o)
-        i  (interpret/interpret o)
-        r  (ref/->ConvergentRef
-            a
-            (ref/->ConvergentState (opset/opset
-                                    (opset/successor-id id a)
-                                    (opset/snapshot id i))
-                                   i
-                                   nil
-                                   true)
-            (util/queue)
-            meta
-            validator
-            nil)]
-    @r
-    r))
+  having a single `snapshot` operation in its log."
+    [cr & {:keys [actor backend] :as options}]
+    (let [r  (core/make-snapshot-ref
+              (assoc options
+                     :actor (or actor (core/-actor cr))
+                     :backend (or backend default-backend)
+                     :state (core/-state cr)))]
+      @r
+      r))

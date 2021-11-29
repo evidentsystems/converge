@@ -13,7 +13,7 @@
 ;; limitations under the License.
 (ns converge.serialize-test
   (:require #?(:clj  [clojure.test :refer :all]
-               :cljs [cljs.test :refer-macros [deftest is testing run-tests]])
+               :cljs [cljs.test :refer-macros [deftest is testing]])
             #?(:clj  [clojure.test.check.clojure-test :refer [defspec]]
                :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
             [clojure.test.check.generators :as gen]
@@ -28,14 +28,15 @@
   (t/tagged-value "map" rec))
 
 (def read-handlers*
-  {"converge/id"             (t/read-handler serialize/read-id)
-   "converge/op"             (t/read-handler serialize/read-operation)
-   "converge/patch"          (t/read-handler serialize/read-patch)
-   "converge/element"        (t/read-handler serialize/read-element)
-   "converge/interpretation" (t/read-handler serialize/read-interpretation)
-   "converge/state"          (t/read-handler serialize/read-state)
-   "converge/ref"            (t/read-handler serialize/read-ref)
-   "avl/map"                 (t/read-handler serialize/read-avl-map)})
+  {"avl/map"              (t/read-handler serialize/read-avl-map)
+   "converge/id"          (t/read-handler serialize/read-id)
+   "converge/op"          (t/read-handler serialize/read-operation)
+   "converge/patch"       (t/read-handler serialize/read-patch)
+   "converge/state"       (t/read-handler serialize/read-state)
+   "opset/element"        (t/read-handler serialize/read-element)
+   "opset/interpretation" (t/read-handler serialize/read-interpretation)
+   "opset/ref"            (t/read-handler serialize/read-opset-convergent-ref)
+   "editscript/ref"       (t/read-handler serialize/read-editscript-convergent-ref)})
 
 (def read-handlers
   (merge #?(:clj
@@ -47,14 +48,18 @@
 
 (def #?(:clj  write-handlers*
         :cljs write-handlers)
-  {converge.opset.Id                 (t/write-handler (constantly "converge/id") tagged-map-value)
-   converge.opset.Op                 (t/write-handler (constantly "converge/op") tagged-map-value)
-   converge.patch.Patch              (t/write-handler (constantly "converge/patch") tagged-map-value)
-   converge.interpret.Element        (t/write-handler (constantly "converge/element") tagged-map-value)
-   converge.interpret.Interpretation (t/write-handler (constantly "converge/interpretation") tagged-map-value)
-   converge.ref.ConvergentState      (t/write-handler (constantly "converge/state") serialize/write-state)
-   converge.ref.ConvergentRef        (t/write-handler (constantly "converge/ref") serialize/write-ref)
-   clojure.data.avl.AVLMap           (t/write-handler (constantly "avl/map") serialize/write-avl-map)})
+  {clojure.data.avl.AVLMap (t/write-handler (constantly "avl/map") serialize/write-avl-map)
+
+   converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
+   converge.core.Op                        (t/write-handler (constantly "converge/op") tagged-map-value)
+   converge.core.Patch                     (t/write-handler (constantly "converge/patch") tagged-map-value)
+   converge.core.ConvergentState           (t/write-handler (constantly "converge/state") serialize/write-state)
+   converge.opset.interpret.Element        (t/write-handler (constantly "opset/element") tagged-map-value)
+   converge.opset.interpret.Interpretation (t/write-handler (constantly "opset/interpretation") tagged-map-value)
+   converge.opset.ref.OpsetConvergentRef   (t/write-handler (constantly "opset/ref") serialize/write-ref)
+
+   converge.editscript.ref.EditscriptConvergentRef
+   (t/write-handler (constantly "editscript/ref") serialize/write-ref)})
 
 #?(:clj
    (def write-handlers
@@ -121,12 +126,16 @@
           rt  (read-str (write-str ref))]
       (is (= b @ref @rt)))))
 
-#_(defspec transit-roundtrip 100
-    (prop/for-all
-     [v (gen/one-of [(gen/vector gen/any) (gen/map gen/any gen/any)])]
-     (let [ref (convergent/ref v)
-           rt  (read-str (write-str ref))]
-       (= v @ref @rt))))
+(defspec transit-roundtrip 100
+  (prop/for-all
+   [v (gen/one-of [(gen/vector gen/any-equatable)
+                   (gen/map gen/any-equatable gen/any-equatable)
+                   (gen/set gen/any-equatable)
+                   (gen/list gen/any-equatable)
+                   (gen/container-type gen/any-equatable)])]
+   (let [ref (convergent/ref v)
+         rt  (read-str (write-str ref))]
+     (= v @ref @rt))))
 
 (comment ;; Clojure benchmarks
 
@@ -145,11 +154,9 @@
   ;;                    Overhead used : 7.672645 ns
 
   ;; Found 4 outliers in 60 samples (6.6667 %)
-  ;; 	low-severe	 2 (3.3333 %)
-  ;; 	low-mild	 2 (3.3333 %)
+  ;;  low-severe   2 (3.3333 %)
+  ;;  low-mild   2 (3.3333 %)
   ;;  Variance from outliers : 6.2885 % Variance is slightly inflated by outliers
-
-
   )
 
 (comment ;; ClojureScript benchmarks
@@ -161,5 +168,4 @@
 
   ;; Macbook Pro, Chrome 02/17/2021
   ;; [r (convergent/ref a)], (read-str (write-str r)), 10000 runs, 7310 msecs
-
   )

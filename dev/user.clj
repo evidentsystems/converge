@@ -16,7 +16,9 @@
             [clojure.pprint :refer [pprint]]
             [clojure.spec.test.alpha :as stest]
             [clojure.tools.namespace.repl :refer [refresh]]
-            [kaocha.repl :as kaocha]))
+            [kaocha.repl :as kaocha]
+            [criterium.core :as criterium]
+            [clj-async-profiler.core :as profiler]))
 
 (set! *warn-on-reflection* true)
 
@@ -33,7 +35,6 @@
 (defn unstrument
   []
   (stest/unstrument))
-
 
 (comment
 

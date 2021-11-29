@@ -12,11 +12,14 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 (ns converge.api-test
-  (:require #?(:clj  [clojure.test :refer :all]
-               :cljs [cljs.test :refer-macros [deftest is testing run-tests]])
+  (:require #?(:clj  [clojure.test :refer [deftest is testing]]
+               :cljs [cljs.test :refer-macros [deftest is testing]])
+            #?(:clj  [clojure.test.check.clojure-test :refer [defspec]]
+               :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
-            [converge.patch :as patch]
-            [converge.ref :as ref]))
+            [converge.core :as core]))
 
 (def a {:empty-m {}
         :empty-l []
@@ -78,7 +81,11 @@
   (testing "Can remove a list element"
     (let [c (convergent/ref a)]
       (is (= (swap! c assoc :a-list [:foo "bar" {:nested :inalist}])
-             (assoc a :a-list [:foo "bar" {:nested :inalist}]))))))
+             (assoc a :a-list [:foo "bar" {:nested :inalist}])))))
+  (testing "Can update a string element"
+    (let [c (convergent/ref a)]
+      (is (= (swap! c update-in [:a-list 1] str " baz")
+             (update-in a [:a-list 1] str " baz"))))))
 
 (deftest convergent-ref-of-vector
   (testing "Can initialize convergent ref with an empty vector"
@@ -113,20 +120,24 @@
   (testing "Can remove a list element"
     (let [c (convergent/ref b)]
       (is (= (swap! c assoc 4 [:foo "bar" {:nested :inalist}])
-             (assoc b 4 [:foo "bar" {:nested :inalist}]))))))
+             (assoc b 4 [:foo "bar" {:nested :inalist}])))))
+  (testing "Can update a string element"
+    (let [c (convergent/ref a)]
+      (is (= (swap! c update-in [4 1] str " baz")
+             (update-in a [4 1] str " baz"))))))
 
 (deftest merging
   (let [c (convergent/ref a)
-        d (convergent/ref-from-opset (convergent/opset c))]
+        d (convergent/ref-from-ops (convergent/log c))]
     (swap! d assoc :b :another-key)
     (testing "merging nil"
-      (is (= a @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+      (is (= a @(convergent/merge! (convergent/ref-from-ops (convergent/log c))
                                    nil))))
     (testing "merging another convergent ref"
-      (is (= @d @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+      (is (= @d @(convergent/merge! (convergent/ref-from-ops (convergent/log c))
                                     d))))
     (testing "merging a patch"
-      (is (= @d @(convergent/merge! (convergent/ref-from-opset (convergent/opset c))
+      (is (= @d @(convergent/merge! (convergent/ref-from-ops (convergent/log c))
                                     (convergent/peek-patches d)))))
     ;; TODO: merging a snapshot ref, with subsequent operations
     ))
@@ -136,7 +147,7 @@
     (testing "snapshotting another convergent ref"
       (let [cr (convergent/snapshot-ref c)]
         (is (= @c @cr))
-        (is (= 1 (count (convergent/opset cr))))))
+        (is (= 1 (count (convergent/log cr))))))
     (testing "adding some values to a snapshot ref"
       (let [cr (convergent/snapshot-ref c)]
         (swap! cr
@@ -147,11 +158,11 @@
                       :b :another-key
                       :a :foo)
                @cr))
-        (is (< 1 (count (convergent/opset cr))))))))
+        (is (< 1 (count (convergent/log cr))))))))
 
 (deftest squashing
   (let [c      (convergent/ref a)
-        d      (convergent/ref-from-opset (convergent/opset c))
+        d      (convergent/ref-from-ops (convergent/log c))
         _      (swap! d assoc
                       :b :another-key
                       :a :foo)
@@ -159,32 +170,77 @@
         final  (swap! d dissoc :a)
         patch2 (convergent/pop-patches! d)]
     (testing "squashing another convergent ref"
-      (let [cr (convergent/ref-from-opset (convergent/opset c))]
+      (let [cr (convergent/ref-from-ops (convergent/log c))]
         (is (= @(convergent/squash! cr d) final))
-        (is (> (count (convergent/opset d))
-               (count (convergent/opset cr))))))
+        (is (> (count (convergent/log d))
+               (count (convergent/log cr))))))
     (testing "squashing a patch"
-      (let [cr (convergent/ref-from-opset (convergent/opset c))]
-        (is (= final @(convergent/squash! cr (patch/->Patch (merge (:ops patch1) (:ops patch2))))))
-        (is (> (count (convergent/opset d))
-               (count (convergent/opset cr))))))
+      (let [cr (convergent/ref-from-ops (convergent/log c))]
+        (is (= final @(convergent/squash! cr (core/->Patch (merge (:ops patch1) (:ops patch2))))))
+        (is (> (count (convergent/log d))
+               (count (convergent/log cr))))))
     (testing "squashing a snapshot ref"
-      (let [initial-count (count (convergent/opset c))
+      (let [initial-count (count (convergent/log c))
             cr            (convergent/snapshot-ref c)]
         (swap! cr assoc
                :b :another-key
                :a :foo)
         (swap! cr dissoc :a)
         (is (= @(convergent/squash! c cr) final))
-        (is (> (count (convergent/opset c))
+        (is (> (count (convergent/log c))
                initial-count))))))
+
+(defspec generated-map 100
+  (prop/for-all
+   [a (gen/map gen/any-equatable gen/any-equatable)
+    b (gen/map gen/any-equatable gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-vector 100
+  (prop/for-all
+   [a (gen/vector gen/any-equatable)
+    b (gen/vector gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-set 100
+  (prop/for-all
+   [a (gen/set gen/any-equatable)
+    b (gen/set gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-list 100
+  (prop/for-all
+   [a (gen/list gen/any-equatable)
+    b (gen/list gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
+
+(defspec generated-any-container 100
+  (prop/for-all
+   [a (gen/container-type gen/any-equatable)
+    b (gen/container-type gen/any-equatable)]
+   (let [ref (convergent/ref a)]
+     (reset! ref b)
+     (= @ref b))))
 
 (comment ;; Clojure benchmarks
 
-  (require '[criterium.core :as criterium])
+  (require '[criterium.core :as criterium]
+           '[clj-async-profiler.core :as profiler])
 
   (criterium/bench
    @(convergent/ref a))
+
+  (profiler/profile
+   (dotimes [_ 10000]
+     @(convergent/ref a)))
 
   ;; MacBook Pro 02/17/2021
   ;;                 Evaluation count : 84780 in 60 samples of 1413 calls.
@@ -201,11 +257,19 @@
 
   (def r (convergent/ref {}))
   @r
+  (count (convergent/log r))
+  (nth (convergent/log r) 0)
 
   (criterium/bench
    (do
+     (swap! r update-in [:a-list 1] str " baz")
      (swap! r assoc-in [:foo :bar :baz] :quux)
-     (swap! r update dissoc :foo)))
+     (swap! r dissoc :foo)))
+
+  (profiler/profile
+   (dotimes [_ 10000]
+     (swap! r assoc-in [:foo :bar :baz] :quux)
+     (swap! r dissoc :foo)))
 
   ;; MacBook Pro 02/22/2021
   ;;                 Evaluation count : 7589040 in 60 samples of 126484 calls.
@@ -220,14 +284,21 @@
   ;; 	low-mild	 1 (1.6667 %)
   ;;  Variance from outliers : 27.1139 % Variance is moderately inflated by outliers
 
-
   (def r (convergent/ref a))
   @r
+  (convergent/peek-patches r)
 
-  (criterium/bench
-   (do
+  (criterium/with-progress-reporting
+    (criterium/bench
+     (do
+       (swap! r update-in [:a-list 1] str " baz")
+       (swap! r assoc-in [:foo :bar :baz] :quux)
+       (swap! r dissoc :foo))))
+
+  (profiler/profile
+   (dotimes [_ 10000]
      (swap! r assoc-in [:foo :bar :baz] :quux)
-     (swap! r update dissoc :foo)))
+     (swap! r dissoc :foo)))
 
   ;; MacBook Pro 03/25/2021 before patch optimization
   ;;                 Evaluation count : 31560 in 60 samples of 526 calls.
@@ -241,7 +312,6 @@
   ;; 	low-severe	 2 (3.3333 %)
   ;;  Variance from outliers : 61.8498 % Variance is severely inflated by outliers
 
-
   ;; MacBook Pro 02/22/2021 after patch optimization
   ;;                 Evaluation count : 1902960 in 60 samples of 31716 calls.
   ;;              Execution time mean : 33.085470 µs
@@ -253,8 +323,6 @@
   ;; Found 1 outliers in 60 samples (1.6667 %)
   ;; 	low-severe	 1 (1.6667 %)
   ;;  Variance from outliers : 27.1107 % Variance is moderately inflated by outliers
-
-
   )
 
 (comment ;; ClojureScript benchmarks

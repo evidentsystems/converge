@@ -11,12 +11,12 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
-(ns converge.edn
-  "API for interpreting an OpSet as EDN data."
+(ns converge.opset.edn
+  "API for converting an OpSet interpretation as EDN data."
   (:require [clojure.zip :as zip]
-            [converge.opset :as opset]
-            [converge.interpret :as interpret]
-            [converge.util :as util]))
+            [converge.core :as core]
+            [converge.util :as util]
+            [converge.opset.interpret :as interpret]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
@@ -49,7 +49,7 @@
 
 (defn interpretation-zip
   ([interpretation]
-   (interpretation-zip interpretation opset/root-id))
+   (interpretation-zip interpretation core/root-id))
   ([interpretation root-id]
    (let [elements   (:elements interpretation)
          list-links (:list-links interpretation)
@@ -61,7 +61,7 @@
         (for [{:keys [entity attribute value]}
               (:children node)]
           (let [v        (get elements value)
-                a        (if (opset/id? attribute)
+                a        (if (core/id? attribute)
                            (insertion-index by-attr list-links entity attribute)
                            attribute)
                 children (get by-entity value)]
@@ -90,9 +90,9 @@
 
 (defn add-element
   [return path value]
-  (let [attribute (peek path)]
+  (let [attribute (util/last-indexed path)]
     (if attribute
-      (let [parent-path (pop path)
+      (let [parent-path (util/safe-pop path)
             parent      (util/safe-get-in return parent-path)]
         (if (sequential? parent)
           (if (seq parent-path)
@@ -102,8 +102,8 @@
       value)))
 
 (defn assemble-values
-  [{:keys [list-links] :as interpretation}]
-  (loop [loc    (interpretation-zip interpretation opset/root-id)
+  [interpretation]
+  (loop [loc    (interpretation-zip interpretation core/root-id)
          return nil]
     (if (zip/end? loc)
       return
@@ -113,12 +113,14 @@
         (recur (zip/next loc)
                (add-element return
                             path
-                            (cond-> v
-                              (sequential? v)
-                              (vary-meta assoc :converge/id entity :converge/insertions insertions)
+                            (case (util/get-type v)
+                              (:vec :lst)
+                              (vary-meta v assoc :converge/id entity :converge/insertions insertions)
 
-                              (map? v)
-                              (vary-meta assoc :converge/id entity))))))))
+                              :map
+                              (vary-meta v assoc :converge/id entity)
+
+                              v)))))))
 
 (defn edn
   "Transforms an converge.interpret.Interpretation into an EDN value."
