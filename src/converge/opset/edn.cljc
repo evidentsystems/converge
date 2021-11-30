@@ -123,6 +123,6 @@
                               v)))))))
 
 (defn edn
-  "Transforms an converge.interpret.Interpretation into an EDN value."
+  "Transforms an converge.opset.interpret.Interpretation into an EDN value."
   [interpretation]
   (assemble-values interpretation))

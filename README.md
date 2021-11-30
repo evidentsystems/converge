@@ -58,7 +58,7 @@ backend.
 
 (def c (convergent/ref {:my :value})) ;; Defaults to :editscript backend
 ;; or to select another backend:
-(def c (convergent/ref {:my :value} {:backend :opset}))
+(def c (convergent/ref {:my :value} :backend :opset))
 @c
 ; => {:my :value}
 
