@@ -14,41 +14,37 @@
 (ns converge.opset.interpret
   "Functions for interpreting an OpSet as per sections 3.2 and 5.2 of
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
-  (:require [clojure.set :as set]
-            [converge.opset.ops :as ops])
-  #?(:clj (:import [converge.core Id])))
+  (:require [clojure.data.avl :as avl]
+            [converge.opset.ops :as ops]
+            converge.core))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defn transitive-closure
-  [e]
-  (let [e2 (into #{}
-                 (for [[a b] e
-                       [c d] e
-                       :when (= b c)]
-                   [a d]))]
-    (if (set/subset? e2 e)
-      e
-      (recur (set/union e e2)))))
-
+(declare element?)
 
 (defrecord Element [#?@(:cljs [^clj entity]
-                        :clj  [^Id entity])
+                        :clj  [entity])
                     attribute
                     #?@(:cljs [^clj value]
-                        :clj  [^Id value])])
+                        :clj  [value])]
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (compare
+     [entity          (hash attribute)          value]
+     [(:entity other) (hash (:attribute other)) (:value other)])))
+
+(defn element?
+  [o]
+  (instance? Element o))
 
 (defrecord Interpretation [elements list-links])
 
 (def list-end-sigil ::list-end)
-
-(defn ancestor
-  [elements]
-  (transitive-closure
-   (into #{}
-         (map (juxt :entity :value))
-         (vals elements))))
 
 (defmulti -interpret-op
   (fn [_agg _id op] (:action op))
@@ -58,32 +54,60 @@
   [agg _id _op]
   agg)
 
-;; TODO: test opset log hash prior to this id matches hash stored in this op
-(defmethod -interpret-op ops/SNAPSHOT
-  [agg _id {{{:keys [elements list-links]} :interpretation} :data}]
-  (assoc agg
-         :elements   (transient elements)
-         :list-links (transient list-links)))
+(defmethod -interpret-op ops/MAKE_MAP
+  [agg id _op]
+  (update agg :elements assoc! id {}))
 
+(defmethod -interpret-op ops/MAKE_VECTOR
+  [agg id _op]
+  (-> agg
+      (update :list-links assoc! id list-end-sigil)
+      (update :elements assoc! id [])))
+
+(defmethod -interpret-op ops/MAKE_SET
+  [agg id _op]
+  (update agg :elements assoc! id #{}))
+
+(defmethod -interpret-op ops/MAKE_LIST
+  [agg id _op]
+  (-> agg
+      (update :list-links assoc! id list-end-sigil)
+      (update :elements assoc! id ())))
+
+(defmethod -interpret-op ops/MAKE_VALUE
+  [agg id op]
+  (update agg :elements assoc! id (-> op :data :value)))
+
+(defmethod -interpret-op ops/INSERT
+  [{:keys [list-links] :as agg} id {{prev :after} :data}]
+  (let [next (get list-links prev)]
+    (if next
+      (assoc agg
+             :list-links
+             (-> list-links
+                 (dissoc! prev)
+                 (assoc! prev id
+                         id next)))
+      agg)))
+
+;; We use the broader interpretation algorithm defined in section 3.2,
+;; rather than the narrower tree definition defined in 5.2, since
+;; we're generating Ops from trees.
 (defmethod -interpret-op ops/ASSIGN
   [{:keys [elements] :as agg} id {:keys [data]}]
   (let [{:keys [entity attribute value]} data
 
         elements* (persistent! elements)]
-    ;; Skip operations that would introduce a cycle from decendent
-    ;; (value) to ancestor (entity), per Section 5.2
-    (if false #_(contains? (ancestor elements*) [value entity])
-      agg
-      (assoc agg
-             :elements
-             (transient
-              (into {id (->Element entity attribute value)}
-                    (filter
-                     (fn [[_id element]]
-                       (and (or (not= (:entity element)    entity)
-                                (not= (:attribute element) attribute))
-                            (not= value (:value element)))))
-                    elements*))))))
+    (assoc agg
+           :elements
+           (transient
+            (into {id (->Element entity attribute value)}
+                  (filter
+                   (fn [[_id element]]
+                     (and (or (not= (:entity element)    entity)
+                              (not= (:attribute element) attribute))
+                          (not= value (:value element)))))
+                  elements*)))))
 
 (defmethod -interpret-op ops/REMOVE
   [{:keys [elements] :as agg} _id {:keys [data]}]
@@ -98,41 +122,26 @@
                          (not= (:attribute element) attribute))))
                   (persistent! elements))))))
 
-(defmethod -interpret-op ops/INSERT
-  [{:keys [list-links] :as agg} id {{prev :after} :data}]
-  (let [next (get list-links prev)]
-    (if next
-      (assoc agg
-             :list-links
-             (-> list-links
-                 (dissoc! prev)
-                 (assoc! prev id
-                         id next)))
-      agg)))
-
-(defmethod -interpret-op ops/MAKE_LIST
-  [agg id _op]
-  (-> agg
-      (update :list-links assoc! id list-end-sigil)
-      (update :elements assoc! id [])))
-
-(defmethod -interpret-op ops/MAKE_MAP
-  [agg id _op]
-  (update agg :elements assoc! id {}))
-
-(defmethod -interpret-op ops/MAKE_VALUE
-  [agg id op]
-  (update agg :elements assoc! id (-> op :data :value)))
+(defmethod -interpret-op ops/SNAPSHOT
+  [agg id {{{:keys [ops elements list-links]} :interpretation
+            log-hash :log-hash}
+           :data}]
+  (if (= log-hash (hash (avl/subrange ops > id)))
+    (assoc agg
+           :elements   (transient elements)
+           :list-links (transient list-links))
+    agg))
 
 (defn interpret
   ([opset-log]
-   (interpret (->Interpretation {} {}) opset-log))
+   (interpret {:elements {} :list-links {}} opset-log))
   ([{:keys [elements list-links] :as _interpretation} ops]
    (let [{elements*   :elements
           list-links* :list-links}
          (reduce-kv -interpret-op
                     {:elements   (transient elements)
-                     :list-links (transient list-links)}
+                     :list-links (transient list-links)
+                     :opset      ops}
                     ops)]
      (->Interpretation
       (persistent! elements*)

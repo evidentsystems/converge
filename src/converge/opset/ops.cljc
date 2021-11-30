@@ -22,11 +22,12 @@
 (def ^:const MAKE_VECTOR 1)
 (def ^:const MAKE_SET 2)
 (def ^:const MAKE_LIST 3)
-(def ^:const MAKE_VALUE 4)
-(def ^:const INSERT 5)
-(def ^:const ASSIGN 6)
-(def ^:const REMOVE 7)
-(def ^:const SNAPSHOT 8)
+(def ^:const MAKE_TEXT 4)
+(def ^:const MAKE_VALUE 5)
+(def ^:const INSERT 6)
+(def ^:const ASSIGN 7)
+(def ^:const REMOVE 8)
+(def ^:const SNAPSHOT 9)
 
 (defn make-map
   []
@@ -44,6 +45,10 @@
   []
   (core/op MAKE_LIST))
 
+(defn make-text
+  []
+  (core/op MAKE_TEXT))
+
 (defn make-value
   [value]
   (core/op MAKE_VALUE {:value value}))
@@ -54,9 +59,12 @@
   (core/op INSERT {:after after}))
 
 (defn assign
-  [entity attribute value]
-  (assert (core/id? entity) "`entity` must be an Id")
-  (core/op ASSIGN {:entity entity :attribute attribute :value value}))
+  ([entity attribute]
+   (assign entity attribute nil))
+  ([entity attribute value]
+   (assert (core/id? entity) "`entity` must be an Id")
+   (core/op ASSIGN (merge {:entity entity :attribute attribute}
+                          (when value {:value value})))))
 
 (defn remove
   [entity attribute]

@@ -23,16 +23,13 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-;; TODO: is it necessary to maintain consistent top-level type?
-;; TODO: add note to docstring about our special top-level type
-;; validation logic
 (defn valid?
   [validator old-value new-value]
-  (let [type-pred (if (or (map? old-value)
-                          (and (nil? old-value)
-                               (map? new-value)))
-                    map?
-                    sequential?)]
+  (let [type-pred (condp = (util/get-type old-value)
+                    :map map?
+                    :set set?
+                    :vec vector?
+                    :lst list?)]
     (and (type-pred new-value)
          (if (ifn? validator) (validator new-value) true))))
 

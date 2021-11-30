@@ -133,7 +133,7 @@
 ;;;; Operation Log
 
 (defn log
-  "An opseration log is a sorted map of Id -> Op"
+  "An operation log is a sorted map of Id -> Op"
   ([]
    (avl/sorted-map))
   ([& id-ops]
