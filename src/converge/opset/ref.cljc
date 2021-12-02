@@ -243,24 +243,3 @@
                         meta
                         validator
                         nil))
-
-(defmethod core/make-snapshot-ref :opset
-  [{:keys [actor meta validator]
-    {log             :log
-     interpretation* :cache}
-    :state}]
-  (let [id (core/latest-id log)
-
-        interpretation (or interpretation* (interpret/interpret log))]
-    (->OpsetConvergentRef
-     actor
-     (core/->ConvergentState (core/log
-                              (core/successor-id id actor)
-                              (ops/snapshot (hash log) interpretation))
-                             interpretation
-                             nil
-                             true)
-     (util/queue)
-     meta
-     validator
-     nil)))

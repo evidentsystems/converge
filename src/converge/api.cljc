@@ -97,17 +97,6 @@
     @r
     r))
 
-(defn snapshot-ref
-  "Creates a new reference which is a snapshot of the given reference,
-  having a single `snapshot` operation in its log."
-  [cr & {:keys [actor] :as options}]
-  (let [r  (core/make-snapshot-ref
-            (assoc options
-                   :actor (or actor (core/-actor cr))
-                   :state (core/-state cr)))]
-    @r
-    r))
-
 (defn convergent?
   [o]
   (satisfies? core/ConvergentRef o))

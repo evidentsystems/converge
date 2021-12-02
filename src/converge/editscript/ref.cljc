@@ -231,21 +231,3 @@
                              meta
                              validator
                              nil))
-
-(defmethod core/make-snapshot-ref :editscript
-  [{:keys [actor meta validator]
-    {:keys [log value]}
-    :state}]
-  (let [id (core/latest-id log)]
-    (->EditscriptConvergentRef
-     actor
-     (core/->ConvergentState (core/log
-                              (core/successor-id id actor)
-                              (ops/snapshot (hash log) value))
-                             nil
-                             nil
-                             true)
-     (util/queue)
-     meta
-     validator
-     nil)))

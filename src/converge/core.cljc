@@ -61,12 +61,6 @@
   [options]
   (throw (ex-info "Unknown ConvergentRef backend" options)))
 
-(defmulti make-snapshot-ref :backend :default ::default)
-
-(defmethod make-snapshot-ref ::default
-  [options]
-  (throw (ex-info "Unknown ConvergentRef backend" options)))
-
 ;;;; Implementation
 
 (defn notify-w
