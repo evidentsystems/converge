@@ -224,35 +224,24 @@
        (-hash [this] (goog/getUid this))]))
 
 (defmethod core/make-ref :opset
-  [{:keys [initial-value actor meta validator]}]
-  (cond
-    (map? initial-value)
-    (->OpsetConvergentRef actor
-                          (core/->ConvergentState
-                           (core/log core/root-id (ops/make-map))
-                           nil
-                           nil
-                           true)
-                          (util/queue)
-                          meta
-                          validator
-                          nil)
-
-    (vector? initial-value)
-    (->OpsetConvergentRef actor
-                          (core/->ConvergentState
-                           (core/log core/root-id (ops/make-list))
-                           nil
-                           nil
-                           true)
-                          (util/queue)
-                          meta
-                          validator
-                          nil)
-
-    :else
-    (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
-                    {:initial-value initial-value}))))
+  [{:keys [log actor initial-value meta validator]}]
+  (->OpsetConvergentRef actor
+                        (core/->ConvergentState
+                         (assoc log
+                                (core/next-id log actor)
+                                (ops/snapshot
+                                 (hash log)
+                                 (interpret/interpret
+                                  (merge log
+                                         (:ops
+                                          (patch/make-patch log nil actor nil initial-value))))))
+                         nil
+                         nil
+                         true)
+                        (util/queue)
+                        meta
+                        validator
+                        nil))
 
 (defmethod core/make-ref-from-ops :opset
   [{:keys [ops actor meta validator]}]

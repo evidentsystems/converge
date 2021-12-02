@@ -67,7 +67,8 @@
       (assert (validator new-value) "Validator rejected reference state"))
     (let [edits (e/get-edits (e/diff (:value state) new-value {:str-diff? true}))]
       (when (pos? (count edits))
-        (core/->Patch (avl/sorted-map
+        (core/->Patch (-> state :log core/ref-id-from-log)
+                      (avl/sorted-map
                        (core/next-id (:log state) actor)
                        (ops/edit edits))))))
   (-state-from-patch [_ patch]
@@ -209,10 +210,12 @@
        (-hash [this] (goog/getUid this))]))
 
 (defmethod core/make-ref :editscript
-  [{:keys [initial-value actor meta validator]}]
+  [{:keys [log initial-value actor meta validator]}]
   (->EditscriptConvergentRef actor
                              (core/->ConvergentState
-                              (core/log core/root-id (ops/snapshot (hash (core/log)) initial-value))
+                              (assoc log
+                                     (core/next-id log actor)
+                                     (ops/snapshot (hash log) initial-value))
                               nil
                               nil
                               true)

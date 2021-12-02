@@ -84,6 +84,10 @@
 
 ;;;; Identifiers
 
+(defn ref-id-from-log
+  [log]
+  (-> log util/first-indexed val :data :id))
+
 (declare id?)
 
 (defrecord Id [^UUID actor ^long counter]
@@ -149,10 +153,15 @@
    (assert (or (nil? data) (map? data)) "The `data` of an Op, if provided, must be a map")
    (->Op action data)))
 
+(def ^:const ROOT -1)
+
+(defn root-op
+  [id backend]
+  (op ROOT {:id id :backend backend}))
+
 ;;;; Patch
 
-;; TODO: patch caches?
-(defrecord Patch [ops])
+(defrecord Patch [source ops])
 
 (defn patch?
   [o]

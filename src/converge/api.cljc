@@ -31,30 +31,40 @@
   "Creates and returns a ConvergentRef with an initial value of `x` and
   zero or more options (in any order):
 
+  :id a UUID
+
   :actor a UUID
 
   :meta metadata-map
 
   :validator validate-fn
 
-  The actor uniquely identifies the origin of all changes made on this
-  convergent ref, and must be globally unique for all sites/users of the
-  underlying CRDT. If not provided, a random actor UUID will be
-  generated. If metadata-map is supplied, it will become the metadata
-  on the atom. validate-fn must be nil or a side-effect-free fn of one
-  argument, which will be passed the intended new state on any state
-  change. If the new state is unacceptable, the validate-fn should
-  return false or throw an Error.  If either of these error conditions
-  occur, then the value of the atom will not change."
-  [initial-value & {:keys [actor backend] :as options}]
+  The `id` uniquely identifies this convergent reference across all
+  peers. The `actor` uniquely identifies the origin of all changes made
+  on this convergent ref, and must be globally unique for all
+  sites/users of the underlying CRDT. If not provided, a random actor
+  UUID will be generated. If metadata-map is supplied, it will become
+  the metadata on the atom. validate-fn must be nil or a
+  side-effect-free fn of one argument, which will be passed the
+  intended new state on any state change. If the new state is
+  unacceptable, the validate-fn should return false or throw an Error.
+  If either of these error conditions occur, then the value of the
+  atom will not change."
+  [initial-value & {:keys [id actor backend] :as options}]
+  (assert (or (nil? id) (uuid? id))
+          "Option `:id`, if provided, must be a UUID")
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
-  (let [r (core/make-ref (assoc options
-                                :actor (or actor (util/uuid))
-                                :backend (or backend default-backend)
-                                :initial-value initial-value))]
+  (let [backend* (or backend default-backend)
+        log      (core/log
+                  (core/make-id nil)
+                  (core/root-op (or id (util/uuid)) backend*))
+        r        (core/make-ref (assoc options
+                                       :log log
+                                       :actor (or actor (util/uuid))
+                                       :backend backend*
+                                       :initial-value initial-value))]
     @r
-    (reset! r initial-value)
     r))
 
 (defn ref-from-ops
@@ -76,14 +86,13 @@
   change. If the new state is unacceptable, the validate-fn should
   return false or throw an Error.  If either of these error conditions
   occur, then the value of the atom will not change."
-  [ops & {:keys [actor backend] :as options}]
+  [ops & {:keys [actor] :as options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
   ;; TODO: assertions ensuring valid operation ops
   (let [r (core/make-ref-from-ops
            (assoc options
                   :actor (or actor (util/uuid))
-                  :backend (or backend default-backend)
                   :ops (into (core/log) ops)))]
     @r
     r))
@@ -91,14 +100,13 @@
 (defn snapshot-ref
   "Creates a new reference which is a snapshot of the given reference,
   having a single `snapshot` operation in its log."
-    [cr & {:keys [actor backend] :as options}]
-    (let [r  (core/make-snapshot-ref
-              (assoc options
-                     :actor (or actor (core/-actor cr))
-                     :backend (or backend default-backend)
-                     :state (core/-state cr)))]
-      @r
-      r))
+  [cr & {:keys [actor] :as options}]
+  (let [r  (core/make-snapshot-ref
+            (assoc options
+                   :actor (or actor (core/-actor cr))
+                   :state (core/-state cr)))]
+    @r
+    r))
 
 (defn convergent?
   [o]
@@ -117,17 +125,24 @@
   [cr]
   (core/-log cr))
 
-;; TODO: Docstring, noting that source ops must come from ref with same backend
+(defn ref-id
+  [cr]
+  (-> cr log core/ref-id-from-log))
+
 (defn merge!
   [cr other]
-  (let [patch (cond
+  (assert (convergent? cr) "Destination must be a ConvergentRef")
+  (let [cr-id (ref-id cr)
+        patch (cond
                 (nil? other)
                 nil
 
-                (= (type cr) (type other))
-                (core/->Patch (log other))
+                (and (= (type cr) (type other))
+                     (= cr-id (ref-id other)))
+                (core/->Patch (ref-id other) (log other))
 
-                (core/patch? other)
+                (and (core/patch? other)
+                     (= cr-id (:source other)))
                 other
 
                 :else
@@ -140,15 +155,20 @@
 
 (defn squash!
   [cr other]
-  (let [additional-ops
+  (assert (convergent? cr) "Destination must be a ConvergentRef")
+  (let [cr-id (ref-id cr)
+
+        additional-ops
         (cond
           (nil? other)
           nil
 
-          (convergent? other)
+          (and (= (type cr) (type other))
+               (= cr-id (ref-id other)))
           (log other)
 
-          (core/patch? other)
+          (and (core/patch? other)
+               (= cr-id (:source other)))
           (:ops other)
 
           :else
