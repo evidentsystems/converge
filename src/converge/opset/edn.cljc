@@ -33,29 +33,30 @@
 
 (defmulti -edn
   (fn [{:keys [elements entity]}]
-    (some->> entity
-             (get elements)
-             util/get-type))
+    (some-> elements
+            (get-in [entity :value])
+            util/get-type))
   :default ::default)
 
 (defmethod -edn ::default
   [{:keys [elements entity]}]
-  (get elements entity))
+  (get-in elements [entity :value]))
 
+;; TODO: build metadata index of (hash element) -> value id
+;; TODO: lookup element value by attribute (which is a value id, not a static value)
 (defmethod -edn :map
   [{:keys [elements list-links eavt entity]}]
-  (let [container (get elements entity)]
-    (-> (reduce (fn [agg {:keys [attribute value]}]
-                  (assoc! agg attribute (-edn {:elements   elements
-                                               :list-links list-links
-                                               :eavt       eavt
-                                               :entity     value})))
-                (transient container)
-                (avl/subrange eavt
-                              >= (interpret/->Element entity nil nil)
-                              <  (interpret/->Element (core/successor-id entity) nil nil)))
-        persistent!
-        (vary-meta assoc :converge/id entity))))
+  (-> (reduce (fn [agg {:keys [attribute value]}]
+                (assoc! agg attribute (-edn {:elements   elements
+                                             :list-links list-links
+                                             :eavt       eavt
+                                             :entity     value})))
+              (some-> elements (get-in [entity :value]) transient)
+              (avl/subrange eavt
+                            >= (interpret/->Element entity nil nil)
+                            <  (interpret/->Element (core/successor-id entity) nil nil)))
+      persistent!
+      (vary-meta assoc :converge/id entity)))
 
 (defmethod -edn :vec
   [{:keys [elements list-links eavt entity]}]
@@ -67,7 +68,7 @@
                                      >= (interpret/->Element entity nil nil)
                                      <  (interpret/->Element (core/successor-id entity) nil nil))))]
     (loop [ins (get list-links entity)
-           ret (transient (get elements entity))
+           ret (some-> elements (get-in [entity :value]) transient)
            idx []]
       (if (= ins interpret/list-end-sigil)
         (some-> ret
@@ -83,20 +84,20 @@
                 [ret idx])]
           (recur (get list-links ins) next-ret next-idx))))))
 
+;; TODO: build metadata index of (hash element) -> value id
 (defmethod -edn :set
   [{:keys [elements list-links eavt entity]}]
-  (let [container (get elements entity)]
-    (-> (reduce (fn [agg {:keys [attribute]}]
-                  (conj! agg (-edn {:elements   elements
-                                    :list-links list-links
-                                    :eavt       eavt
-                                    :entity         attribute})))
-                (transient container)
-                (avl/subrange eavt
-                              >= (interpret/->Element entity nil nil)
-                              <  (interpret/->Element (core/successor-id entity) nil nil)))
-        persistent!
-        (vary-meta assoc :converge/id entity))))
+  (-> (reduce (fn [agg {:keys [attribute]}]
+                (conj! agg (-edn {:elements   elements
+                                  :list-links list-links
+                                  :eavt       eavt
+                                  :entity     attribute})))
+              (some-> elements (get-in [entity :value]) transient)
+              (avl/subrange eavt
+                            >= (interpret/->Element entity nil nil)
+                            <  (interpret/->Element (core/successor-id entity) nil nil)))
+      persistent!
+      (vary-meta assoc :converge/id entity)))
 
 (defmethod -edn :lst
   [{:keys [elements list-links eavt entity]}]
@@ -108,7 +109,7 @@
                                      >= (interpret/->Element entity nil nil)
                                      <  (interpret/->Element (core/successor-id entity) nil nil))))]
     (loop [ins (get list-links entity)
-           ret (get elements entity)
+           ret (get-in elements [entity :value])
            idx []]
       (if (= ins interpret/list-end-sigil)
         (vary-meta ret assoc :converge/id entity :converge/insertions idx)
@@ -123,28 +124,19 @@
                 [ret idx])]
           (recur (get list-links ins) next-ret next-idx))))))
 
+(defn root-element-id
+  [elements]
+  (reduce-kv (fn [agg id {:keys [root?]}]
+               (if root?
+                 (max agg id)
+                 agg))
+             nil
+             elements))
+
 (defn edn
   "Transforms an converge.opset.interpret.Interpretation into an EDN value."
   [{:keys [elements list-links] :as _interpretation}]
   (-edn {:elements   elements
          :list-links list-links
          :eavt       (elements->eavt elements)
-         :entity     core/root-id}))
-
-(comment
-
-  (def l (converge.core/log core/root-id (converge.opset.ops/make-map)))
-
-  (def p (converge.opset.patch/make-patch l nil (util/uuid) {} user/model))
-
-  (def l* (merge l (:ops p)))
-
-  (def i (interpret/interpret l*))
-
-  (keys i)
-
-  (get (:elements i) core/root-id)
-
-  (edn i)
-
-  )
+         :entity     (root-element-id elements)}))

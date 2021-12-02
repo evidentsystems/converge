@@ -55,28 +55,28 @@
   agg)
 
 (defmethod -interpret-op ops/MAKE_MAP
-  [agg id _op]
-  (update agg :elements assoc! id {}))
+  [agg id op]
+  (update agg :elements assoc! id (assoc (:data op) :value {})))
 
 (defmethod -interpret-op ops/MAKE_VECTOR
-  [agg id _op]
+  [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :elements assoc! id [])))
+      (update :elements assoc! id (assoc (:data op) :value []))))
 
 (defmethod -interpret-op ops/MAKE_SET
-  [agg id _op]
-  (update agg :elements assoc! id #{}))
+  [agg id op]
+  (update agg :elements assoc! id (assoc (:data op) :value #{})))
 
 (defmethod -interpret-op ops/MAKE_LIST
-  [agg id _op]
+  [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :elements assoc! id ())))
+      (update :elements assoc! id (assoc (:data op) :value ()))))
 
 (defmethod -interpret-op ops/MAKE_VALUE
   [agg id op]
-  (update agg :elements assoc! id (-> op :data :value)))
+  (update agg :elements assoc! id (:data op)))
 
 (defmethod -interpret-op ops/INSERT
   [{:keys [list-links] :as agg} id {{prev :after} :data}]

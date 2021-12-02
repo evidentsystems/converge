@@ -32,7 +32,7 @@
                (core/latest-id ops)))))
     (testing "next-id on empty log"
       (let [ops (core/log)]
-        (is (= core/root-id (core/next-id ops a)))))
+        (is (= (core/make-id a) (core/next-id ops a)))))
     (testing "next-id on non-empty log"
       (let [ops (core/log
                  (core/make-id a 0) :foo

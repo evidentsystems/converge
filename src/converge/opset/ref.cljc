@@ -23,16 +23,6 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defn valid?
-  [validator old-value new-value]
-  (let [type-pred (condp = (util/get-type old-value)
-                    :map map?
-                    :set set?
-                    :vec vector?
-                    :lst list?)]
-    (and (type-pred new-value)
-         (if (ifn? validator) (validator new-value) true))))
-
 (deftype OpsetConvergentRef #?(:clj  [^:volatile-mutable actor
                                       ^:volatile-mutable state
                                       ^:volatile-mutable patches
@@ -57,7 +47,8 @@
       (core/notify-w this watches old-value (:value new-state))))
   (-make-patch
     [_ new-value]
-    (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
+    (when (ifn? validator)
+      (assert (validator new-value) "Validator rejected reference state"))
     (let [{:keys [value log]
            interpretation :cache}
           state]
@@ -138,7 +129,8 @@
             value)))
        (setValidator
         [_ f]
-        (assert (valid? f (:value state) (:value state)) "Validator rejected reference state")
+        (when (ifn? validator)
+          (assert (validator (:value state)) "Validator rejected reference state"))
         (set! validator f))
        (getValidator [_] validator)
        (getWatches   [_] watches)

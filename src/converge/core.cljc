@@ -115,9 +115,6 @@
   [o]
   (instance? Id o))
 
-(def root-id
-  (make-id nil 0))
-
 (defn successor-id
   ([id]
    (successor-id id (:actor id)))
@@ -132,7 +129,7 @@
   [log actor]
   (if-let [latest (latest-id log)]
     (successor-id latest actor)
-    root-id))
+    (make-id actor)))
 
 ;;;; Operation Log
 
