@@ -32,7 +32,6 @@
     ops/SNAPSHOT
     (:value data)
 
-    :else
     value))
 
 (defn value-from-ops
