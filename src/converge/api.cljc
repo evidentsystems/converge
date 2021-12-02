@@ -25,6 +25,7 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
+(def backends #{:opset :editscript})
 (def default-backend :editscript)
 
 (defn ref
@@ -34,6 +35,8 @@
   :id a UUID
 
   :actor a UUID
+
+  :backend one of `backends`
 
   :meta metadata-map
 
@@ -55,13 +58,16 @@
           "Option `:id`, if provided, must be a UUID")
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
-  (let [backend* (or backend default-backend)
-        log      (core/log
-                  (core/make-id nil)
-                  (core/root-op (or id (util/uuid)) backend*))
+  (assert (or (nil? backend) (backends backend))
+          (str "Option `:backend`, if provided, must be one of " backends))
+  (let [actor* (or actor (util/uuid))
+        backend* (or backend default-backend)
+        log      (core/make-log
+                  (core/make-id)
+                  (core/root-op (or id (util/uuid)) actor* backend*))
         r        (core/make-ref (assoc options
                                        :log log
-                                       :actor (or actor (util/uuid))
+                                       :actor actor*
                                        :backend backend*
                                        :initial-value initial-value))]
     @r
@@ -89,11 +95,12 @@
   [ops & {:keys [actor] :as options}]
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
-  ;; TODO: assertions ensuring valid operation ops
+  ;; TODO: assertions ensuring valid operation log
   (let [r (core/make-ref-from-ops
            (assoc options
+                  :backend (-> ops core/ref-root-data-from-log :backend)
                   :actor (or actor (util/uuid))
-                  :ops (into (core/log) ops)))]
+                  :ops (into (core/make-log) ops)))]
     @r
     r))
 
@@ -101,7 +108,7 @@
   [o]
   (satisfies? core/ConvergentRef o))
 
-(defn actor
+(defn ref-actor
   [cr]
   (core/-actor cr))
 
@@ -110,13 +117,21 @@
   (core/-set-actor! cr actor)
   cr)
 
-(defn log
+(defn ref-log
   [cr]
   (core/-log cr))
 
 (defn ref-id
   [cr]
-  (-> cr log core/ref-id-from-log))
+  (-> cr ref-log core/ref-root-data-from-log :id))
+
+(defn ref-creator
+  [cr]
+  (-> cr ref-log core/ref-root-data-from-log :creator))
+
+(defn ref-backend
+  [cr]
+  (-> cr ref-log core/ref-root-data-from-log :backend))
 
 (defn merge!
   [cr other]
@@ -128,7 +143,7 @@
 
                 (and (= (type cr) (type other))
                      (= cr-id (ref-id other)))
-                (core/->Patch (ref-id other) (log other))
+                (core/->Patch (ref-id other) (ref-log other))
 
                 (and (core/patch? other)
                      (= cr-id (:source other)))
@@ -154,7 +169,7 @@
 
           (and (= (type cr) (type other))
                (= cr-id (ref-id other)))
-          (log other)
+          (ref-log other)
 
           (and (core/patch? other)
                (= cr-id (:source other)))
@@ -165,7 +180,7 @@
                           {:ref    cr
                            :object other})))]
     (when-not (nil? additional-ops)
-      (reset! cr (core/-value-from-ops cr (merge (log cr) additional-ops))))
+      (reset! cr (core/-value-from-ops cr (merge (ref-log cr) additional-ops))))
     cr))
 
 (defn peek-patches

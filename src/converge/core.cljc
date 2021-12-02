@@ -78,10 +78,6 @@
 
 ;;;; Identifiers
 
-(defn ref-id-from-log
-  [log]
-  (-> log util/first-indexed val :data :id))
-
 (declare id?)
 
 (defrecord Id [^UUID actor ^long counter]
@@ -97,7 +93,7 @@
 
 (defn make-id
   ([]
-   (make-id (util/uuid)))
+   (make-id nil))
   ([actor]
    (make-id actor 0))
   ([actor counter]
@@ -113,6 +109,7 @@
   ([id]
    (successor-id id (:actor id)))
   ([{:keys [counter]} actor]
+   (assert (uuid? actor) "The `actor` of an Id must be a UUID")
    (make-id actor (inc counter))))
 
 (defn latest-id
@@ -121,18 +118,15 @@
 
 (defn next-id
   [log actor]
+  (assert (uuid? actor) "The `actor` of an Id must be a UUID")
   (if-let [latest (latest-id log)]
     (successor-id latest actor)
     (make-id actor)))
 
 ;;;; Operation Log
 
-(defn log
-  "An operation log is a sorted map of Id -> Op"
-  ([]
-   (avl/sorted-map))
-  ([& id-ops]
-   (apply avl/sorted-map id-ops)))
+(def ^{:doc "An operation log is a sorted map of Id -> Op"}
+  make-log avl/sorted-map)
 
 (defrecord Op [^long action data])
 
@@ -147,8 +141,12 @@
 (def ^:const ROOT -1)
 
 (defn root-op
-  [id backend]
-  (op ROOT {:id id :backend backend}))
+  [id actor backend]
+  (op ROOT {:id id :creator actor :backend backend}))
+
+(defn ref-root-data-from-log
+  [log]
+  (-> log util/first-indexed val :data))
 
 ;;;; Patch
 
