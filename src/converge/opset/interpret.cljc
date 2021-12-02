@@ -123,13 +123,13 @@
                   (persistent! elements))))))
 
 (defmethod -interpret-op ops/SNAPSHOT
-  [agg id {{{:keys [ops elements list-links]} :interpretation
-            log-hash :log-hash}
-           :data}]
-  (if (= log-hash (hash (avl/subrange ops > id)))
+  [agg id
+   {{:keys [interpretation log-hash]}
+    :data}]
+  (if (= log-hash (hash (avl/subrange (:opset agg) < id)))
     (assoc agg
-           :elements   (transient elements)
-           :list-links (transient list-links))
+           :elements   (transient (:elements interpretation))
+           :list-links (transient (:list-links interpretation)))
     agg))
 
 (defn interpret
