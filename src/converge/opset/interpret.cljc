@@ -35,8 +35,8 @@
     [_ other]
     (assert (element? other))
     (compare
-     [entity          (hash attribute)          value]
-     [(:entity other) (hash (:attribute other)) (:value other)])))
+     [entity          attribute          value]
+     [(:entity other) (:attribute other) (:value other)])))
 
 (defn element?
   [o]

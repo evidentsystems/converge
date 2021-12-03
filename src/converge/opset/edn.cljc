@@ -149,12 +149,13 @@
 
 (defn root-element-id
   [elements]
-  (reduce-kv (fn [agg id {:keys [root?]}]
-               (if root?
-                 (max agg id)
-                 agg))
-             nil
-             elements))
+  (let [root-id (core/make-id)]
+    (reduce-kv (fn [agg id {:keys [root?]}]
+                 (if root?
+                   (if (nat-int? (compare id agg)) id agg)
+                   agg))
+               root-id
+               elements)))
 
 (defn edn
   "Transforms an converge.opset.interpret.Interpretation into an EDN value."

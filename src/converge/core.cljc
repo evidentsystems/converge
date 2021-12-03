@@ -138,7 +138,7 @@
    (assert (or (nil? data) (map? data)) "The `data` of an Op, if provided, must be a map")
    (->Op action data)))
 
-(def ^:const ROOT -1)
+(def ^:const ROOT 0)
 
 (defn root-op
   [id actor backend]
