@@ -66,7 +66,7 @@
       (assert (validator new-value) "Validator rejected reference state"))
     (let [edits (e/get-edits (e/diff (:value state) new-value {:str-diff? true}))]
       (when (pos? (count edits))
-        (core/->Patch (-> state :log core/ref-id-from-log)
+        (core/->Patch (-> state :log core/ref-root-data-from-log :id)
                       (avl/sorted-map
                        (core/next-id (:log state) actor)
                        (ops/edit edits))))))
