@@ -49,29 +49,31 @@
     [_ new-value]
     (when (ifn? validator)
       (assert (validator new-value) "Validator rejected reference state"))
-    (let [{:keys [value log]
+    (let [{:keys          [value log]
            interpretation :cache}
           state]
       (patch/make-patch log interpretation actor value new-value)))
   (-state-from-patch [_ patch]
     (if (core/patch? patch)
-      (let [{:keys [ops]}
+      (let [{ops                  :ops
+             patch-interpretation :interpretation
+             patch-value          :value}
             patch
 
-            {:keys [log]
-             interpretation :cache}
-            state
-
             new-log
-            (into log ops)
+            (into (:log state) ops)
 
             new-interpretation
-            (if interpretation
-              (interpret/interpret interpretation ops)
-              (interpret/interpret new-log))]
+            (or patch-interpretation
+                (if-let [cached (:cache state)]
+                  (interpret/interpret cached ops)
+                  (interpret/interpret new-log)))
+
+            new-value
+            (or patch-value (edn/edn new-interpretation))]
         (core/->ConvergentState new-log
                                 new-interpretation
-                                (edn/edn new-interpretation)
+                                new-value
                                 false))
       state))
   (-peek-patches [_] (peek patches))
@@ -109,9 +111,9 @@
        IRef
        (deref
         [_]
-        (let [{:keys [log value dirty?]
+        (let [{:keys          [log value dirty?]
                interpretation :cache
-               :as s}
+               :as            s}
               state]
           (if dirty?
             (let [new-interpretation
@@ -149,9 +151,9 @@
        IDeref
        (-deref
         [_]
-        (let [{:keys [log value dirty?]
+        (let [{:keys          [log value dirty?]
                interpretation :cache
-               :as s}
+               :as            s}
               state]
           (if dirty?
             (let [new-interpretation

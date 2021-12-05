@@ -72,6 +72,10 @@
   [m]
   (into [] m))
 
+(defn write-patch
+  [patch]
+  {:ops (:ops patch)})
+
 (defn write-state
   [state]
   {:log (:log state)})

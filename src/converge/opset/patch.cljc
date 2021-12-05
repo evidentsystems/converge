@@ -437,10 +437,12 @@
                next-interp))
       (let [ops (avl/subrange log > (core/latest-id log-orig))]
         (when-not (empty? ops)
-          (some-> log-orig
-                  core/ref-root-data-from-log
-                  :id
-                  (core/->Patch ops)))))))
+          (core/map->Patch {:source         (-> log-orig
+                                                core/ref-root-data-from-log
+                                                :id)
+                            :ops            ops
+                            :interpretation interp
+                            :value          value}))))))
 
 (comment
 
