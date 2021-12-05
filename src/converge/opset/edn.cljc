@@ -48,31 +48,29 @@
                             >= (interpret/->Element entity nil nil)
                             <  (interpret/->Element (core/successor-id entity) nil nil))]
     (loop [i   0
-           ret (some-> elements (get-in [entity :value]) transient)
+           ret (transient {})
            idx (transient {})]
       (if-let [element (nth attrs i nil)]
-        (let [attribute (-edn {:elements   elements
-                               :list-links list-links
-                               :eavt       eavt
-                               :entity     (:attribute element)})]
+        (let [k (-edn {:elements   elements
+                       :list-links list-links
+                       :eavt       eavt
+                       :entity     (:attribute element)})]
           (recur (inc i)
                  (assoc! ret
-                         attribute
+                         k
                          (-edn {:elements   elements
                                 :list-links list-links
                                 :eavt       eavt
                                 :entity     (:value element)}))
-                 (assoc! idx
-                         (hash attribute)
-                         (:attribute element))))
+                 (assoc! idx k (:attribute element))))
         (some-> ret
                 persistent!
                 (vary-meta assoc
                            :converge/id entity
                            :converge/keys (persistent! idx)))))))
 
-(defmethod -edn :vec
-  [{:keys [elements list-links eavt entity]}]
+(defn- -edn-vector
+  [elements list-links eavt entity]
   (let [attrs (persistent!
                (reduce (fn [agg {:keys [attribute value]}]
                          (assoc! agg attribute value))
@@ -81,21 +79,29 @@
                                      >= (interpret/->Element entity nil nil)
                                      <  (interpret/->Element (core/successor-id entity) nil nil))))]
     (loop [ins (get list-links entity)
-           ret (some-> elements (get-in [entity :value]) transient)
-           idx []]
+           ret (transient [])
+           idx (transient [])]
       (if (= ins interpret/list-end-sigil)
         (some-> ret
                 persistent!
-                (vary-meta assoc :converge/id entity :converge/insertions idx))
+                (vary-meta assoc
+                           :converge/id entity
+                           :converge/insertions (persistent! idx)))
         (let [[next-ret next-idx]
-              (if-let [value (get attrs ins)]
+              (if-some [value (get attrs ins)]
                 [(conj! ret (-edn {:elements   elements
                                    :list-links list-links
                                    :eavt       eavt
                                    :entity     value}))
-                 (conj idx ins)]
+                 (conj! idx ins)]
                 [ret idx])]
-          (recur (get list-links ins) next-ret next-idx))))))
+          (recur (get list-links ins)
+                 next-ret
+                 next-idx))))))
+
+(defmethod -edn :vec
+  [{:keys [elements list-links eavt entity]}]
+  (-edn-vector elements list-links eavt entity))
 
 (defmethod -edn :set
   [{:keys [elements list-links eavt entity]}]
@@ -103,19 +109,16 @@
                             >= (interpret/->Element entity nil nil)
                             <  (interpret/->Element (core/successor-id entity) nil nil))]
     (loop [i   0
-           ret (some-> elements (get-in [entity :value]) transient)
+           ret (transient #{})
            idx (transient {})]
       (if-let [element (nth attrs i nil)]
-        (let [attribute (-edn {:elements   elements
-                               :list-links list-links
-                               :eavt       eavt
-                               :entity     (:attribute element)})]
+        (let [member (-edn {:elements   elements
+                            :list-links list-links
+                            :eavt       eavt
+                            :entity     (:attribute element)})]
           (recur (inc i)
-                 (conj! ret
-                        attribute)
-                 (assoc! idx
-                         (hash attribute)
-                         (:attribute element))))
+                 (conj! ret member)
+                 (assoc! idx member (:attribute element))))
         (some-> ret
                 persistent!
                 (vary-meta assoc
@@ -124,28 +127,8 @@
 
 (defmethod -edn :lst
   [{:keys [elements list-links eavt entity]}]
-  (let [attrs (persistent!
-               (reduce (fn [agg {:keys [attribute value]}]
-                         (assoc! agg attribute value))
-                       (transient {})
-                       (avl/subrange eavt
-                                     >= (interpret/->Element entity nil nil)
-                                     <  (interpret/->Element (core/successor-id entity) nil nil))))]
-    (loop [ins (get list-links entity)
-           ret (get-in elements [entity :value])
-           idx (transient [])]
-      (if (= ins interpret/list-end-sigil)
-        (vary-meta ret assoc :converge/id entity :converge/insertions (persistent! idx))
-        (let [[next-ret next-idx]
-              (if-let [value (get attrs ins)]
-                [(cons (-edn {:elements   elements
-                              :list-links list-links
-                              :eavt       eavt
-                              :entity     value})
-                       ret)
-                 (conj! idx ins)]
-                [ret idx])]
-          (recur (get list-links ins) next-ret next-idx))))))
+  (let [v (-edn-vector elements list-links eavt entity)]
+   (with-meta (apply list v) (meta v))))
 
 (defn root-element-id
   [elements]

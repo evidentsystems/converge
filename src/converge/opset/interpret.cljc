@@ -95,19 +95,16 @@
 ;; we're generating Ops from trees.
 (defmethod -interpret-op ops/ASSIGN
   [{:keys [elements] :as agg} id {:keys [data]}]
-  (let [{:keys [entity attribute value]} data
-
-        elements* (persistent! elements)]
+  (let [{:keys [entity attribute value]} data]
     (assoc agg
            :elements
            (transient
             (into {id (->Element entity attribute value)}
                   (filter
                    (fn [[_id element]]
-                     (and (or (not= (:entity element)    entity)
-                              (not= (:attribute element) attribute))
-                          (not= value (:value element)))))
-                  elements*)))))
+                     (or (not= (:entity element)    entity)
+                         (not= (:attribute element) attribute))))
+                  (persistent! elements))))))
 
 (defmethod -interpret-op ops/REMOVE
   [{:keys [elements] :as agg} _id {:keys [data]}]

@@ -14,7 +14,7 @@
 (ns converge.opset.ref
   (:require [converge.core :as core]
             [converge.util :as util]
-            [converge.opset.ops :as ops]
+            #_[converge.opset.ops :as ops]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
             [converge.opset.patch :as patch])
@@ -215,25 +215,23 @@
        IHash
        (-hash [this] (goog/getUid this))]))
 
+;; TODO: add snapshot as initial op?
 (defmethod core/make-ref :opset
   [{:keys [log actor initial-value meta validator]}]
-  (->OpsetConvergentRef actor
-                        (core/->ConvergentState
-                         (assoc log
-                                (core/next-id log actor)
-                                (ops/snapshot
-                                 (hash log)
-                                 (interpret/interpret
-                                  (merge log
-                                         (:ops
-                                          (patch/make-patch log nil actor nil initial-value))))))
-                         nil
-                         nil
-                         true)
-                        (util/queue)
-                        meta
-                        validator
-                        nil))
+  (let [r         (->OpsetConvergentRef actor
+                                        (core/->ConvergentState log
+                                                                nil
+                                                                nil
+                                                                true)
+                                        (util/queue)
+                                        meta
+                                        validator
+                                        nil)
+        patch     (core/-make-patch r initial-value)
+        new-state (core/-state-from-patch r patch)]
+    (core/validate-reset nil initial-value new-state patch)
+    (core/-apply-state! r new-state)
+    r))
 
 (defmethod core/make-ref-from-ops :opset
   [{:keys [ops actor meta validator]}]

@@ -117,11 +117,15 @@
   (some-> log util/last-indexed key))
 
 (defn next-id
-  [log actor]
-  (assert (uuid? actor) "The `actor` of an Id must be a UUID")
-  (if-let [latest (latest-id log)]
-    (successor-id latest actor)
-    (make-id actor)))
+  ([log] (next-id log nil))
+  ([log actor]
+   (if-let [latest (latest-id log)]
+     (if actor
+       (successor-id latest actor)
+       (successor-id latest))
+     (if actor
+       (make-id actor)
+       (throw (ex-info "Can't get the next-id of an empty log without an `actor`" {:log log}))))))
 
 ;;;; Operation Log
 
