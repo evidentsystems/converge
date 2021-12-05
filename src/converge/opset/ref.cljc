@@ -14,7 +14,7 @@
 (ns converge.opset.ref
   (:require [converge.core :as core]
             [converge.util :as util]
-            #_[converge.opset.ops :as ops]
+            [converge.opset.ops :as ops]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
             [converge.opset.patch :as patch])
@@ -217,20 +217,27 @@
        IHash
        (-hash [this] (goog/getUid this))]))
 
-;; TODO: add snapshot as initial op?
 (defmethod core/make-ref :opset
   [{:keys [log actor initial-value meta validator]}]
-  (let [r         (->OpsetConvergentRef actor
-                                        (core/->ConvergentState log
-                                                                nil
-                                                                nil
-                                                                true)
-                                        (util/queue)
-                                        meta
-                                        validator
-                                        nil)
-        patch     (core/-make-patch r initial-value)
-        new-state (core/-state-from-patch r patch)]
+  (let [r               (->OpsetConvergentRef actor
+                                              (core/->ConvergentState log
+                                                                      nil
+                                                                      nil
+                                                                      true)
+                                              (util/queue)
+                                              meta
+                                              validator
+                                              nil)
+        patch           (core/-make-patch r initial-value)
+        snapshot-log    (merge log (:ops patch))
+        snapshot-interp (:interpretation patch)
+        new-state       (core/->ConvergentState
+                         (assoc log
+                                (core/next-id snapshot-log actor)
+                                (ops/snapshot (hash log) snapshot-interp))
+                         snapshot-interp
+                         (:value patch)
+                         false)]
     (core/validate-reset nil initial-value new-state patch)
     (core/-apply-state! r new-state)
     r))

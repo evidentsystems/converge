@@ -268,7 +268,7 @@
 
   (profiler/profile
    (dotimes [_ 10000]
-     @(convergent/ref a)))
+     @(convergent/ref a :backend :opset)))
 
   ;; MacBook Pro 02/17/2021
   ;;                 Evaluation count : 84780 in 60 samples of 1413 calls.
