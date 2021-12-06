@@ -16,7 +16,7 @@
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
   (:require [clojure.data.avl :as avl]
             [converge.opset.ops :as ops]
-            converge.core))
+            [converge.core :as core]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
@@ -43,6 +43,16 @@
   (instance? Element o))
 
 (defrecord Interpretation [elements list-links])
+
+(defn elements->eavt
+  [elements]
+  (persistent!
+   (reduce-kv (fn [agg k v]
+                (if (element? v)
+                  (conj! agg (vary-meta v assoc :converge/id k))
+                  agg))
+              (transient (avl/sorted-set))
+              elements)))
 
 (def list-end-sigil ::list-end)
 
@@ -92,54 +102,78 @@
 
 ;; We use the broader interpretation algorithm defined in section 3.2,
 ;; rather than the narrower tree definition defined in 5.2, since
-;; we're generating Ops from trees.
+;; we're generating Ops from trees. We use the adjustment for single-value register.
 (defmethod -interpret-op ops/ASSIGN
-  [{:keys [elements] :as agg} id {:keys [data]}]
-  (let [{:keys [entity attribute value]} data]
-    (assoc agg
-           :elements
-           (transient
-            (into {id (->Element entity attribute value)}
-                  (filter
-                   (fn [[_id element]]
-                     (or (not= (:entity element)    entity)
-                         (not= (:attribute element) attribute))))
-                  (persistent! elements))))))
+  [{:keys [eavt] :as agg} id {:keys [data]}]
+  (let [{:keys [entity attribute value]} data
 
+        eavt* (persistent! eavt)]
+    (reduce (fn [agg element]
+              (if-let [id (get (meta element) :converge/id)]
+                (-> agg
+                    (update :elements dissoc! id)
+                    (update :eavt disj! element))
+                agg))
+            (let [element (->Element entity attribute value)]
+              (-> agg
+                  (assoc :eavt (-> eavt*
+                                   transient
+                                   (conj! (vary-meta element assoc :converge/id id))))
+                  (update :elements assoc! id element)))
+            (avl/subrange eavt*
+                          >= (->Element entity attribute nil)
+                          <  (->Element entity (core/successor-id attribute) nil)))))
+
+;; We use the broader interpretation algorithm defined in section 3.2,
+;; rather than the narrower tree definition defined in 5.2, since
+;; we're generating Ops from trees. We use the adjustment for single-value register.
 (defmethod -interpret-op ops/REMOVE
-  [{:keys [elements] :as agg} _id {:keys [data]}]
-  (let [{:keys [entity attribute]} data]
-    (assoc agg
-           :elements
-           (transient
-            (into {}
-                  (filter
-                   (fn [[_id element]]
-                     (or (not= (:entity element)    entity)
-                         (not= (:attribute element) attribute))))
-                  (persistent! elements))))))
+  [{:keys [eavt] :as agg} _id {:keys [data]}]
+  (let [{:keys [entity attribute]} data
+
+        eavt* (persistent! eavt)]
+    (reduce (fn [agg element]
+              (if-let [id (get (meta element) :converge/id)]
+                (-> agg
+                    (update :elements dissoc! id)
+                    (update :eavt disj! element))
+                agg))
+            (assoc agg :eavt (transient eavt*))
+            (avl/subrange eavt*
+                          >= (->Element entity attribute nil)
+                          <  (->Element entity (core/successor-id attribute) nil)))))
 
 (defmethod -interpret-op ops/SNAPSHOT
   [agg id
-   {{:keys [interpretation log-hash]}
+   {{:keys [log-hash]
+     {:keys [elements list-links]}
+     :interpretation}
     :data}]
   (if (= log-hash (hash (avl/subrange (:opset agg) < id)))
     (assoc agg
-           :elements   (transient (:elements interpretation))
-           :list-links (transient (:list-links interpretation)))
+           :eavt       (transient (elements->eavt elements))
+           :elements   (transient elements)
+           :list-links (transient list-links))
     agg))
 
 (defn interpret
   ([opset-log]
-   (interpret {:elements {} :list-links {}} opset-log))
-  ([{:keys [elements list-links] :as _interpretation} ops]
-   (let [{elements*   :elements
-          list-links* :list-links}
+   (interpret nil opset-log))
+  ([{:keys [elements list-links eavt] :as _interpretation} ops]
+   (let [elements-init   (or elements {})
+         list-links-init (or list-links {})
+         eavt-init       (or eavt (elements->eavt elements-init))
+
+         {elements*   :elements
+          list-links* :list-links
+          eavt*       :eavt}
          (reduce-kv -interpret-op
-                    {:elements   (transient elements)
-                     :list-links (transient list-links)
+                    {:elements   (transient elements-init)
+                     :list-links (transient list-links-init)
+                     :eavt       (transient eavt-init)
                      :opset      ops}
                     ops)]
-     (->Interpretation
-      (persistent! elements*)
-      (persistent! list-links*)))))
+     (map->Interpretation
+      {:elements   (persistent! elements*)
+       :list-links (persistent! list-links*)
+       :eavt       (persistent! eavt*)}))))

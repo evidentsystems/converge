@@ -76,6 +76,11 @@
   [patch]
   {:ops (:ops patch)})
 
+(defn write-interpretation
+  [interpretation]
+  {:elements   (:elements interpretation)
+   :list-links (:list-links interpretation)})
+
 (defn write-state
   [state]
   {:log (:log state)})

@@ -230,7 +230,8 @@
                                               nil)
         patch           (core/-make-patch r initial-value)
         snapshot-log    (merge log (:ops patch))
-        snapshot-interp (:interpretation patch)
+        snapshot-interp (or (:interpretation patch)
+                            (interpret/interpret snapshot-log))
         new-state       (core/->ConvergentState
                          (assoc log
                                 (core/next-id snapshot-log actor)

@@ -21,16 +21,6 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defn- elements->eavt
-  [elements]
-  (persistent!
-   (reduce-kv (fn [agg _k v]
-                (if (interpret/element? v)
-                  (conj! agg v)
-                  agg))
-              (transient (avl/sorted-set))
-              elements)))
-
 (defmulti -edn
   (fn [{:keys [elements entity]}]
     (some-> elements
@@ -142,8 +132,8 @@
 
 (defn edn
   "Transforms an converge.opset.interpret.Interpretation into an EDN value."
-  [{:keys [elements list-links] :as _interpretation}]
+  [{:keys [elements list-links eavt] :as _interpretation}]
   (-edn {:elements   elements
          :list-links list-links
-         :eavt       (elements->eavt elements)
+         :eavt       (or eavt (interpret/elements->eavt elements))
          :entity     (root-element-id elements)}))
