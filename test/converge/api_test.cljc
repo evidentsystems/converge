@@ -121,6 +121,10 @@
         (let [r (convergent/ref b :backend backend)]
           (is (= (assoc-in b [0 :foo] :baz)
                  (swap! r assoc-in [0 :foo] :baz)))))
+      (testing "Can replace a nested vector"
+        (let [r     (convergent/ref [[0]] :backend backend)
+              final [[]]]
+          (is (= (reset! r final) final))))
       (testing "Can add a nested vector"
         (let [r (convergent/ref b :backend backend)]
           (is (= (assoc-in b [0 :foo] [:baz])
@@ -176,9 +180,7 @@
         (testing "merging a patch"
           (is (= @d @(convergent/merge! r (convergent/peek-patches d))))
           (is (= @d @(convergent/merge! (convergent/ref-from-ops (convergent/ref-log r))
-                                        (convergent/peek-patches d)))))
-        ;; TODO: merging a snapshot ref, with subsequent operations
-        ))))
+                                        (convergent/peek-patches d)))))))))
 
 (deftest squashing
   (doseq [backend convergent/backends]

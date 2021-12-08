@@ -48,6 +48,12 @@
     (assoc ops-after-member assign-id (ops/assign map-id member-id))))
 
 (defn insert-list-item-ops
+  [ops list-id insert-id after-id item-id]
+  (let [ops-after-insert (assoc ops insert-id (ops/insert after-id))
+        assign-id        (core/next-id ops-after-insert)]
+    (assoc ops-after-insert assign-id (ops/assign list-id insert-id item-id))))
+
+(defn create-and-insert-list-item-ops
   [ops list-id insert-id after-id item]
   (let [ops-after-insert (assoc ops insert-id (ops/insert after-id))
         item-id          (core/next-id ops-after-insert)
@@ -84,7 +90,7 @@
          after-id  list-id
          items     the-list]
     (if-some [item (first items)]
-      (let [next-ops (insert-list-item-ops ops list-id insert-id after-id item)]
+      (let [next-ops (create-and-insert-list-item-ops ops list-id insert-id after-id item)]
         (recur next-ops
                (core/next-id next-ops)
                insert-id
@@ -168,12 +174,16 @@
 (defmethod -edit-to-ops [:+ :vec]
   [ops actor [path _ item] the-vector]
   (let [entity-id (get-id the-vector)]
-    (insert-list-item-ops ops
-                          entity-id
-                          (core/next-id ops actor)
-                          (or (some->> path util/last-indexed dec (get-insertion-id the-vector))
-                              entity-id)
-                          item)))
+    (create-and-insert-list-item-ops
+     ops
+     entity-id
+     (core/next-id ops actor)
+     (or (some->> path
+                  util/last-indexed
+                  dec
+                  (get-insertion-id the-vector))
+         entity-id)
+     item)))
 
 (defmethod -edit-to-ops [:+ :set]
   [ops actor [_ _ item] the-set]
@@ -186,12 +196,16 @@
 (defmethod -edit-to-ops [:+ :lst]
   [ops actor [path _ item] the-list]
   (let [entity-id (get-id the-list)]
-    (insert-list-item-ops ops
-                          entity-id
-                          (core/next-id ops actor)
-                          (or (some->> path util/last-indexed dec (get-insertion-id the-list))
-                              entity-id)
-                          item)))
+    (create-and-insert-list-item-ops
+     ops
+     entity-id
+     (core/next-id ops actor)
+     (or (some->> path
+                  util/last-indexed
+                  dec
+                  (get-insertion-id the-list))
+         entity-id)
+     item)))
 
 ;;;; Remove
 
@@ -267,22 +281,36 @@
           (into #{} (concat (keys old-map) (keys new-map)))))
 
 
-;; TODO: actually diff here to preserve existing elements
+;; TODO: Can we make this better?  Preserve existing insertions/assignments/values?
 (defn list-diff-ops
   [ops* actor list-id old-list new-list]
-  #_(let [old-idx (loop [items old-list
-                         i     0
-                         idx   (transient {})]
-                    (if-let [item (first items)]
-                      (recur (next items)
-                             (inc i)
-                             (assoc! idx
-                                     item
-                                     {:index        i
-                                      :value-id     (get-id item)
-                                      :insertion-id (get-insertion-id old-list item)}))
-                      (persistent! idx)))])
-  (populate-list-ops ops* list-id new-list (core/next-id ops* actor)))
+  (let [ops-after-removals
+        (loop [ops ops*
+               items old-list
+               i    0]
+          (if (first items)
+            (recur (remove-key-ops ops
+                                   list-id
+                                   (core/next-id ops actor)
+                                   (get-insertion-id old-list i))
+                   (next items)
+                   (inc i))
+            ops))]
+    (loop [ops       ops-after-removals
+           insert-id (core/next-id ops-after-removals actor)
+           after-id  list-id
+           items     new-list]
+      (if-let [item (first items)]
+        (let [next-ops (if-let [id (get-id item)]
+                         (insert-list-item-ops
+                          ops list-id insert-id after-id id)
+                         (create-and-insert-list-item-ops
+                          ops list-id insert-id after-id item))]
+          (recur next-ops
+                 (core/next-id next-ops)
+                 insert-id
+                 (next new-list)))
+        ops))))
 
 (defn set-diff-ops
   [ops* actor set-id old-set new-set]
@@ -481,9 +509,14 @@
 
   (edn/edn (interpret/interpret log3))
 
-  (def r (converge.api/ref {#{} 0, {} 0} :backend :opset))
+  (def r (converge.api/ref [[0]] :backend :opset))
+  @r
+  (reset! r [[]])
+
+  (def r (converge.api/ref [0] :backend :opset))
+  @r
+  (reset! r [])
   (meta @r)
-  (reset! r {})
 
   (reset! r #{0})
 
