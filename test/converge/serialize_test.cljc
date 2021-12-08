@@ -29,6 +29,7 @@
 
 (def read-handlers*
   {"avl/map"              (t/read-handler serialize/read-avl-map)
+   "avl/set"              (t/read-handler serialize/read-avl-set)
    "converge/id"          (t/read-handler serialize/read-id)
    "converge/op"          (t/read-handler serialize/read-operation)
    "converge/patch"       (t/read-handler serialize/read-patch)
@@ -49,6 +50,7 @@
 (def #?(:clj  write-handlers*
         :cljs write-handlers)
   {clojure.data.avl.AVLMap (t/write-handler (constantly "avl/map") serialize/write-avl-map)
+   clojure.data.avl.AVLSet (t/write-handler (constantly "avl/set") serialize/write-avl-set)
 
    converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
    converge.core.Op                        (t/write-handler (constantly "converge/op") tagged-map-value)

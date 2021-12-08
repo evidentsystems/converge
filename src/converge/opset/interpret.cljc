@@ -16,7 +16,8 @@
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
   (:require [clojure.data.avl :as avl]
             [converge.opset.ops :as ops]
-            [converge.core :as core]))
+            [converge.core :as core])
+  #?(:clj (:import [converge.core Id])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
@@ -24,10 +25,13 @@
 (declare element?)
 
 (defrecord Element [#?@(:cljs [^clj entity]
-                        :clj  [entity])
-                    attribute
+                        :clj  [^Id  entity])
+                    #?@(:cljs [^clj attribute]
+                        :clj  [^Id  attribute])
                     #?@(:cljs [^clj value]
-                        :clj  [value])]
+                        :clj  [^Id  value])
+                    #?@(:cljs [^clj id]
+                        :clj  [^Id  id])]
   #?(:clj  Comparable
      :cljs IComparable)
   (#?(:clj  compareTo
@@ -35,24 +39,14 @@
     [_ other]
     (assert (element? other))
     (compare
-     [entity          attribute          value]
-     [(:entity other) (:attribute other) (:value other)])))
+     [entity          attribute          value          id]
+     [(:entity other) (:attribute other) (:value other) (:id other)])))
 
 (defn element?
   [o]
   (instance? Element o))
 
-(defrecord Interpretation [elements list-links])
-
-(defn elements->eavt
-  [elements]
-  (persistent!
-   (reduce-kv (fn [agg k v]
-                (if (element? v)
-                  (conj! agg (vary-meta v assoc :converge/id k))
-                  agg))
-              (transient (avl/sorted-set))
-              elements)))
+(defrecord Interpretation [elements list-links values])
 
 (def list-end-sigil ::list-end)
 
@@ -66,27 +60,27 @@
 
 (defmethod -interpret-op ops/MAKE_MAP
   [agg id op]
-  (update agg :elements assoc! id (assoc (:data op) :value {})))
+  (update agg :values assoc! id (assoc (:data op) :value {})))
 
 (defmethod -interpret-op ops/MAKE_VECTOR
   [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :elements assoc! id (assoc (:data op) :value []))))
+      (update :values assoc! id (assoc (:data op) :value []))))
 
 (defmethod -interpret-op ops/MAKE_SET
   [agg id op]
-  (update agg :elements assoc! id (assoc (:data op) :value #{})))
+  (update agg :values assoc! id (assoc (:data op) :value #{})))
 
 (defmethod -interpret-op ops/MAKE_LIST
   [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :elements assoc! id (assoc (:data op) :value ()))))
+      (update :values assoc! id (assoc (:data op) :value ()))))
 
 (defmethod -interpret-op ops/MAKE_VALUE
   [agg id op]
-  (update agg :elements assoc! id (:data op)))
+  (update agg :values assoc! id (:data op)))
 
 (defmethod -interpret-op ops/INSERT
   [{:keys [list-links] :as agg} id {{prev :after} :data}]
@@ -104,63 +98,51 @@
 ;; rather than the narrower tree definition defined in 5.2, since
 ;; we're generating Ops from trees. We use the adjustment for single-value register.
 (defmethod -interpret-op ops/ASSIGN
-  [{:keys [eavt] :as agg} id {:keys [data]}]
+  [{:keys [elements] :as agg} id {:keys [data]}]
   (let [{:keys [entity attribute value]} data
 
-        eavt* (persistent! eavt)]
+        elements* (persistent! elements)]
     (reduce (fn [agg element]
-              (if-let [id (get (meta element) :converge/id)]
-                (-> agg
-                    (update :elements dissoc! id)
-                    (update :eavt disj! element))
-                agg))
-            (let [element (->Element entity attribute value)]
-              (-> agg
-                  (assoc :eavt (-> eavt*
-                                   transient
-                                   (conj! (vary-meta element assoc :converge/id id))))
-                  (update :elements assoc! id element)))
-            (avl/subrange eavt*
-                          >= (->Element entity attribute nil)
-                          <  (->Element entity (core/successor-id attribute) nil)))))
+              (update agg :elements disj! (avl/nearest elements* >= element)))
+            (assoc agg :elements (conj!
+                                  (transient elements*)
+                                  (->Element entity attribute value id)))
+            (avl/subrange elements*
+                          >= (->Element entity attribute nil nil)
+                          <  (->Element entity (core/successor-id attribute) nil nil)))))
 
 ;; We use the broader interpretation algorithm defined in section 3.2,
 ;; rather than the narrower tree definition defined in 5.2, since
 ;; we're generating Ops from trees. We use the adjustment for single-value register.
 (defmethod -interpret-op ops/REMOVE
-  [{:keys [eavt] :as agg} _id {:keys [data]}]
+  [{:keys [elements] :as agg} _id {:keys [data]}]
   (let [{:keys [entity attribute]} data
 
-        eavt* (persistent! eavt)]
+        elements* (persistent! elements)]
     (reduce (fn [agg element]
-              (if-let [id (get (meta element) :converge/id)]
-                (-> agg
-                    (update :elements dissoc! id)
-                    (update :eavt disj! element))
-                agg))
-            (assoc agg :eavt (transient eavt*))
-            (avl/subrange eavt*
-                          >= (->Element entity attribute nil)
-                          <  (->Element entity (core/successor-id attribute) nil)))))
+              (update agg :elements disj! (avl/nearest elements* <= element)))
+            (assoc agg :elements (transient elements*))
+            (avl/subrange elements*
+                          >= (->Element entity attribute nil nil)
+                          <  (->Element entity (core/successor-id attribute) nil nil)))))
 
 (defn interpret
   ([opset-log]
    (interpret nil opset-log))
-  ([{:keys [elements list-links eavt] :as _interpretation} ops]
-   (let [elements-init   (or elements {})
+  ([{:keys [elements list-links values] :as _interpretation} ops]
+   (let [elements-init   (or elements   (avl/sorted-set))
          list-links-init (or list-links {})
-         eavt-init       (or eavt (elements->eavt elements-init))
+         values          (or values     {})
 
          {elements*   :elements
           list-links* :list-links
-          eavt*       :eavt}
+          values*     :values}
          (reduce-kv -interpret-op
                     {:elements   (transient elements-init)
                      :list-links (transient list-links-init)
-                     :eavt       (transient eavt-init)
-                     :opset      ops}
+                     :values     (transient values)}
                     ops)]
      (map->Interpretation
       {:elements   (persistent! elements*)
        :list-links (persistent! list-links*)
-       :eavt       (persistent! eavt*)}))))
+       :values     (persistent! values*)}))))
