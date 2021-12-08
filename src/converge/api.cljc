@@ -26,7 +26,7 @@
    :cljs (set! *warn-on-infer* true))
 
 (def backends #{:opset :editscript})
-(def default-backend :editscript)
+(def default-backend :opset)
 
 (defn ref
   "Creates and returns a ConvergentRef with an initial value of `x` and
