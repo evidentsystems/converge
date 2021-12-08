@@ -20,7 +20,8 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
-            [converge.core :as core]))
+            [converge.core :as core]
+            [converge.util :as util]))
 
 (def a {:empty-m {}
         :empty-l []
@@ -164,15 +165,16 @@
   (doseq [backend convergent/backends]
     (testing (str "Merging with backend: " backend)
       (let [r (convergent/ref a :backend backend)
-            d (convergent/ref-from-ops (convergent/ref-log r))]
+            d (convergent/ref-from-ops (convergent/ref-log r) :actor (util/uuid))]
         (swap! d assoc :b :another-key)
         (testing "merging nil"
-          (is (= a @(convergent/merge! (convergent/ref-from-ops (convergent/ref-log r))
-                                       nil))))
+          (is (= a @(convergent/merge! r nil))))
         (testing "merging another convergent ref"
+          (is (= @d @(convergent/merge! r d)))
           (is (= @d @(convergent/merge! (convergent/ref-from-ops (convergent/ref-log r))
                                         d))))
         (testing "merging a patch"
+          (is (= @d @(convergent/merge! r (convergent/peek-patches d))))
           (is (= @d @(convergent/merge! (convergent/ref-from-ops (convergent/ref-log r))
                                         (convergent/peek-patches d)))))
         ;; TODO: merging a snapshot ref, with subsequent operations
@@ -182,7 +184,7 @@
   (doseq [backend convergent/backends]
     (testing (str "Squashing with backend: " backend)
       (let [r      (convergent/ref a :backend backend)
-            d      (convergent/ref-from-ops (convergent/ref-log r))
+            d      (convergent/ref-from-ops (convergent/ref-log r) :actor (util/uuid))
             _      (swap! d assoc
                           :b :another-key
                           :a :foo)
@@ -201,7 +203,7 @@
             (is (> (count (convergent/ref-log d))
                    (count (convergent/ref-log cr))))))))))
 
-#_(defspec newly-constructed-ref-id-and-backend 10
+(defspec newly-constructed-ref-id-and-backend 10
   (prop/for-all
    [a       (gen/map gen/any-equatable gen/any-equatable)
     backend (spec/gen convergent/backends)]
@@ -210,7 +212,20 @@
           (= (convergent/ref-actor r) (convergent/ref-creator r))
           (= backend (convergent/ref-backend r))))))
 
-;; TODO: ref-from-ops-id-and-backend
+(defspec ref-from-ops-id-and-backend 10
+  (prop/for-all
+   [a       (gen/map gen/any-equatable gen/any-equatable)
+    backend (spec/gen convergent/backends)]
+   (let [o (convergent/ref a :backend backend)
+         r (convergent/ref-from-ops
+            (convergent/ref-log o)
+            :actor (util/uuid))]
+     (and (uuid? (convergent/ref-id r))
+          (= (convergent/ref-id o)
+             (convergent/ref-id r))
+          (= (convergent/ref-creator o)
+             (convergent/ref-creator r))
+          (= backend (convergent/ref-backend r))))))
 
 (defspec reset-generated-map 100
   (prop/for-all
