@@ -79,9 +79,7 @@
             (into (:log state) ops)]
         (core/->ConvergentState new-log
                                 nil
-                                (if (:dirty? state)
-                                  (value-from-ops new-log)
-                                  (reduce apply-patch (:value state) (vals ops)))
+                                (value-from-ops new-log)
                                 false))
       state))
   (-peek-patches [_] (peek patches))

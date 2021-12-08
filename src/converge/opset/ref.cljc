@@ -14,7 +14,6 @@
 (ns converge.opset.ref
   (:require [converge.core :as core]
             [converge.util :as util]
-            [converge.opset.ops :as ops]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
             [converge.opset.patch :as patch])
@@ -65,9 +64,7 @@
 
             new-interpretation
             (or patch-interpretation
-                (if-let [cached (:cache state)]
-                  (interpret/interpret cached ops)
-                  (interpret/interpret new-log)))
+                (interpret/interpret new-log))
 
             new-value
             (or patch-value (edn/edn new-interpretation))]
@@ -90,7 +87,9 @@
         (let [patch     (core/-make-patch this new-value)
               new-state (core/-state-from-patch this patch)]
           (core/validate-reset (:value state) new-value new-state patch)
-          (when patch (set! patches (conj patches patch)))
+          (when patch (set! patches (conj patches (core/->Patch
+                                                   (:source patch)
+                                                   (:ops patch)))))
           (core/-apply-state! this new-state)
           (:value new-state)))
        (swap [this f]          (.reset this (f (:value state))))
@@ -111,14 +110,12 @@
        IRef
        (deref
         [_]
-        (let [{:keys          [log value dirty?]
-               interpretation :cache
-               :as            s}
+        (let [{:keys [log value dirty?]
+               :as   s}
               state]
           (if dirty?
             (let [new-interpretation
-                  (or interpretation
-                      (interpret/interpret log))
+                  (interpret/interpret log)
 
                   value
                   (edn/edn new-interpretation)]
@@ -151,14 +148,12 @@
        IDeref
        (-deref
         [_]
-        (let [{:keys          [log value dirty?]
-               interpretation :cache
-               :as            s}
+        (let [{:keys [log value dirty?]
+               :as   s}
               state]
           (if dirty?
             (let [new-interpretation
-                  (or interpretation
-                      (interpret/interpret log))
+                  (interpret/interpret log)
 
                   value
                   (edn/edn new-interpretation)]
@@ -179,7 +174,9 @@
         (let [patch     (core/-make-patch this new-value)
               new-state (core/-state-from-patch this patch)]
           (core/validate-reset (:value state) new-value new-state patch)
-          (when patch (set! patches (conj patches patch)))
+          (when patch (set! patches (conj patches (core/->Patch
+                                                   (:source patch)
+                                                   (:ops patch)))))
           (core/-apply-state! this new-state)
           (:value new-state)))
 
@@ -219,28 +216,13 @@
 
 (defmethod core/make-ref :opset
   [{:keys [log actor initial-value meta validator]}]
-  (let [r               (->OpsetConvergentRef actor
-                                              (core/->ConvergentState log
-                                                                      nil
-                                                                      nil
-                                                                      true)
-                                              (util/queue)
-                                              meta
-                                              validator
-                                              nil)
-        patch           (core/-make-patch r initial-value)
-        snapshot-log    (merge log (:ops patch))
-        snapshot-interp (or (:interpretation patch)
-                            (interpret/interpret snapshot-log))
-        new-state       (core/->ConvergentState
-                         (assoc log
-                                (core/next-id snapshot-log actor)
-                                (ops/snapshot (hash log) snapshot-interp))
-                         snapshot-interp
-                         (:value patch)
-                         false)]
-    (core/validate-reset nil initial-value new-state patch)
-    (core/-apply-state! r new-state)
+  (let [r (->OpsetConvergentRef actor
+                                (core/->ConvergentState log nil nil false)
+                                (util/queue)
+                                meta
+                                validator
+                                nil)]
+    (reset! r initial-value)
     r))
 
 (defmethod core/make-ref-from-ops :opset
