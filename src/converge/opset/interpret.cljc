@@ -143,19 +143,6 @@
                           >= (->Element entity attribute nil)
                           <  (->Element entity (core/successor-id attribute) nil)))))
 
-(defmethod -interpret-op ops/SNAPSHOT
-  [agg id
-   {{:keys [log-hash]
-     {:keys [elements list-links]}
-     :interpretation}
-    :data}]
-  (if (= log-hash (hash (avl/subrange (:opset agg) < id)))
-    (assoc agg
-           :eavt       (transient (elements->eavt elements))
-           :elements   (transient elements)
-           :list-links (transient list-links))
-    agg))
-
 (defn interpret
   ([opset-log]
    (interpret nil opset-log))

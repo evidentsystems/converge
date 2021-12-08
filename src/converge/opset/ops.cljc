@@ -27,7 +27,6 @@
 (def ^:const INSERT 7)
 (def ^:const ASSIGN 8)
 (def ^:const REMOVE 9)
-(def ^:const SNAPSHOT 10)
 
 (defn make-map
   []
@@ -75,7 +74,3 @@
   [entity attribute]
   (assert (core/id? entity) "`entity` must be an Id")
   (core/op REMOVE {:entity entity :attribute attribute}))
-
-(defn snapshot
-  [log-hash interpretation]
-  (core/op SNAPSHOT {:log-hash log-hash :interpretation interpretation}))

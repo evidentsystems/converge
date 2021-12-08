@@ -28,10 +28,6 @@
     ops/EDIT
     (e/patch value (e/edits->script (:edits data)))
 
-    ;; TODO: ensure hash of operation log prior to this op matches log hash stored in the op
-    ops/SNAPSHOT
-    (:value data)
-
     value))
 
 (defn value-from-ops
@@ -144,6 +140,9 @@
       :cljs
       [IAtom
 
+       IEquiv
+       (-equiv [this other] (identical? this other))
+
        IDeref
        ;; TODO: refactor this out, and only do these impls in one place
        (-deref
@@ -158,9 +157,6 @@
                            :dirty? false))
               new-value)
             value)))
-
-       IEquiv
-       (-equiv [this other] (identical? this other))
 
        IReset
        (-reset!
@@ -208,18 +204,14 @@
 
 (defmethod core/make-ref :editscript
   [{:keys [log initial-value actor meta validator]}]
-  (->EditscriptConvergentRef actor
-                             (core/->ConvergentState
-                              (assoc log
-                                     (core/next-id log actor)
-                                     (ops/snapshot (hash log) initial-value))
-                              nil
-                              nil
-                              true)
-                             (util/queue)
-                             meta
-                             validator
-                             nil))
+  (let [r (->EditscriptConvergentRef actor
+                                     (core/->ConvergentState log nil nil true)
+                                     (util/queue)
+                                     meta
+                                     validator
+                                     nil)]
+    (reset! r initial-value)
+    r))
 
 (defmethod core/make-ref-from-ops :editscript
   [{:keys [ops actor meta validator]}]

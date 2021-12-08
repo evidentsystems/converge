@@ -145,6 +145,9 @@
       :cljs
       [IAtom
 
+       IEquiv
+       (-equiv [this other] (identical? this other))
+
        IDeref
        (-deref
         [_]
@@ -164,9 +167,6 @@
                            :dirty? false))
               value)
             value)))
-
-       IEquiv
-       (-equiv [this other] (identical? this other))
 
        IReset
        (-reset!
