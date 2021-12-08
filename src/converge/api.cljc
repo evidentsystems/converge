@@ -96,11 +96,12 @@
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
   ;; TODO: assertions ensuring valid operation log
-  (let [r (core/make-ref-from-ops
-           (assoc options
-                  :backend (-> ops core/ref-root-data-from-log :backend)
-                  :actor (or actor (util/uuid))
-                  :ops (into (core/make-log) ops)))]
+  (let [log (into (core/make-log) ops)
+        r   (core/make-ref-from-ops
+             (assoc options
+                    :backend (-> log core/ref-root-data-from-log :backend)
+                    :actor (or actor (util/uuid))
+                    :ops log))]
     @r
     r))
 
