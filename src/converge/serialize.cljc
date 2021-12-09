@@ -82,7 +82,8 @@
 
 (defn write-patch
   [patch]
-  {:ops (:ops patch)})
+  {:ops    (:ops patch)
+   :source (:source patch)})
 
 (defn write-interpretation
   [interpretation]
