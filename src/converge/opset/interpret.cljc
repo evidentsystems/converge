@@ -46,7 +46,7 @@
       (catch #?(:clj ClassCastException :cljs :default) _
         (compare (hash x) (hash y))))
     #?(:clj  (compare (.getName (class x)) (.getName (class y)))
-       :cljs (garray/defaultCompare (type->str (type x)) (type->str (type y))))))
+       :cljs (compare (type->str (type x)) (type->str (type y))))))
 
 (defrecord Element [#?@(:cljs [^clj entity]
                         :clj  [^Id  entity])
