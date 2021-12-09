@@ -28,11 +28,6 @@
     ops/EDIT
     (e/patch value (e/edits->script (:edits data)))
 
-    ;; TODO: ensure hash of operation log prior to this op matches log hash stored in the op
-    ops/SNAPSHOT
-    (:value data)
-
-    :else
     value))
 
 (defn value-from-ops
@@ -67,7 +62,8 @@
       (assert (validator new-value) "Validator rejected reference state"))
     (let [edits (e/get-edits (e/diff (:value state) new-value {:str-diff? true}))]
       (when (pos? (count edits))
-        (core/->Patch (avl/sorted-map
+        (core/->Patch (-> state :log core/ref-root-data-from-log :id)
+                      (avl/sorted-map
                        (core/next-id (:log state) actor)
                        (ops/edit edits))))))
   (-state-from-patch [_ patch]
@@ -79,9 +75,7 @@
             (into (:log state) ops)]
         (core/->ConvergentState new-log
                                 nil
-                                (if (:dirty? state)
-                                  (value-from-ops new-log)
-                                  (reduce apply-patch (:value state) (vals ops)))
+                                (value-from-ops new-log)
                                 false))
       state))
   (-peek-patches [_] (peek patches))
@@ -146,6 +140,9 @@
       :cljs
       [IAtom
 
+       IEquiv
+       (-equiv [this other] (identical? this other))
+
        IDeref
        ;; TODO: refactor this out, and only do these impls in one place
        (-deref
@@ -160,9 +157,6 @@
                            :dirty? false))
               new-value)
             value)))
-
-       IEquiv
-       (-equiv [this other] (identical? this other))
 
        IReset
        (-reset!
@@ -209,17 +203,15 @@
        (-hash [this] (goog/getUid this))]))
 
 (defmethod core/make-ref :editscript
-  [{:keys [initial-value actor meta validator]}]
-  (->EditscriptConvergentRef actor
-                             (core/->ConvergentState
-                              (core/log core/root-id (ops/snapshot (hash (core/log)) initial-value))
-                              nil
-                              nil
-                              true)
-                             (util/queue)
-                             meta
-                             validator
-                             nil))
+  [{:keys [log initial-value actor meta validator]}]
+  (let [r (->EditscriptConvergentRef actor
+                                     (core/->ConvergentState log nil nil true)
+                                     (util/queue)
+                                     meta
+                                     validator
+                                     nil)]
+    (reset! r initial-value)
+    r))
 
 (defmethod core/make-ref-from-ops :editscript
   [{:keys [ops actor meta validator]}]
@@ -229,21 +221,3 @@
                              meta
                              validator
                              nil))
-
-(defmethod core/make-snapshot-ref :editscript
-  [{:keys [actor meta validator]
-    {:keys [log value]}
-    :state}]
-  (let [id (core/latest-id log)]
-    (->EditscriptConvergentRef
-     actor
-     (core/->ConvergentState (core/log
-                              (core/successor-id id actor)
-                              (ops/snapshot (hash log) value))
-                             nil
-                             nil
-                             true)
-     (util/queue)
-     meta
-     validator
-     nil)))

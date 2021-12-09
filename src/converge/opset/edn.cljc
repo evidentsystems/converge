@@ -13,7 +13,7 @@
 ;; limitations under the License.
 (ns converge.opset.edn
   "API for converting an OpSet interpretation as EDN data."
-  (:require [clojure.zip :as zip]
+  (:require [clojure.data.avl :as avl]
             [converge.core :as core]
             [converge.util :as util]
             [converge.opset.interpret :as interpret]))
@@ -21,108 +21,98 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defn insertion-index
-  [grouped list-links entity attribute]
-  (if-let [init-id (get list-links entity)]
-    (loop [id init-id
-           i  0]
-      (if (= id attribute)
-        i
-        (recur (get list-links id)
-               (if (contains? grouped id)
-                 (inc i)
-                 i))))
-    []))
+(defmulti -edn
+  (fn [{:keys [values]} entity]
+    (some-> values
+            (get-in [entity :value])
+            util/get-type))
+  :default ::default)
 
-(defn list-insertions
-  [grouped list-links entity]
-  (if-let [init-id (get list-links entity)]
-    (loop [id  init-id
-           ins []]
-      (if (= id interpret/list-end-sigil)
-        ins
-        (recur (get list-links id)
-               (if (contains? grouped id)
-                 (conj ins id)
-                 ins))))
-    []))
+(defmethod -edn ::default
+  [{:keys [values]} entity]
+  (get-in values [entity :value]))
 
-(defn interpretation-zip
-  ([interpretation]
-   (interpretation-zip interpretation core/root-id))
-  ([interpretation root-id]
-   (let [elements   (:elements interpretation)
-         list-links (:list-links interpretation)
-         by-entity  (group-by :entity (vals elements))
-         by-attr    (group-by :attribute (vals elements))]
-     (zip/zipper
-      (fn [node] (-> node :children seq boolean))
-      (fn [node]
-        (for [{:keys [entity attribute value]}
-              (:children node)]
-          (let [v        (get elements value)
-                a        (if (core/id? attribute)
-                           (insertion-index by-attr list-links entity attribute)
-                           attribute)
-                children (get by-entity value)]
-            {:path       (conj (:path node) a)
-             :entity     value
-             :attribute  attribute
-             :value      v
-             :insertions (list-insertions by-attr list-links value)
-             :children   children})))
-      (constantly nil) ;; TODO: if we need to "mutate" the zipper itself
-      {:entity     root-id
-       :value      (get elements root-id)
-       :children   (get by-entity root-id)
-       :insertions (list-insertions by-attr list-links root-id)
-       :path       []}))))
+(defmethod -edn :map
+  [{:keys [elements] :as interpretation} entity]
+  (let [attrs (avl/subrange elements
+                            >= (interpret/->EntityStartElement entity)
+                            <  (interpret/->EntityEndElement   entity))]
+    (loop [i   0
+           ret (transient {})]
+      (if-let [element (nth attrs i nil)]
+        (let [k (:attribute element)]
+          (recur (inc i)
+                 (assoc! ret
+                         k
+                         (-edn interpretation (:value element)))))
+        (some-> ret
+                persistent!
+                (vary-meta assoc :converge/id entity))))))
 
-(defn assoc-resizing
-  ([vtr k v]
-   (assoc-resizing vtr k v ::fill))
-  ([vtr k v fill]
-   (let [vtr-n (count vtr)
-         vtr*  (if (> k vtr-n)
-                 (into vtr (take (- k vtr-n) (repeat fill)))
-                 vtr)]
-     (assoc vtr* k v))))
+(defn- -edn-vector
+  [{:keys [elements list-links] :as interpretation}
+   entity]
+  (let [attrs (persistent!
+               (reduce (fn [agg {:keys [attribute value]}]
+                         (assoc! agg attribute value))
+                       (transient {})
+                       (avl/subrange elements
+                                     >= (interpret/->EntityStartElement entity)
+                                     <  (interpret/->EntityEndElement   entity))))]
+    (loop [ins (get list-links entity)
+           ret (transient [])
+           idx (transient [])]
+      (if (= ins interpret/list-end-sigil)
+        (some-> ret
+                persistent!
+                (vary-meta assoc
+                           :converge/id entity
+                           :converge/insertions (persistent! idx)))
+        (let [[next-ret next-idx]
+              (if-some [value (get attrs ins)]
+                [(conj! ret (-edn interpretation value))
+                 (conj! idx ins)]
+                [ret idx])]
+          (recur (get list-links ins)
+                 next-ret
+                 next-idx))))))
 
-(defn add-element
-  [return path value]
-  (let [attribute (util/last-indexed path)]
-    (if attribute
-      (let [parent-path (util/safe-pop path)
-            parent      (util/safe-get-in return parent-path)]
-        (if (sequential? parent)
-          (if (seq parent-path)
-            (update-in return parent-path (fnil assoc-resizing []) attribute value)
-            ((fnil assoc-resizing []) return attribute value))
-          (assoc-in return path value)))
-      value)))
+(defmethod -edn :vec
+  [interpretation entity]
+  (-edn-vector interpretation entity))
 
-(defn assemble-values
-  [interpretation]
-  (loop [loc    (interpretation-zip interpretation core/root-id)
-         return nil]
-    (if (zip/end? loc)
-      return
-      (let [{:keys [path entity insertions]
-             v     :value}
-            (zip/node loc)]
-        (recur (zip/next loc)
-               (add-element return
-                            path
-                            (case (util/get-type v)
-                              (:vec :lst)
-                              (vary-meta v assoc :converge/id entity :converge/insertions insertions)
+(defmethod -edn :set
+  [{:keys [elements]} entity]
+  (let [attrs (avl/subrange elements
+                            >= (interpret/->EntityStartElement entity)
+                            <  (interpret/->EntityEndElement   entity))]
+    (loop [i   0
+           ret (transient #{})]
+      (if-let [element (nth attrs i nil)]
+        (let [member (:attribute element)]
+          (recur (inc i)
+                 (conj! ret member)))
+        (some-> ret
+                persistent!
+                (vary-meta assoc :converge/id entity))))))
 
-                              :map
-                              (vary-meta v assoc :converge/id entity)
+(defmethod -edn :lst
+  [interpretation entity]
+  (let [v (-edn-vector interpretation entity)]
+    (with-meta (apply list v) (meta v))))
 
-                              v)))))))
+(defn root-element-id
+  [values]
+  (let [root-id (core/make-id)]
+    (reduce-kv (fn [agg id {:keys [root?]}]
+                 (if root?
+                   (if (nat-int? (compare id agg)) id agg)
+                   agg))
+               root-id
+               values)))
 
 (defn edn
-  "Transforms an converge.interpret.Interpretation into an EDN value."
-  [interpretation]
-  (assemble-values interpretation))
+  "Transforms an converge.opset.interpret.Interpretation into an EDN value."
+  [{:keys [values] :as interpretation}]
+  (-edn interpretation
+        (root-element-id values)))

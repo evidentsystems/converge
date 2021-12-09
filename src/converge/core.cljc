@@ -61,12 +61,6 @@
   [options]
   (throw (ex-info "Unknown ConvergentRef backend" options)))
 
-(defmulti make-snapshot-ref :backend :default ::default)
-
-(defmethod make-snapshot-ref ::default
-  [options]
-  (throw (ex-info "Unknown ConvergentRef backend" options)))
-
 ;;;; Implementation
 
 (defn notify-w
@@ -99,7 +93,7 @@
 
 (defn make-id
   ([]
-   (make-id (util/uuid)))
+   (make-id nil))
   ([actor]
    (make-id actor 0))
   ([actor counter]
@@ -111,13 +105,11 @@
   [o]
   (instance? Id o))
 
-(def root-id
-  (make-id nil 0))
-
 (defn successor-id
   ([id]
    (successor-id id (:actor id)))
   ([{:keys [counter]} actor]
+   (assert (uuid? actor) "The `actor` of an Id must be a UUID")
    (make-id actor (inc counter))))
 
 (defn latest-id
@@ -125,19 +117,20 @@
   (some-> log util/last-indexed key))
 
 (defn next-id
-  [log actor]
-  (if-let [latest (latest-id log)]
-    (successor-id latest actor)
-    root-id))
+  ([log] (next-id log nil))
+  ([log actor]
+   (if-let [latest (latest-id log)]
+     (if actor
+       (successor-id latest actor)
+       (successor-id latest))
+     (if actor
+       (make-id actor)
+       (throw (ex-info "Can't get the next-id of an empty log without an `actor`" {:log log}))))))
 
 ;;;; Operation Log
 
-(defn log
-  "An opseration log is a sorted map of Id -> Op"
-  ([]
-   (avl/sorted-map))
-  ([& id-ops]
-   (apply avl/sorted-map id-ops)))
+(def ^{:doc "An operation log is a sorted map of Id -> Op"}
+  make-log avl/sorted-map)
 
 (defrecord Op [^long action data])
 
@@ -149,10 +142,19 @@
    (assert (or (nil? data) (map? data)) "The `data` of an Op, if provided, must be a map")
    (->Op action data)))
 
+(def ^:const ROOT 0)
+
+(defn root-op
+  [id actor backend]
+  (op ROOT {:id id :creator actor :backend backend}))
+
+(defn ref-root-data-from-log
+  [log]
+  (-> log util/first-indexed val :data))
+
 ;;;; Patch
 
-;; TODO: patch caches?
-(defrecord Patch [ops])
+(defrecord Patch [source ops])
 
 (defn patch?
   [o]

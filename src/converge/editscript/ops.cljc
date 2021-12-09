@@ -18,12 +18,7 @@
    :cljs (set! *warn-on-infer* true))
 
 (def ^:const EDIT 20)
-(def ^:const SNAPSHOT 21)
 
 (defn edit
   [edits]
   (core/op EDIT {:edits edits}))
-
-(defn snapshot
-  [log-hash value]
-  (core/op SNAPSHOT {:log-hash log-hash :value value}))

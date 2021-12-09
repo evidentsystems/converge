@@ -14,7 +14,6 @@
 (ns converge.opset.ref
   (:require [converge.core :as core]
             [converge.util :as util]
-            [converge.opset.ops :as ops]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
             [converge.opset.patch :as patch])
@@ -22,19 +21,6 @@
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
-
-;; TODO: is it necessary to maintain consistent top-level type?
-;; TODO: add note to docstring about our special top-level type
-;; validation logic
-(defn valid?
-  [validator old-value new-value]
-  (let [type-pred (if (or (map? old-value)
-                          (and (nil? old-value)
-                               (map? new-value)))
-                    map?
-                    sequential?)]
-    (and (type-pred new-value)
-         (if (ifn? validator) (validator new-value) true))))
 
 (deftype OpsetConvergentRef #?(:clj  [^:volatile-mutable actor
                                       ^:volatile-mutable state
@@ -60,30 +46,31 @@
       (core/notify-w this watches old-value (:value new-state))))
   (-make-patch
     [_ new-value]
-    (assert (valid? validator (:value state) new-value) "Validator rejected reference state")
-    (let [{:keys [value log]
+    (when (ifn? validator)
+      (assert (validator new-value) "Validator rejected reference state"))
+    (let [{:keys          [value log]
            interpretation :cache}
           state]
       (patch/make-patch log interpretation actor value new-value)))
   (-state-from-patch [_ patch]
     (if (core/patch? patch)
-      (let [{:keys [ops]}
+      (let [{ops                  :ops
+             patch-interpretation :interpretation
+             patch-value          :value}
             patch
 
-            {:keys [log]
-             interpretation :cache}
-            state
-
             new-log
-            (into log ops)
+            (into (:log state) ops)
 
             new-interpretation
-            (if interpretation
-              (interpret/interpret interpretation ops)
-              (interpret/interpret new-log))]
+            (or patch-interpretation
+                (interpret/interpret new-log))
+
+            new-value
+            (or patch-value (edn/edn new-interpretation))]
         (core/->ConvergentState new-log
                                 new-interpretation
-                                (edn/edn new-interpretation)
+                                new-value
                                 false))
       state))
   (-peek-patches [_] (peek patches))
@@ -100,7 +87,9 @@
         (let [patch     (core/-make-patch this new-value)
               new-state (core/-state-from-patch this patch)]
           (core/validate-reset (:value state) new-value new-state patch)
-          (when patch (set! patches (conj patches patch)))
+          (when patch (set! patches (conj patches (core/->Patch
+                                                   (:source patch)
+                                                   (:ops patch)))))
           (core/-apply-state! this new-state)
           (:value new-state)))
        (swap [this f]          (.reset this (f (:value state))))
@@ -122,13 +111,11 @@
        (deref
         [_]
         (let [{:keys [log value dirty?]
-               interpretation :cache
-               :as s}
+               :as   s}
               state]
           (if dirty?
             (let [new-interpretation
-                  (or interpretation
-                      (interpret/interpret log))
+                  (interpret/interpret log)
 
                   value
                   (edn/edn new-interpretation)]
@@ -141,7 +128,8 @@
             value)))
        (setValidator
         [_ f]
-        (assert (valid? f (:value state) (:value state)) "Validator rejected reference state")
+        (when (ifn? validator)
+          (assert (validator (:value state)) "Validator rejected reference state"))
         (set! validator f))
        (getValidator [_] validator)
        (getWatches   [_] watches)
@@ -157,17 +145,18 @@
       :cljs
       [IAtom
 
+       IEquiv
+       (-equiv [this other] (identical? this other))
+
        IDeref
        (-deref
         [_]
         (let [{:keys [log value dirty?]
-               interpretation :cache
-               :as s}
+               :as   s}
               state]
           (if dirty?
             (let [new-interpretation
-                  (or interpretation
-                      (interpret/interpret log))
+                  (interpret/interpret log)
 
                   value
                   (edn/edn new-interpretation)]
@@ -179,16 +168,15 @@
               value)
             value)))
 
-       IEquiv
-       (-equiv [this other] (identical? this other))
-
        IReset
        (-reset!
         [this new-value]
         (let [patch     (core/-make-patch this new-value)
               new-state (core/-state-from-patch this patch)]
           (core/validate-reset (:value state) new-value new-state patch)
-          (when patch (set! patches (conj patches patch)))
+          (when patch (set! patches (conj patches (core/->Patch
+                                                   (:source patch)
+                                                   (:ops patch)))))
           (core/-apply-state! this new-state)
           (:value new-state)))
 
@@ -227,35 +215,15 @@
        (-hash [this] (goog/getUid this))]))
 
 (defmethod core/make-ref :opset
-  [{:keys [initial-value actor meta validator]}]
-  (cond
-    (map? initial-value)
-    (->OpsetConvergentRef actor
-                          (core/->ConvergentState
-                           (core/log core/root-id (ops/make-map))
-                           nil
-                           nil
-                           true)
-                          (util/queue)
-                          meta
-                          validator
-                          nil)
-
-    (vector? initial-value)
-    (->OpsetConvergentRef actor
-                          (core/->ConvergentState
-                           (core/log core/root-id (ops/make-list))
-                           nil
-                           nil
-                           true)
-                          (util/queue)
-                          meta
-                          validator
-                          nil)
-
-    :else
-    (throw (ex-info "The initial value of a convergent ref must be either a map or a vector."
-                    {:initial-value initial-value}))))
+  [{:keys [log actor initial-value meta validator]}]
+  (let [r (->OpsetConvergentRef actor
+                                (core/->ConvergentState log nil nil false)
+                                (util/queue)
+                                meta
+                                validator
+                                nil)]
+    (reset! r initial-value)
+    r))
 
 (defmethod core/make-ref-from-ops :opset
   [{:keys [ops actor meta validator]}]
@@ -265,24 +233,3 @@
                         meta
                         validator
                         nil))
-
-(defmethod core/make-snapshot-ref :opset
-  [{:keys [actor meta validator]
-    {log             :log
-     interpretation* :cache}
-    :state}]
-  (let [id (core/latest-id log)
-
-        interpretation (or interpretation* (interpret/interpret log))]
-    (->OpsetConvergentRef
-     actor
-     (core/->ConvergentState (core/log
-                              (core/successor-id id actor)
-                              (ops/snapshot (hash log) interpretation))
-                             interpretation
-                             nil
-                             true)
-     (util/queue)
-     meta
-     validator
-     nil)))

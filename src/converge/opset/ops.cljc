@@ -18,15 +18,15 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(def ^:const MAKE_MAP 0)
-(def ^:const MAKE_VECTOR 1)
-(def ^:const MAKE_SET 2)
-(def ^:const MAKE_LIST 3)
-(def ^:const MAKE_VALUE 4)
-(def ^:const INSERT 5)
-(def ^:const ASSIGN 6)
-(def ^:const REMOVE 7)
-(def ^:const SNAPSHOT 8)
+(def ^:const MAKE_MAP 1)
+(def ^:const MAKE_VECTOR 2)
+(def ^:const MAKE_SET 3)
+(def ^:const MAKE_LIST 4)
+(def ^:const MAKE_TEXT 5)
+(def ^:const MAKE_VALUE 6)
+(def ^:const INSERT 7)
+(def ^:const ASSIGN 8)
+(def ^:const REMOVE 9)
 
 (defn make-map
   []
@@ -44,6 +44,10 @@
   []
   (core/op MAKE_LIST))
 
+(defn make-text
+  []
+  (core/op MAKE_TEXT))
+
 (defn make-value
   [value]
   (core/op MAKE_VALUE {:value value}))
@@ -54,15 +58,17 @@
   (core/op INSERT {:after after}))
 
 (defn assign
-  [entity attribute value]
-  (assert (core/id? entity) "`entity` must be an Id")
-  (core/op ASSIGN {:entity entity :attribute attribute :value value}))
+  ([entity attribute]
+   (assign entity attribute nil))
+  ([entity attribute value]
+   (assert (core/id? entity)
+           "`entity` must be an Id")
+   (assert (or (nil? value )(core/id? value))
+           "`value` must be either nil or an Id")
+   (core/op ASSIGN (merge {:entity entity :attribute attribute}
+                          (when value {:value value})))))
 
 (defn remove
   [entity attribute]
   (assert (core/id? entity) "`entity` must be an Id")
   (core/op REMOVE {:entity entity :attribute attribute}))
-
-(defn snapshot
-  [log-hash interpretation]
-  (core/op SNAPSHOT {:log-hash log-hash :interpretation interpretation}))

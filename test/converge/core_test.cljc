@@ -9,7 +9,7 @@
         b (util/uuid)
         c (util/uuid)]
     (testing "latest-id with absolute max counter"
-      (let [ops (core/log
+      (let [ops (core/make-log
                  (core/make-id a 0) :foo
                  (core/make-id b 0) :foo
                  (core/make-id b 1) :foo
@@ -18,7 +18,7 @@
                  (core/make-id c 1) :foo)]
         (is (= (core/make-id b 2) (core/latest-id ops)))))
     (testing "latest-id with tie for max counter"
-      (let [ops (core/log
+      (let [ops (core/make-log
                  (core/make-id a 0) :foo
                  (core/make-id b 0) :foo
                  (core/make-id b 1) :foo
@@ -31,10 +31,10 @@
                        (core/make-id b 2)]))
                (core/latest-id ops)))))
     (testing "next-id on empty log"
-      (let [ops (core/log)]
-        (is (= core/root-id (core/next-id ops a)))))
+      (let [ops (core/make-log)]
+        (is (= (core/make-id a) (core/next-id ops a)))))
     (testing "next-id on non-empty log"
-      (let [ops (core/log
+      (let [ops (core/make-log
                  (core/make-id a 0) :foo
                  (core/make-id b 0) :foo
                  (core/make-id b 1) :foo

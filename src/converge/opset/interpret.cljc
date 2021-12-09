@@ -14,41 +14,157 @@
 (ns converge.opset.interpret
   "Functions for interpreting an OpSet as per sections 3.2 and 5.2 of
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
-  (:require [clojure.set :as set]
-            [converge.opset.ops :as ops])
+  (:require [clojure.data.avl :as avl]
+            [converge.opset.ops :as ops]
+            [converge.core :as core])
   #?(:clj (:import [converge.core Id])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defn transitive-closure
-  [e]
-  (let [e2 (into #{}
-                 (for [[a b] e
-                       [c d] e
-                       :when (= b c)]
-                   [a d]))]
-    (if (set/subset? e2 e)
-      e
-      (recur (set/union e e2)))))
+(defprotocol IElement
+  (-entity    [_])
+  (-attribute [_])
+  (-value     [_])
+  (-time      [_] "The operation Id"))
 
+(defn element?
+  [o]
+  (satisfies? IElement o))
+
+(defn compare-attributes
+  [x y]
+  (if #?(:clj  (identical? (class x) (class y))
+         :cljs (identical? (type x) (type y)))
+    (try
+      (cond
+        #?@(:clj  [(instance? Number x) (clojure.lang.Numbers/compare x y)])
+        #?@(:clj  [(instance? Comparable x)   (.compareTo ^Comparable x y)]
+            :cljs [(satisfies? IComparable x) (-compare x y)])
+        :else
+        (compare (hash x) (hash y)))
+      (catch #?(:clj ClassCastException :cljs :default) _
+        (compare (hash x) (hash y))))
+    #?(:clj  (compare (.getName (class x)) (.getName (class y)))
+       :cljs (garray/defaultCompare (type->str (type x)) (type->str (type y))))))
 
 (defrecord Element [#?@(:cljs [^clj entity]
-                        :clj  [^Id entity])
+                        :clj  [^Id  entity])
                     attribute
                     #?@(:cljs [^clj value]
-                        :clj  [^Id value])])
+                        :clj  [^Id  value])
+                    #?@(:cljs [^clj id]
+                        :clj  [^Id  id])]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] attribute)
+  (-value     [_] value)
+  (-time      [_] id)
 
-(defrecord Interpretation [elements list-links])
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (let [ec (compare entity (-entity other))]
+      (if (zero? ec)
+        (let [ac (compare-attributes attribute (-attribute other))]
+          (if (zero? ac)
+            (let [vc (compare value (-value other))]
+              (if (zero? vc)
+                (compare id (-time other))
+                vc))
+            ac))
+        ec))))
+
+(deftype EntityStartElement [#?@(:cljs [^clj entity]
+                                 :clj  [^Id  entity])]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] nil)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (let [ec (compare entity (-entity other))]
+      (if (zero? ec)
+        -1
+        ec))))
+
+(deftype EntityEndElement [#?@(:cljs [^clj entity]
+                               :clj  [^Id  entity])]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] nil)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (let [ec (compare entity (-entity other))]
+      (if (zero? ec)
+        1
+        ec))))
+
+(deftype EntityAttributeStartElement [#?@(:cljs [^clj entity]
+                                          :clj  [^Id  entity])
+                                      attribute]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] attribute)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (if (and (= entity    (-entity other))
+             (= attribute (-attribute other)))
+      -1
+      (let [ec (compare entity (-entity other))]
+        (if (zero? ec)
+          (compare-attributes attribute (-attribute other))
+          ec)))))
+
+(deftype EntityAttributeEndElement [#?@(:cljs [^clj entity]
+                                        :clj  [^Id  entity])
+                                    attribute]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] attribute)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (if (and (= entity    (-entity other))
+             (= attribute (-attribute other)))
+      1
+      (let [ec (compare entity (-entity other))]
+        (if (zero? ec)
+          (compare-attributes attribute (-attribute other))
+          ec)))))
+
+(defrecord Interpretation [elements list-links values])
 
 (def list-end-sigil ::list-end)
-
-(defn ancestor
-  [elements]
-  (transitive-closure
-   (into #{}
-         (map (juxt :entity :value))
-         (vals elements))))
 
 (defmulti -interpret-op
   (fn [_agg _id op] (:action op))
@@ -58,45 +174,29 @@
   [agg _id _op]
   agg)
 
-;; TODO: test opset log hash prior to this id matches hash stored in this op
-(defmethod -interpret-op ops/SNAPSHOT
-  [agg _id {{{:keys [elements list-links]} :interpretation} :data}]
-  (assoc agg
-         :elements   (transient elements)
-         :list-links (transient list-links)))
+(defmethod -interpret-op ops/MAKE_MAP
+  [agg id op]
+  (update agg :values assoc! id (assoc (:data op) :value {})))
 
-(defmethod -interpret-op ops/ASSIGN
-  [{:keys [elements] :as agg} id {:keys [data]}]
-  (let [{:keys [entity attribute value]} data
+(defmethod -interpret-op ops/MAKE_VECTOR
+  [agg id op]
+  (-> agg
+      (update :list-links assoc! id list-end-sigil)
+      (update :values assoc! id (assoc (:data op) :value []))))
 
-        elements* (persistent! elements)]
-    ;; Skip operations that would introduce a cycle from decendent
-    ;; (value) to ancestor (entity), per Section 5.2
-    (if false #_(contains? (ancestor elements*) [value entity])
-      agg
-      (assoc agg
-             :elements
-             (transient
-              (into {id (->Element entity attribute value)}
-                    (filter
-                     (fn [[_id element]]
-                       (and (or (not= (:entity element)    entity)
-                                (not= (:attribute element) attribute))
-                            (not= value (:value element)))))
-                    elements*))))))
+(defmethod -interpret-op ops/MAKE_SET
+  [agg id op]
+  (update agg :values assoc! id (assoc (:data op) :value #{})))
 
-(defmethod -interpret-op ops/REMOVE
-  [{:keys [elements] :as agg} _id {:keys [data]}]
-  (let [{:keys [entity attribute]} data]
-    (assoc agg
-           :elements
-           (transient
-            (into {}
-                  (filter
-                   (fn [[_id element]]
-                     (or (not= (:entity element)    entity)
-                         (not= (:attribute element) attribute))))
-                  (persistent! elements))))))
+(defmethod -interpret-op ops/MAKE_LIST
+  [agg id op]
+  (-> agg
+      (update :list-links assoc! id list-end-sigil)
+      (update :values assoc! id (assoc (:data op) :value ()))))
+
+(defmethod -interpret-op ops/MAKE_VALUE
+  [agg id op]
+  (update agg :values assoc! id (:data op)))
 
 (defmethod -interpret-op ops/INSERT
   [{:keys [list-links] :as agg} id {{prev :after} :data}]
@@ -110,30 +210,55 @@
                          id next)))
       agg)))
 
-(defmethod -interpret-op ops/MAKE_LIST
-  [agg id _op]
-  (-> agg
-      (update :list-links assoc! id list-end-sigil)
-      (update :elements assoc! id [])))
+;; We use the broader interpretation algorithm defined in section 3.2,
+;; rather than the narrower tree definition defined in 5.2, since
+;; we're generating Ops from trees. We use the adjustment for single-value register.
+(defmethod -interpret-op ops/ASSIGN
+  [{:keys [elements] :as agg} id {:keys [data]}]
+  (let [{:keys [entity attribute value]} data
 
-(defmethod -interpret-op ops/MAKE_MAP
-  [agg id _op]
-  (update agg :elements assoc! id {}))
+        elements* (persistent! elements)]
+    (reduce (fn [agg element]
+              (update agg :elements disj! (avl/nearest elements* >= element)))
+            (assoc agg :elements (conj!
+                                  (transient elements*)
+                                  (->Element entity attribute value id)))
+            (avl/subrange elements*
+                          >= (->EntityAttributeStartElement entity attribute)
+                          <  (->EntityAttributeEndElement   entity attribute)))))
 
-(defmethod -interpret-op ops/MAKE_VALUE
-  [agg id op]
-  (update agg :elements assoc! id (-> op :data :value)))
+;; We use the broader interpretation algorithm defined in section 3.2,
+;; rather than the narrower tree definition defined in 5.2, since
+;; we're generating Ops from trees. We use the adjustment for single-value register.
+(defmethod -interpret-op ops/REMOVE
+  [{:keys [elements] :as agg} _id {:keys [data]}]
+  (let [{:keys [entity attribute]} data
+
+        elements* (persistent! elements)]
+    (reduce (fn [agg element]
+              (update agg :elements disj! (avl/nearest elements* <= element)))
+            (assoc agg :elements (transient elements*))
+            (avl/subrange elements*
+                          >= (->EntityAttributeStartElement entity attribute)
+                          <  (->EntityAttributeEndElement   entity attribute)))))
 
 (defn interpret
   ([opset-log]
-   (interpret (->Interpretation {} {}) opset-log))
-  ([{:keys [elements list-links] :as _interpretation} ops]
-   (let [{elements*   :elements
-          list-links* :list-links}
+   (interpret nil opset-log))
+  ([{:keys [elements list-links values] :as _interpretation} ops]
+   (let [elements-init   (or elements   (avl/sorted-set))
+         list-links-init (or list-links {})
+         values          (or values     {})
+
+         {elements*   :elements
+          list-links* :list-links
+          values*     :values}
          (reduce-kv -interpret-op
-                    {:elements   (transient elements)
-                     :list-links (transient list-links)}
+                    {:elements   (transient elements-init)
+                     :list-links (transient list-links-init)
+                     :values     (transient values)}
                     ops)]
-     (->Interpretation
-      (persistent! elements*)
-      (persistent! list-links*)))))
+     (map->Interpretation
+      {:elements   (persistent! elements*)
+       :list-links (persistent! list-links*)
+       :values     (persistent! values*)}))))

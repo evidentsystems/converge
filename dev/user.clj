@@ -15,7 +15,7 @@
   (:require [clojure.repl :refer :all]
             [clojure.pprint :refer [pprint]]
             [clojure.spec.test.alpha :as stest]
-            [clojure.tools.namespace.repl :refer [refresh]]
+            [clojure.tools.namespace.repl :refer [refresh refresh-all set-refresh-dirs]]
             [kaocha.repl :as kaocha]
             [criterium.core :as criterium]
             [clj-async-profiler.core :as profiler]))
@@ -38,12 +38,6 @@
 
 (comment
 
-  (require '[converge.api :as converge]
-           '[converge.opset :as opset]
-           '[converge.interpret :as interpret]
-           '[converge.edn :as edn]
-           '[criterium.core :as criterium])
-
   (def m (converge/ref {}))
   @m
 
@@ -64,9 +58,9 @@
 
   (simple-benchmark [m a f converge/ref] (f m) 1000)
 
-  (def c (converge/ref a))
+  (def c (converge/ref a :backend :opset))
   @c
-  (converge/opset c)
+  (converge/log c)
 
   (simple-benchmark [c (converge/ref a) v (random-uuid)] (swap! c assoc :foo v) 1000)
 
