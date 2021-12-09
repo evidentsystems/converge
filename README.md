@@ -20,9 +20,7 @@ e.g. via Transit/Fressian, for storage and transmission.
 
 ## Status
 
-> :warning:
-
-Converge is pre-alpha quality software. Its API and implementation are
+> :warning: Converge is pre-alpha quality software. Its API and implementation are
 changing rapidly. Use at your own risk!
 
 Evident Systems is using Converge in [oNote](https://onote.com) to
@@ -30,9 +28,19 @@ support real-time and async/repository-based collaboration.
 
 ## Backends
 
+### OpSets backend (default)
+
+The default backend is based on the [OpSets
+paper](https://arxiv.org/pdf/1805.04263.pdf) by [Martin
+Kleppmann](https://github.com/ept) and co-authors.  It is a
+well-designed algorithm whose behavior conforms to end user
+expectations, especially in real-time applications, however it is
+somewhat less efficient (in time and space) than the Editscript
+backend.
+
 ### Editscript Backend
 
-The default backend is based on Editscript diff/snapshot operations,
+The Editscript backend is based on Editscript diff/snapshot operations,
 which are given a total order via Lamport timestamps.  This
 implementation is more efficient (in time and space) than the OpSets
 backend, and provides the convergence guarantee described above.
@@ -40,16 +48,6 @@ However, relative to the OpSets backend, the Editscript algorithm may
 provide results that violate end user expectations.  In particular,
 removed elements may reappear due to a subsequent update from a remote
 actor.
-
-### OpSets backend
-
-The OpSets backend is based on the [OpSets
-paper](https://arxiv.org/pdf/1805.04263.pdf) by [Martin
-Kleppmann](https://github.com/ept) and co-authors.  It is a
-well-designed algorithm whose behavior conforms to end user
-expectations, especially in real-time applications, however it is
-somewhat less efficient (in time and space) than the Editscript
-backend.
 
 ## Usage
 
