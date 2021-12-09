@@ -35,23 +35,19 @@
 (defmethod -edn :map
   [{:keys [elements] :as interpretation} entity]
   (let [attrs (avl/subrange elements
-                            >= (interpret/->Element entity nil nil nil)
-                            <  (interpret/->Element (core/successor-id entity) nil nil nil))]
+                            >= (interpret/->EntityStartElement entity)
+                            <  (interpret/->EntityEndElement   entity))]
     (loop [i   0
-           ret (transient {})
-           idx (transient {})]
+           ret (transient {})]
       (if-let [element (nth attrs i nil)]
-        (let [k (-edn interpretation (:attribute element))]
+        (let [k (:attribute element)]
           (recur (inc i)
                  (assoc! ret
                          k
-                         (-edn interpretation (:value element)))
-                 (assoc! idx k (:attribute element))))
+                         (-edn interpretation (:value element)))))
         (some-> ret
                 persistent!
-                (vary-meta assoc
-                           :converge/id entity
-                           :converge/keys (persistent! idx)))))))
+                (vary-meta assoc :converge/id entity))))))
 
 (defn- -edn-vector
   [{:keys [elements list-links] :as interpretation}
@@ -61,8 +57,8 @@
                          (assoc! agg attribute value))
                        (transient {})
                        (avl/subrange elements
-                                     >= (interpret/->Element entity nil nil nil)
-                                     <  (interpret/->Element (core/successor-id entity) nil nil nil))))]
+                                     >= (interpret/->EntityStartElement entity)
+                                     <  (interpret/->EntityEndElement   entity))))]
     (loop [ins (get list-links entity)
            ret (transient [])
            idx (transient [])]
@@ -86,24 +82,19 @@
   (-edn-vector interpretation entity))
 
 (defmethod -edn :set
-  [{:keys [elements] :as interpretation} entity]
+  [{:keys [elements]} entity]
   (let [attrs (avl/subrange elements
-                            >= (interpret/->Element entity nil nil nil)
-                            <  (interpret/->Element (core/successor-id entity) nil nil nil))]
+                            >= (interpret/->EntityStartElement entity)
+                            <  (interpret/->EntityEndElement   entity))]
     (loop [i   0
-           ret (transient #{})
-           idx (transient {})]
+           ret (transient #{})]
       (if-let [element (nth attrs i nil)]
-        (let [member (-edn interpretation
-                           (:attribute element))]
+        (let [member (:attribute element)]
           (recur (inc i)
-                 (conj! ret member)
-                 (assoc! idx member (:attribute element))))
+                 (conj! ret member)))
         (some-> ret
                 persistent!
-                (vary-meta assoc
-                           :converge/id entity
-                           :converge/keys (persistent! idx)))))))
+                (vary-meta assoc :converge/id entity))))))
 
 (defmethod -edn :lst
   [interpretation entity]

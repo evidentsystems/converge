@@ -22,29 +22,145 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(declare element?)
+(defprotocol IElement
+  (-entity    [_])
+  (-attribute [_])
+  (-value     [_])
+  (-time      [_] "The operation Id"))
+
+(defn element?
+  [o]
+  (satisfies? IElement o))
+
+(defn compare-attributes
+  [x y]
+  (if #?(:clj  (identical? (class x) (class y))
+         :cljs (identical? (type x) (type y)))
+    (try
+      (cond
+        #?@(:clj  [(instance? Number x) (clojure.lang.Numbers/compare x y)])
+        #?@(:clj  [(instance? Comparable x)   (.compareTo ^Comparable x y)]
+            :cljs [(satisfies? IComparable x) (-compare x y)])
+        :else
+        (compare (hash x) (hash y)))
+      (catch #?(:clj ClassCastException :cljs :default) _
+        (compare (hash x) (hash y))))
+    #?(:clj  (compare (.getName (class x)) (.getName (class y)))
+       :cljs (garray/defaultCompare (type->str (type x)) (type->str (type y))))))
 
 (defrecord Element [#?@(:cljs [^clj entity]
                         :clj  [^Id  entity])
-                    #?@(:cljs [^clj attribute]
-                        :clj  [^Id  attribute])
+                    attribute
                     #?@(:cljs [^clj value]
                         :clj  [^Id  value])
                     #?@(:cljs [^clj id]
                         :clj  [^Id  id])]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] attribute)
+  (-value     [_] value)
+  (-time      [_] id)
+
   #?(:clj  Comparable
      :cljs IComparable)
   (#?(:clj  compareTo
       :cljs -compare)
     [_ other]
     (assert (element? other))
-    (compare
-     [entity          attribute          value          id]
-     [(:entity other) (:attribute other) (:value other) (:id other)])))
+    (let [ec (compare entity (-entity other))]
+      (if (zero? ec)
+        (let [ac (compare-attributes attribute (-attribute other))]
+          (if (zero? ac)
+            (let [vc (compare value (-value other))]
+              (if (zero? vc)
+                (compare id (-time other))
+                vc))
+            ac))
+        ec))))
 
-(defn element?
-  [o]
-  (instance? Element o))
+(deftype EntityStartElement [#?@(:cljs [^clj entity]
+                                 :clj  [^Id  entity])]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] nil)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (let [ec (compare entity (-entity other))]
+      (if (zero? ec)
+        -1
+        ec))))
+
+(deftype EntityEndElement [#?@(:cljs [^clj entity]
+                               :clj  [^Id  entity])]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] nil)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (let [ec (compare entity (-entity other))]
+      (if (zero? ec)
+        1
+        ec))))
+
+(deftype EntityAttributeStartElement [#?@(:cljs [^clj entity]
+                                          :clj  [^Id  entity])
+                                      attribute]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] attribute)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (if (and (= entity    (-entity other))
+             (= attribute (-attribute other)))
+      -1
+      (let [ec (compare entity (-entity other))]
+        (if (zero? ec)
+          (compare-attributes attribute (-attribute other))
+          ec)))))
+
+(deftype EntityAttributeEndElement [#?@(:cljs [^clj entity]
+                                        :clj  [^Id  entity])
+                                    attribute]
+  IElement
+  (-entity    [_] entity)
+  (-attribute [_] attribute)
+  (-value     [_] nil)
+  (-time      [_] nil)
+
+  #?(:clj  Comparable
+     :cljs IComparable)
+  (#?(:clj  compareTo
+      :cljs -compare)
+    [_ other]
+    (assert (element? other))
+    (if (and (= entity    (-entity other))
+             (= attribute (-attribute other)))
+      1
+      (let [ec (compare entity (-entity other))]
+        (if (zero? ec)
+          (compare-attributes attribute (-attribute other))
+          ec)))))
 
 (defrecord Interpretation [elements list-links values])
 
@@ -108,8 +224,8 @@
                                   (transient elements*)
                                   (->Element entity attribute value id)))
             (avl/subrange elements*
-                          >= (->Element entity attribute nil nil)
-                          <  (->Element entity (core/successor-id attribute) nil nil)))))
+                          >= (->EntityAttributeStartElement entity attribute)
+                          <  (->EntityAttributeEndElement   entity attribute)))))
 
 ;; We use the broader interpretation algorithm defined in section 3.2,
 ;; rather than the narrower tree definition defined in 5.2, since
@@ -123,8 +239,8 @@
               (update agg :elements disj! (avl/nearest elements* <= element)))
             (assoc agg :elements (transient elements*))
             (avl/subrange elements*
-                          >= (->Element entity attribute nil nil)
-                          <  (->Element entity (core/successor-id attribute) nil nil)))))
+                          >= (->EntityAttributeStartElement entity attribute)
+                          <  (->EntityAttributeEndElement   entity attribute)))))
 
 (defn interpret
   ([opset-log]

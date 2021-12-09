@@ -33,19 +33,18 @@
   [ops value-id value]
   (assoc ops value-id (ops/make-value value)))
 
-(defn assign-map-key-ops
-  [ops map-id key-id k v]
-  (let [ops-after-key (value-to-ops ops key-id k)
-        val-id        (core/next-id ops-after-key)
-        ops-after-val (value-to-ops ops-after-key val-id v)
-        assign-id     (core/next-id ops-after-val)]
-    (assoc ops-after-val assign-id (ops/assign map-id key-id val-id))))
+(defn assign-key-ops
+  [ops map-id assign-id k val-id]
+  (assoc ops assign-id (ops/assign map-id k val-id)))
+
+(defn create-value-and-assign-key-ops
+  [ops map-id k val-id v]
+  (let [ops-after-val (value-to-ops ops val-id v)]
+    (assign-key-ops ops-after-val map-id (core/next-id ops-after-val) k val-id)))
 
 (defn assign-set-member-ops
-  [ops map-id member-id member]
-  (let [ops-after-member (value-to-ops ops member-id member)
-        assign-id        (core/next-id ops-after-member)]
-    (assoc ops-after-member assign-id (ops/assign map-id member-id))))
+  [ops set-id assign-id member]
+  (assoc ops assign-id (ops/assign set-id member)))
 
 (defn insert-list-item-ops
   [ops list-id insert-id after-id item-id]
@@ -61,27 +60,9 @@
         assign-id        (core/next-id ops-after-item)]
     (assoc ops-after-item assign-id (ops/assign list-id insert-id item-id))))
 
-(defn reassign-existing-key-ops
-  [ops entity-id key-id value value-id]
-  (let [agg-after-val (value-to-ops ops value-id value)
-        assign-id     (core/next-id agg-after-val)]
-    (assoc agg-after-val assign-id (ops/assign entity-id key-id value-id))))
-
 (defn remove-key-ops
   [ops entity-id remove-id key-id]
   (assoc ops remove-id (ops/remove entity-id key-id)))
-
-(defn populate-map-ops
-  [ops* map-id the-map start-id]
-  (loop [ops     ops*
-         key-id  start-id
-         entries the-map]
-    (if-let [entry (first entries)]
-      (let [next-ops (assign-map-key-ops ops map-id key-id (key entry) (val entry))]
-        (recur next-ops
-               (core/next-id next-ops)
-               (next entries)))
-      ops)))
 
 (defn populate-list-ops
   [ops* list-id the-list start-id]
@@ -99,10 +80,10 @@
 
 (defmethod value-to-ops :map
   [ops map-id the-map]
-  (populate-map-ops (assoc ops map-id (ops/make-map))
-                    map-id
-                    the-map
-                    (core/successor-id map-id)))
+  (reduce-kv (fn [agg k v]
+               (create-value-and-assign-key-ops agg map-id k (core/next-id agg) v))
+             (assoc ops map-id (ops/make-map))
+             the-map))
 
 (defmethod value-to-ops :vec
   [ops vector-id the-vector]
@@ -112,16 +93,11 @@
                      (core/successor-id vector-id)))
 
 (defmethod value-to-ops :set
-  [ops* set-id the-set]
-  (loop [ops   (assoc ops* set-id (ops/make-set))
-         items the-set]
-    (if-some [item (first items)]
-      (let [item-id        (core/next-id ops)
-            ops-after-item (value-to-ops ops item-id item)
-            assign-id      (core/next-id ops-after-item)]
-        (recur (assoc ops-after-item assign-id (ops/assign set-id item-id))
-               (next items)))
-      ops)))
+  [ops set-id the-set]
+  (reduce (fn [agg item]
+            (assign-set-member-ops agg set-id (core/next-id agg) item))
+          (assoc ops set-id (ops/make-set))
+          the-set))
 
 (defmethod value-to-ops :lst
   [ops list-id the-list]
@@ -139,10 +115,6 @@
 (defn get-insertion-id
   [o n]
   (some-> o meta :converge/insertions (util/safe-get n)))
-
-(defn get-key-id
-  [o k]
-  (some-> o meta :converge/keys (get k)))
 
 (defmulti -edit-to-ops
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
@@ -163,13 +135,12 @@
 
 (defmethod -edit-to-ops [:+ :map]
   [ops actor [path _ v] the-map]
-  (let [entity-id     (get-id the-map)
-        key-id        (core/next-id ops actor)
-        ops-after-key (value-to-ops ops key-id (util/last-indexed path))
-        value-id      (core/next-id ops-after-key)
-        ops-after-val (value-to-ops ops-after-key value-id v)
-        assign-id     (core/next-id ops-after-val)]
-    (assoc ops-after-val assign-id (ops/assign entity-id key-id value-id))))
+  (create-value-and-assign-key-ops
+   ops
+   (get-id the-map)
+   (util/last-indexed path)
+   (core/next-id ops actor)
+   v))
 
 (defmethod -edit-to-ops [:+ :vec]
   [ops actor [path _ item] the-vector]
@@ -187,11 +158,7 @@
 
 (defmethod -edit-to-ops [:+ :set]
   [ops actor [_ _ item] the-set]
-  (let [entity-id      (get-id the-set)
-        item-id        (core/next-id ops actor)
-        ops-after-item (value-to-ops ops item-id item)
-        assign-id      (core/next-id ops-after-item)]
-    (assoc ops-after-item assign-id (ops/assign entity-id item-id))))
+  (assign-set-member-ops ops (get-id the-set) (core/next-id ops actor) item))
 
 (defmethod -edit-to-ops [:+ :lst]
   [ops actor [path _ item] the-list]
@@ -214,9 +181,7 @@
   (remove-key-ops ops
                   (get-id the-map)
                   (core/next-id ops actor)
-                  (->> path
-                       util/last-indexed
-                       (get-key-id the-map))))
+                  (util/last-indexed path)))
 
 (defmethod -edit-to-ops [:- :vec]
   [ops actor [path] the-vector]
@@ -232,9 +197,7 @@
   (remove-key-ops ops
                   (get-id the-set)
                   (core/next-id ops actor)
-                  (->> path
-                       util/last-indexed
-                       (get-key-id the-set))))
+                  (util/last-indexed path)))
 
 (defmethod -edit-to-ops [:- :lst]
   [ops actor [path] the-list]
@@ -250,36 +213,28 @@
 (defn map-diff-ops
   [ops* actor map-id old-map new-map]
   (reduce (fn [ops k]
-            (cond
-              (and (contains? old-map k)
-                   (not (contains? new-map k)))
+            (if (and (contains? old-map k)
+                     (not (contains? new-map k)))
               (remove-key-ops ops
                               map-id
                               (core/next-id ops actor)
-                              (get-key-id old-map k))
-
-              (and (not (contains? old-map k))
-                   (contains? new-map k))
-              (assign-map-key-ops ops
-                                  map-id
-                                  (core/next-id ops actor)
-                                  k
-                                  (get new-map k))
-
-              (and (contains? new-map k)
-                   (contains? old-map k)
-                   (not= (get old-map k)
-                         (get new-map k)))
-              (reassign-existing-key-ops ops
-                                         map-id
-                                         (get-key-id old-map k)
-                                         (get new-map k)
-                                         (core/next-id ops actor))
-
-              :else ops))
+                              k)
+              (let [value (get new-map k)]
+                (if-let [val-id (get-id value)]
+                  (assign-key-ops
+                   ops
+                   map-id
+                   (core/next-id ops actor)
+                   k
+                   val-id)
+                  (create-value-and-assign-key-ops
+                   ops
+                   map-id
+                   k
+                   (core/next-id ops actor)
+                   value)))))
           ops*
           (into #{} (concat (keys old-map) (keys new-map)))))
-
 
 ;; TODO: Can we make this better?  Preserve existing insertions/assignments/values?
 (defn list-diff-ops
@@ -321,7 +276,7 @@
               (remove-key-ops ops
                               set-id
                               (core/next-id ops actor)
-                              (get-key-id old-set k))
+                              k)
 
               (and (not (contains? old-set k))
                    (contains? new-set k))
@@ -357,19 +312,19 @@
           (:vec :lst) (list-diff-ops ops actor (get-id old-value) old-value new-value)
           :set (set-diff-ops ops actor (get-id old-value) old-value new-value)
           ;; else replace a primitive type
-          (reassign-existing-key-ops ops
-                                     (get-id the-list)
-                                     (get-insertion-id the-list k)
-                                     new-value
-                                     (core/next-id ops actor)))
+          (create-value-and-assign-key-ops ops
+                                           (get-id the-list)
+                                           (get-insertion-id the-list k)
+                                           (core/next-id ops actor)
+                                           new-value))
         ;; TODO: attempt to retain inner values when converting from one collection type to another?
         ;; TODO: more broadly, should we cache and re-use scalar (not including tracking text/string) values?
         ;; ... with an entirely new value
-        (reassign-existing-key-ops ops
-                                   (get-id the-list)
-                                   (get-insertion-id the-list k)
-                                   new-value
-                                   (core/next-id ops actor))))))
+        (create-value-and-assign-key-ops ops
+                                         (get-id the-list)
+                                         (get-insertion-id the-list k)
+                                         (core/next-id ops actor)
+                                         new-value)))))
 
 (defmethod -edit-to-ops [:r :map]
   [ops actor [path _ new-value] the-map]
@@ -394,19 +349,19 @@
           (:vec :lst) (list-diff-ops ops actor (get-id old-value) old-value new-value)
           :set (set-diff-ops ops actor (get-id old-value) old-value new-value)
           ;; else replace a primitive type
-          (reassign-existing-key-ops ops
-                                     (get-id the-map)
-                                     (get-key-id the-map k)
-                                     new-value
-                                     (core/next-id ops actor)))
+          (create-value-and-assign-key-ops ops
+                                           (get-id the-map)
+                                           k
+                                           (core/next-id ops actor)
+                                           new-value))
         ;; TODO: attempt to retain inner values when converting from one collection type to another?
         ;; TODO: more broadly, should we cache and re-use scalar (not including tracking text/string) values?
         ;; ... with an entirely new value
-        (reassign-existing-key-ops ops
-                                   (get-id the-map)
-                                   (get-key-id the-map k)
-                                   new-value
-                                   (core/next-id ops actor))))))
+        (create-value-and-assign-key-ops ops
+                                         (get-id the-map)
+                                         k
+                                         (core/next-id ops actor)
+                                         new-value)))))
 
 (defmethod -edit-to-ops [:r :vec]
   [ops actor [path _ value] the-vector]

@@ -63,8 +63,6 @@
   ([entity attribute value]
    (assert (core/id? entity)
            "`entity` must be an Id")
-   (assert (core/id? attribute)
-           "`attribute` must be an Id")
    (assert (or (nil? value )(core/id? value))
            "`value` must be either nil or an Id")
    (core/op ASSIGN (merge {:entity entity :attribute attribute}
