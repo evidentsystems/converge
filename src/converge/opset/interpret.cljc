@@ -79,7 +79,7 @@
      key-cache
      (persistent!
       (reduce-kv (fn [agg k v]
-                   (assoc! agg (:key v) k))
+                   (assoc! agg (:value v) k))
                  (transient {})
                  keys)))
    values

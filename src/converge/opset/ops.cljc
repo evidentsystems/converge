@@ -30,32 +30,46 @@
 (def ^:const REMOVE 10)
 
 (defn make-map
-  []
-  (core/op MAKE_MAP))
+  ([]
+   (make-map false))
+  ([root?]
+   (core/op MAKE_MAP (when root? {:root? true}))))
 
 (defn make-vector
-  []
-  (core/op MAKE_VECTOR))
+  ([]
+   (make-vector false))
+  ([root?]
+   (core/op MAKE_VECTOR (when root? {:root? true}))))
 
 (defn make-set
-  []
-  (core/op MAKE_SET))
+  ([]
+   (make-set false))
+  ([root?]
+   (core/op MAKE_SET (when root? {:root? true}))))
 
 (defn make-list
-  []
-  (core/op MAKE_LIST))
+  ([]
+   (make-list false))
+  ([root?]
+   (core/op MAKE_LIST (when root? {:root? true}))))
 
 (defn make-text
-  []
-  (core/op MAKE_TEXT))
+  ([]
+   (make-text false))
+  ([root?]
+   (core/op MAKE_TEXT (when root? {:root? true}))))
 
 (defn make-key
   [value]
   (core/op MAKE_KEY {:value value}))
 
 (defn make-value
-  [value]
-  (core/op MAKE_VALUE {:value value}))
+  ([value]
+   (make-value value false))
+  ([value root?]
+   (core/op MAKE_VALUE
+            (merge {:value value}
+                   (when root? {:root? true})))))
 
 (defn insert
   [after]
