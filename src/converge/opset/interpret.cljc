@@ -16,7 +16,7 @@
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
   (:require [clojure.data.avl :as avl]
             [converge.opset.ops :as ops]
-            [converge.core :as core])
+            [converge.domain :as domain])
   (:import [clojure.data.avl AVLSet]
            #?(:clj [converge.core Id])))
 
@@ -47,7 +47,7 @@
 
 (defn entity-end-element
   [entity]
-  (->Element entity core/highest-id nil nil))
+  (->Element entity domain/highest-id nil nil))
 
 (defn entity-attribute-start-element
   [entity attribute]
@@ -55,7 +55,7 @@
 
 (defn entity-attribute-end-element
   [entity attribute]
-  (->Element entity attribute core/highest-id nil))
+  (->Element entity attribute domain/highest-id nil))
 
 (defrecord Interpretation [elements list-links
                            keys     key-cache

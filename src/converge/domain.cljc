@@ -11,7 +11,7 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
-(ns converge.core
+(ns converge.domain
   "Datatypes and functions implementing a serializable, Atom-like
   convergent reference type."
   (:require [clojure.data.avl :as avl]

@@ -12,7 +12,7 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 (ns converge.opset.ref
-  (:require [converge.core :as core]
+  (:require [converge.domain :as domain]
             [converge.util :as util]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
@@ -35,7 +35,7 @@
                                       validator
                                       ^:mutable watches])
 
-  core/ConvergentRef
+  domain/ConvergentRef
   (-actor [_] actor)
   (-state [_] state)
   (-set-actor! [_ new-actor] (set! actor new-actor))
@@ -43,7 +43,7 @@
   (-apply-state! [this new-state]
     (let [old-value (:value state)]
       (set! state new-state)
-      (core/notify-w this watches old-value (:value new-state))))
+      (domain/notify-w this watches old-value (:value new-state))))
   (-make-patch
     [_ new-value]
     (when (ifn? validator)
@@ -53,7 +53,7 @@
           state]
       (patch/make-patch log interpretation actor value new-value)))
   (-state-from-patch [_ patch]
-    (if (core/patch? patch)
+    (if (domain/patch? patch)
       (let [{ops                  :ops
              patch-interpretation :interpretation
              patch-value          :value}
@@ -68,10 +68,10 @@
 
             new-value
             (or patch-value (edn/edn new-interpretation))]
-        (core/->ConvergentState new-log
-                                new-interpretation
-                                new-value
-                                false))
+        (domain/->ConvergentState new-log
+                                  new-interpretation
+                                  new-value
+                                  false))
       state))
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
@@ -84,13 +84,13 @@
       [IAtom
        (reset
         [this new-value]
-        (let [patch     (core/-make-patch this new-value)
-              new-state (core/-state-from-patch this patch)]
-          (core/validate-reset (:value state) new-value new-state patch)
-          (when patch (set! patches (conj patches (core/->Patch
+        (let [patch     (domain/-make-patch this new-value)
+              new-state (domain/-state-from-patch this patch)]
+          (domain/validate-reset (:value state) new-value new-state patch)
+          (when patch (set! patches (conj patches (domain/->Patch
                                                    (:source patch)
                                                    (:ops patch)))))
-          (core/-apply-state! this new-state)
+          (domain/-apply-state! this new-state)
           (:value new-state)))
        (swap [this f]          (.reset this (f (:value state))))
        (swap [this f a]        (.reset this (f (:value state) a)))
@@ -171,13 +171,13 @@
        IReset
        (-reset!
         [this new-value]
-        (let [patch     (core/-make-patch this new-value)
-              new-state (core/-state-from-patch this patch)]
-          (core/validate-reset (:value state) new-value new-state patch)
-          (when patch (set! patches (conj patches (core/->Patch
+        (let [patch     (domain/-make-patch this new-value)
+              new-state (domain/-state-from-patch this patch)]
+          (domain/validate-reset (:value state) new-value new-state patch)
+          (when patch (set! patches (conj patches (domain/->Patch
                                                    (:source patch)
                                                    (:ops patch)))))
-          (core/-apply-state! this new-state)
+          (domain/-apply-state! this new-state)
           (:value new-state)))
 
        ISwap
@@ -201,7 +201,7 @@
        IWatchable
        (-notify-watches
         [this old-value new-value]
-        (core/notify-w this watches old-value new-value))
+        (domain/notify-w this watches old-value new-value))
        (-add-watch
         [this k callback]
         (set! watches (assoc watches k callback))
@@ -214,10 +214,10 @@
        IHash
        (-hash [this] (goog/getUid this))]))
 
-(defmethod core/make-ref :opset
+(defmethod domain/make-ref :opset
   [{:keys [log actor initial-value meta validator]}]
   (let [r (->OpsetConvergentRef actor
-                                (core/->ConvergentState log nil nil false)
+                                (domain/->ConvergentState log nil nil false)
                                 (util/queue)
                                 meta
                                 validator
@@ -225,10 +225,10 @@
     (reset! r initial-value)
     r))
 
-(defmethod core/make-ref-from-ops :opset
+(defmethod domain/make-ref-from-ops :opset
   [{:keys [ops actor meta validator]}]
   (->OpsetConvergentRef actor
-                        (core/->ConvergentState ops nil nil true)
+                        (domain/->ConvergentState ops nil nil true)
                         (util/queue)
                         meta
                         validator

@@ -12,7 +12,7 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 (ns converge.editscript.ops
-  (:require [converge.core :as core]))
+  (:require [converge.domain :as domain]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
@@ -21,4 +21,4 @@
 
 (defn edit
   [edits]
-  (core/op EDIT {:edits edits}))
+  (domain/op EDIT {:edits edits}))

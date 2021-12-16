@@ -20,7 +20,7 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
-            [converge.core :as core]
+            [converge.domain :as domain]
             [converge.util :as util]))
 
 (def a {:empty-m {}
@@ -200,8 +200,8 @@
                    (count (convergent/ref-log cr))))))
         (testing "squashing a patch"
           (let [cr (convergent/ref-from-ops (convergent/ref-log r))]
-            (is (= final @(convergent/squash! cr (core/->Patch (convergent/ref-id cr)
-                                                               (merge (:ops patch1) (:ops patch2))))))
+            (is (= final @(convergent/squash! cr (domain/->Patch (convergent/ref-id cr)
+                                                                 (merge (:ops patch1) (:ops patch2))))))
             (is (> (count (convergent/ref-log d))
                    (count (convergent/ref-log cr))))))))))
 

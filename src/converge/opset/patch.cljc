@@ -14,7 +14,7 @@
 (ns converge.opset.patch
   (:require [clojure.data.avl :as avl]
             [editscript.core :as e]
-            [converge.core :as core]
+            [converge.domain :as domain]
             [converge.util :as util]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
@@ -47,7 +47,7 @@
     :as                 context}
    k]
   (let [key-id (or (get key-cache k)
-                   (core/next-id log actor))
+                   (domain/next-id log actor))
         ops      {key-id (ops/make-key k)}]
     (-> context
         (update-context ops)
@@ -75,7 +75,7 @@
   ([ctx entity-id attribute-id]
    (add-assign-op ctx entity-id attribute-id nil))
   ([{:keys [log actor] :as context} entity-id attribute-id val-id]
-   (let [assign-id (core/next-id log actor)
+   (let [assign-id (domain/next-id log actor)
          ops {assign-id
               (ops/assign entity-id attribute-id val-id)}]
      (-> context
@@ -84,7 +84,7 @@
 
 (defn add-remove-op
   [{:keys [log actor] :as context} entity-id attribute-id]
-  (let [remove-id (core/next-id log actor)
+  (let [remove-id (domain/next-id log actor)
         ops {remove-id
              (ops/remove entity-id attribute-id)}]
     (-> context
@@ -93,7 +93,7 @@
 
 (defn add-insert-op
   [{:keys [log actor] :as context} after-id]
-  (let [insert-id (core/next-id log actor)
+  (let [insert-id (domain/next-id log actor)
         ops       {insert-id (ops/insert after-id)}]
     (-> context
         (update-context ops)
@@ -125,7 +125,7 @@
     :as                   context}
    value root?]
   (let [value-id (or (get value-cache value)
-                     (core/next-id log actor))
+                     (domain/next-id log actor))
         ops      {value-id
                   (ops/make-value value root?)}]
     (-> context
@@ -134,7 +134,7 @@
 
 (defmethod -add-value-ops :map
   [{:keys [log actor] :as context} the-map root?]
-  (let [map-id (core/next-id log actor)
+  (let [map-id (domain/next-id log actor)
         op     (ops/make-map root?)
         ops    {map-id op}]
     [(reduce-kv
@@ -151,7 +151,7 @@
 
 (defmethod -add-value-ops :vec
   [{:keys [log actor] :as context} the-vector root?]
-  (let [vector-id (core/next-id log actor)
+  (let [vector-id (domain/next-id log actor)
         op        (ops/make-vector root?)
         ops       {vector-id op}]
     [(populate-list (update-context context ops)
@@ -161,7 +161,7 @@
 
 (defmethod -add-value-ops :set
   [{:keys [log actor] :as context} the-set root?]
-  (let [set-id (core/next-id log actor)
+  (let [set-id (domain/next-id log actor)
         op     (ops/make-set root?)
         ops    {set-id op}]
     [(reduce
@@ -176,7 +176,7 @@
 
 (defmethod -add-value-ops :lst
   [{:keys [log actor] :as context} the-list root?]
-  (let [list-id (core/next-id log actor)
+  (let [list-id (domain/next-id log actor)
         op      (ops/make-list root?)
         ops     {list-id op}]
     [(populate-list (update-context context ops)
@@ -269,19 +269,19 @@
                    (not (contains? new-map k)))
               (remove-key-ops ops
                               map-id
-                              (core/next-id ops actor)
+                              (domain/next-id ops actor)
                               k)
 
               (and (not (contains? old-map k))
                    (contains? new-map k))
               (let [value         (get new-map k)
-                    key-id        (core/next-id ops actor)
+                    key-id        (domain/next-id ops actor)
                     ops-after-key (assoc ops key-id (ops/make-key k))]
                 (if-let [val-id (get-id value)]
                   (assign-key-ops
                    ops-after-key
                    map-id
-                   (core/successor-id key-id)
+                   (domain/successor-id key-id)
                    key-id
                    val-id)
                   (create-value-and-assign-key-ops
@@ -289,7 +289,7 @@
                    map-id
                    key-id
                    value
-                   (core/successor-id key-id))))
+                   (domain/successor-id key-id))))
 
               (and (contains? old-map k)
                    (contains? new-map k)
@@ -312,13 +312,13 @@
           (if (first items)
             (recur (remove-key-ops ops
                                    list-id
-                                   (core/next-id ops actor)
+                                   (domain/next-id ops actor)
                                    (get-insertion-id old-list i))
                    (next items)
                    (inc i))
             ops))]
     (loop [ops       ops-after-removals
-           insert-id (core/next-id ops-after-removals actor)
+           insert-id (domain/next-id ops-after-removals actor)
            after-id  list-id
            items     new-list]
       (if-let [item (first items)]
@@ -328,7 +328,7 @@
                          (create-and-insert-list-item-ops
                           ops list-id insert-id after-id item))]
           (recur next-ops
-                 (core/next-id next-ops)
+                 (domain/next-id next-ops)
                  insert-id
                  (next new-list)))
         ops))))
@@ -341,14 +341,14 @@
                    (not (contains? new-set k)))
               (remove-key-ops ops
                               set-id
-                              (core/next-id ops actor)
+                              (domain/next-id ops actor)
                               k)
 
               (and (not (contains? old-set k))
                    (contains? new-set k))
               (assign-set-member-ops ops
                                      set-id
-                                     (core/next-id ops actor)
+                                     (domain/next-id ops actor)
                                      k)
 
               :else ops))
@@ -363,7 +363,7 @@
       ;; ...with minimal ops while retaining list identity, since new value is also a list
       (list-diff-ops ops actor (get-id the-list) the-list new-value)
       ;; ...entirely with a new value with :root? true
-      (let [value-id (core/next-id ops actor)
+      (let [value-id (domain/next-id ops actor)
             ops*     (value-to-ops ops value-id new-value)]
         (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
     ;; Replacing a key within this list...
@@ -382,7 +382,7 @@
                                            (get-id the-list)
                                            (get-insertion-id the-list k)
                                            new-value
-                                           (core/next-id ops actor)))
+                                           (domain/next-id ops actor)))
         ;; TODO: attempt to retain inner values when converting from one collection type to another?
         ;; TODO: more broadly, should we cache and re-use scalar (not including tracking text/string) values?
         ;; ... with an entirely new value
@@ -390,7 +390,7 @@
                                          (get-id the-list)
                                          (get-insertion-id the-list k)
                                          new-value
-                                         (core/next-id ops actor))))))
+                                         (domain/next-id ops actor))))))
 
 (defmethod -edit-to-ops [:r :map]
   [context [path _ new-value] the-map]
@@ -401,7 +401,7 @@
         ;; ...with minimal ops while retaining map identity, since new value is also a map
         (map-diff-ops ops actor (get-id the-map) the-map new-value)
         ;; ...entirely with a new value with :root? true
-        (let [value-id (core/next-id ops actor)
+        (let [value-id (domain/next-id ops actor)
               ops*     (value-to-ops ops value-id new-value)]
           (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
       ;; Replacing a key within this map...
@@ -416,21 +416,21 @@
             (:vec :lst) (list-diff-ops ops actor (get-id old-value) old-value new-value)
             :set (set-diff-ops ops actor (get-id old-value) old-value new-value)
             ;; else replace a primitive type
-            (let [key-id (core/next-id ops actor)]
+            (let [key-id (domain/next-id ops actor)]
               (create-value-and-assign-key-ops (assoc ops key-id (ops/make-key k))
                                                (get-id the-map)
                                                key-id
                                                new-value
-                                               (core/successor-id key-id))))
+                                               (domain/successor-id key-id))))
           ;; TODO: attempt to retain inner values when converting from one collection type to another?
           ;; TODO: more broadly, should we cache and re-use scalar (not including tracking text/string) values?
           ;; ... with an entirely new value
-          (let [key-id (core/next-id ops actor)]
+          (let [key-id (domain/next-id ops actor)]
             (create-value-and-assign-key-ops (assoc ops key-id (ops/make-key k))
                                              (get-id the-map)
                                              key-id
                                              new-value
-                                             (core/successor-id key-id)))))))
+                                             (domain/successor-id key-id)))))))
 
 (defmethod -edit-to-ops [:r :vec]
   [context [path _ new-value] the-vector]
@@ -446,7 +446,7 @@
         ;; ...with minimal ops while retaining set identity, since new value is also a set
         (set-diff-ops ops actor (get-id the-set) the-set new-value)
         ;; ...entirely with a new value with :root? true
-        (let [value-id (core/next-id ops actor)
+        (let [value-id (domain/next-id ops actor)
               ops*     (value-to-ops ops value-id new-value)]
           (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
       ;; We don't replace keys within set...
@@ -482,12 +482,12 @@
                          (or interpretation (interpret/interpret log-orig))}
                         (e/get-edits
                          (e/diff old-value new-value)))
-        ops     (avl/subrange (:log context) > (core/latest-id log-orig))]
+        ops     (avl/subrange (:log context) > (domain/latest-id log-orig))]
     (if (= (:value context) new-value)
       (when-not (empty? ops)
-        (core/map->Patch
+        (domain/map->Patch
          {:source         (-> log-orig
-                              core/ref-root-data-from-log
+                              domain/ref-root-data-from-log
                               :id)
           :ops            ops
           :interpretation (:interpretation context)
@@ -507,9 +507,9 @@
     (util/uuid))
 
   (def log1
-    (core/make-log
-     (core/make-id)
-     (core/root-op ref-id creator :opset)))
+    (domain/make-log
+     (domain/make-id)
+     (domain/root-op ref-id creator :opset)))
 
   (edn/edn (interpret/interpret log1))
 

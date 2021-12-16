@@ -14,7 +14,7 @@
 (ns converge.serialize
   "Handlers for serializing to e.g. Transit."
   (:require [clojure.data.avl :as avl]
-            [converge.core :as core]
+            [converge.domain :as domain]
             [converge.util :as util]
             [converge.opset.interpret :as interpret]
             [converge.opset.ref :as opset]
@@ -32,13 +32,13 @@
   (into (avl/sorted-set) v))
 
 (def read-id
-  core/map->Id)
+  domain/map->Id)
 
 (def read-operation
-  core/map->Op)
+  domain/map->Op)
 
 (def read-patch
-  core/map->Patch)
+  domain/map->Patch)
 
 (def read-clock
   core/map->Clock)
@@ -51,7 +51,7 @@
 
 (defn read-state
   [m]
-  (core/map->ConvergentState
+  (domain/map->ConvergentState
    {:log    (:log m)
     :dirty? true}))
 
@@ -98,5 +98,5 @@
 
 (defn write-ref
   [r]
-  {:state (core/-state r)
+  {:state (domain/-state r)
    :meta  (meta r)})

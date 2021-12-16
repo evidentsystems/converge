@@ -14,7 +14,7 @@
 (ns converge.opset.edn
   "API for converting an OpSet interpretation as EDN data."
   (:require [clojure.data.avl :as avl]
-            [converge.core :as core]
+            [converge.domain :as domain]
             [converge.util :as util]
             [converge.opset.interpret :as interpret]))
 
@@ -103,7 +103,7 @@
 
 (defn root-element-id
   [values]
-  (let [root-id (core/make-id)]
+  (let [root-id (domain/make-id)]
     (reduce-kv (fn [agg id {:keys [root?]}]
                  (if root?
                    (if (nat-int? (compare id agg)) id agg)

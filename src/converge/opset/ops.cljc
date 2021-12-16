@@ -13,7 +13,7 @@
 ;; limitations under the License.
 (ns converge.opset.ops
   (:refer-clojure :exclude [remove])
-  (:require [converge.core :as core]))
+  (:require [converge.domain :as domain]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
@@ -33,63 +33,63 @@
   ([]
    (make-map false))
   ([root?]
-   (core/op MAKE_MAP (when root? {:root? true}))))
+   (domain/op MAKE_MAP (when root? {:root? true}))))
 
 (defn make-vector
   ([]
    (make-vector false))
   ([root?]
-   (core/op MAKE_VECTOR (when root? {:root? true}))))
+   (domain/op MAKE_VECTOR (when root? {:root? true}))))
 
 (defn make-set
   ([]
    (make-set false))
   ([root?]
-   (core/op MAKE_SET (when root? {:root? true}))))
+   (domain/op MAKE_SET (when root? {:root? true}))))
 
 (defn make-list
   ([]
    (make-list false))
   ([root?]
-   (core/op MAKE_LIST (when root? {:root? true}))))
+   (domain/op MAKE_LIST (when root? {:root? true}))))
 
 (defn make-text
   ([]
    (make-text false))
   ([root?]
-   (core/op MAKE_TEXT (when root? {:root? true}))))
+   (domain/op MAKE_TEXT (when root? {:root? true}))))
 
 (defn make-key
   [value]
-  (core/op MAKE_KEY {:value value}))
+  (domain/op MAKE_KEY {:value value}))
 
 (defn make-value
   ([value]
    (make-value value false))
   ([value root?]
-   (core/op MAKE_VALUE
+   (domain/op MAKE_VALUE
             (merge {:value value}
                    (when root? {:root? true})))))
 
 (defn insert
   [after]
-  (assert (core/id? after) "`after` must be an Id")
-  (core/op INSERT {:after after}))
+  (assert (domain/id? after) "`after` must be an Id")
+  (domain/op INSERT {:after after}))
 
 (defn assign
   ([entity attribute]
    (assign entity attribute nil))
   ([entity attribute value]
-   (assert (core/id? entity)
+   (assert (domain/id? entity)
            "`entity` must be an Id")
-   (assert (core/id? attribute)
+   (assert (domain/id? attribute)
            "`attribute` must be an Id")
-   (assert (or (nil? value) (core/id? value))
+   (assert (or (nil? value) (domain/id? value))
            "`value` must be either nil or an Id")
-   (core/op ASSIGN (merge {:entity entity :attribute attribute}
+   (domain/op ASSIGN (merge {:entity entity :attribute attribute}
                           (when value {:value value})))))
 
 (defn remove
   [entity attribute]
-  (assert (core/id? entity) "`entity` must be an Id")
-  (core/op REMOVE {:entity entity :attribute attribute}))
+  (assert (domain/id? entity) "`entity` must be an Id")
+  (domain/op REMOVE {:entity entity :attribute attribute}))

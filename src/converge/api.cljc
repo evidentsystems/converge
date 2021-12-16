@@ -17,7 +17,7 @@
   functions for comparing, merging, and patching these convergent
   refs."
   (:refer-clojure :exclude [ref])
-  (:require [converge.core :as core]
+  (:require [converge.domain :as domain]
             [converge.util :as util]
             converge.opset.ref
             converge.editscript.ref))
@@ -62,14 +62,14 @@
           (str "Option `:backend`, if provided, must be one of " backends))
   (let [actor* (or actor (util/uuid))
         backend* (or backend default-backend)
-        log      (core/make-log
-                  (core/make-id)
-                  (core/root-op (or id (util/uuid)) actor* backend*))
-        r        (core/make-ref (assoc options
-                                       :log log
-                                       :actor actor*
-                                       :backend backend*
-                                       :initial-value initial-value))]
+        log      (domain/make-log
+                  (domain/make-id)
+                  (domain/root-op (or id (util/uuid)) actor* backend*))
+        r        (domain/make-ref (assoc options
+                                         :log log
+                                         :actor actor*
+                                         :backend backend*
+                                         :initial-value initial-value))]
     @r
     r))
 
@@ -96,10 +96,10 @@
   (assert (or (nil? actor) (uuid? actor))
           "Option `:actor`, if provided, must be a UUID")
   ;; TODO: assertions ensuring valid operation log
-  (let [log (into (core/make-log) ops)
-        r   (core/make-ref-from-ops
+  (let [log (into (domain/make-log) ops)
+        r   (domain/make-ref-from-ops
              (assoc options
-                    :backend (-> log core/ref-root-data-from-log :backend)
+                    :backend (-> log domain/ref-root-data-from-log :backend)
                     :actor (or actor (util/uuid))
                     :ops log))]
     @r
@@ -107,32 +107,32 @@
 
 (defn convergent?
   [o]
-  (satisfies? core/ConvergentRef o))
+  (satisfies? domain/ConvergentRef o))
 
 (defn ref-actor
   [cr]
-  (core/-actor cr))
+  (domain/-actor cr))
 
 (defn set-actor!
   [cr actor]
-  (core/-set-actor! cr actor)
+  (domain/-set-actor! cr actor)
   cr)
 
 (defn ref-log
   [cr]
-  (core/-log cr))
+  (domain/-log cr))
 
 (defn ref-id
   [cr]
-  (-> cr ref-log core/ref-root-data-from-log :id))
+  (-> cr ref-log domain/ref-root-data-from-log :id))
 
 (defn ref-creator
   [cr]
-  (-> cr ref-log core/ref-root-data-from-log :creator))
+  (-> cr ref-log domain/ref-root-data-from-log :creator))
 
 (defn ref-backend
   [cr]
-  (-> cr ref-log core/ref-root-data-from-log :backend))
+  (-> cr ref-log domain/ref-root-data-from-log :backend))
 
 (defn merge!
   [cr other]
@@ -144,9 +144,9 @@
 
                 (and (= (type cr) (type other))
                      (= cr-id (ref-id other)))
-                (core/->Patch (ref-id other) (ref-log other))
+                (domain/->Patch (ref-id other) (ref-log other))
 
-                (and (core/patch? other)
+                (and (domain/patch? other)
                      (= cr-id (:source other)))
                 other
 
@@ -155,7 +155,7 @@
                                 {:ref    cr
                                  :object other})))]
     (when patch
-      (core/-apply-state! cr (core/-state-from-patch cr patch)))
+      (domain/-apply-state! cr (domain/-state-from-patch cr patch)))
     cr))
 
 (defn squash!
@@ -172,7 +172,7 @@
                (= cr-id (ref-id other)))
           (ref-log other)
 
-          (and (core/patch? other)
+          (and (domain/patch? other)
                (= cr-id (:source other)))
           (:ops other)
 
@@ -181,17 +181,17 @@
                           {:ref    cr
                            :object other})))]
     (when-not (nil? additional-ops)
-      (reset! cr (core/-value-from-ops cr (merge (ref-log cr) additional-ops))))
+      (reset! cr (domain/-value-from-ops cr (merge (ref-log cr) additional-ops))))
     cr))
 
 (defn peek-patches
   [cr]
-  (core/-peek-patches cr))
+  (domain/-peek-patches cr))
 
 (defn pop-patches!
   [cr]
   (let [p (peek-patches cr)]
-    (core/-pop-patches! cr)
+    (domain/-pop-patches! cr)
     p))
 
 (defn clock
