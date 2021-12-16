@@ -47,7 +47,7 @@
   interpret/map->Element)
 
 (def read-interpretation
-  interpret/map->Interpretation)
+  interpret/make-interpretation)
 
 (defn read-state
   [m]

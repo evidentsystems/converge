@@ -35,12 +35,12 @@
 (defmethod -edn :map
   [{:keys [elements] :as interpretation} entity]
   (let [attrs (avl/subrange elements
-                            >= (interpret/->EntityStartElement entity)
-                            <  (interpret/->EntityEndElement   entity))]
+                            >= (interpret/entity-start-element entity)
+                            <  (interpret/entity-end-element   entity))]
     (loop [i   0
            ret (transient {})]
       (if-let [element (nth attrs i nil)]
-        (let [k (:attribute element)]
+        (let [k (-edn interpretation (:attribute element))]
           (recur (inc i)
                  (assoc! ret
                          k
@@ -57,8 +57,8 @@
                          (assoc! agg attribute value))
                        (transient {})
                        (avl/subrange elements
-                                     >= (interpret/->EntityStartElement entity)
-                                     <  (interpret/->EntityEndElement   entity))))]
+                                     >= (interpret/entity-start-element entity)
+                                     <  (interpret/entity-end-element   entity))))]
     (loop [ins (get list-links entity)
            ret (transient [])
            idx (transient [])]
@@ -82,14 +82,14 @@
   (-edn-vector interpretation entity))
 
 (defmethod -edn :set
-  [{:keys [elements]} entity]
+  [{:keys [elements] :as interpretation} entity]
   (let [attrs (avl/subrange elements
-                            >= (interpret/->EntityStartElement entity)
-                            <  (interpret/->EntityEndElement   entity))]
+                            >= (interpret/entity-start-element entity)
+                            <  (interpret/entity-end-element   entity))]
     (loop [i   0
            ret (transient #{})]
       (if-let [element (nth attrs i nil)]
-        (let [member (:attribute element)]
+        (let [member (-edn interpretation (:attribute element))]
           (recur (inc i)
                  (conj! ret member)))
         (some-> ret

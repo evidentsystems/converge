@@ -23,10 +23,11 @@
 (def ^:const MAKE_SET 3)
 (def ^:const MAKE_LIST 4)
 (def ^:const MAKE_TEXT 5)
-(def ^:const MAKE_VALUE 6)
-(def ^:const INSERT 7)
-(def ^:const ASSIGN 8)
-(def ^:const REMOVE 9)
+(def ^:const MAKE_KEY 6)
+(def ^:const MAKE_VALUE 7)
+(def ^:const INSERT 8)
+(def ^:const ASSIGN 9)
+(def ^:const REMOVE 10)
 
 (defn make-map
   []
@@ -48,6 +49,10 @@
   []
   (core/op MAKE_TEXT))
 
+(defn make-key
+  [value]
+  (core/op MAKE_KEY {:value value}))
+
 (defn make-value
   [value]
   (core/op MAKE_VALUE {:value value}))
@@ -63,7 +68,9 @@
   ([entity attribute value]
    (assert (core/id? entity)
            "`entity` must be an Id")
-   (assert (or (nil? value )(core/id? value))
+   (assert (core/id? attribute)
+           "`attribute` must be an Id")
+   (assert (or (nil? value) (core/id? value))
            "`value` must be either nil or an Id")
    (core/op ASSIGN (merge {:entity entity :attribute attribute}
                           (when value {:value value})))))

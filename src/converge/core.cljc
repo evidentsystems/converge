@@ -83,16 +83,34 @@
 
 (declare id?)
 
+(def highest-id
+  (reify
+    #?(:clj  Comparable
+       :cljs IComparable)
+    (#?(:clj  compareTo
+        :cljs -compare)
+      [_ other]
+      (if (id? other)
+        1
+        0))))
+
 (defrecord Id [^UUID actor ^long counter]
   #?(:clj  Comparable
      :cljs IComparable)
   (#?(:clj  compareTo
       :cljs -compare)
     [_ other]
-    (assert (id? other))
-    (compare
-     [counter actor]
-     [(:counter other) (:actor other)])))
+    (cond
+      (id? other)
+      (compare
+       [counter actor]
+       [(:counter other) (:actor other)])
+
+      (identical? other highest-id)
+      -1
+
+      :else
+      0)))
 
 (defn make-id
   ([]
