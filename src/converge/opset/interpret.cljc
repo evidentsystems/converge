@@ -18,7 +18,7 @@
             [converge.opset.ops :as ops]
             [converge.domain :as domain])
   (:import [clojure.data.avl AVLSet]
-           #?(:clj [converge.core Id])))
+           #?(:clj [converge.domain Id])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
