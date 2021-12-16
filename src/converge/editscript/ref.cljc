@@ -15,7 +15,6 @@
   (:require [clojure.data.avl :as avl]
             [editscript.core :as e]
             [converge.domain :as domain]
-            [converge.util :as util]
             [converge.editscript.ops :as ops])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
 
@@ -206,7 +205,7 @@
   [{:keys [log initial-value actor meta validator]}]
   (let [r (->EditscriptConvergentRef actor
                                      (domain/->ConvergentState log nil nil true)
-                                     (util/queue)
+                                     (domain/queue)
                                      meta
                                      validator
                                      nil)]
@@ -217,7 +216,7 @@
   [{:keys [ops actor meta validator]}]
   (->EditscriptConvergentRef actor
                              (domain/->ConvergentState ops nil nil true)
-                             (util/queue)
+                             (domain/queue)
                              meta
                              validator
                              nil))

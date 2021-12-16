@@ -20,8 +20,7 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
-            [converge.domain :as domain]
-            [converge.util :as util]))
+            [converge.domain :as domain]))
 
 (def a {:empty-m {}
         :empty-l []
@@ -169,7 +168,7 @@
   (doseq [backend convergent/backends]
     (testing (str "Merging with backend: " backend)
       (let [r (convergent/ref a :backend backend)
-            d (convergent/ref-from-ops (convergent/ref-log r) :actor (util/uuid))]
+            d (convergent/ref-from-ops (convergent/ref-log r) :actor (domain/uuid))]
         (swap! d assoc :b :another-key)
         (testing "merging nil"
           (is (= a @(convergent/merge! r nil))))
@@ -186,7 +185,7 @@
   (doseq [backend convergent/backends]
     (testing (str "Squashing with backend: " backend)
       (let [r      (convergent/ref a :backend backend)
-            d      (convergent/ref-from-ops (convergent/ref-log r) :actor (util/uuid))
+            d      (convergent/ref-from-ops (convergent/ref-log r) :actor (domain/uuid))
             _      (swap! d assoc
                           :b :another-key
                           :a :foo)
@@ -276,7 +275,7 @@
    (let [o (convergent/ref a :backend backend)
          r (convergent/ref-from-ops
             (convergent/ref-log o)
-            :actor (util/uuid))]
+            :actor (domain/uuid))]
      (and (uuid? (convergent/ref-id r))
           (= (convergent/ref-id o)
              (convergent/ref-id r))

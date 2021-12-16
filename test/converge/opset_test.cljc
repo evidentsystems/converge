@@ -14,7 +14,6 @@
 (ns converge.opset-test
   (:require #?(:clj  [clojure.test :refer [deftest is testing]]
                :cljs [cljs.test :refer-macros [deftest is testing]])
-            [converge.util  :as util]
             [converge.api :as convergent]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]

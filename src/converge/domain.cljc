@@ -15,11 +15,87 @@
   "Datatypes and functions implementing a serializable, Atom-like
   convergent reference type."
   (:require [clojure.data.avl :as avl]
-            [converge.util :as util])
+            [clojure.string :as string]
+            [editscript.edit :as edit]
+            #?(:clj  [clj-uuid :as uuid]
+               :cljs [uuid :as uuid]))
   #?(:clj (:import java.util.UUID)))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
+
+;;;; Util
+
+(defn uuid
+  ([]
+   #?(:clj  (uuid/v4)
+      :cljs (random-uuid)))
+  ([uuid-str]
+   (cond
+     (uuid? uuid-str)
+     uuid-str
+
+     (string/blank? uuid-str)
+     nil
+
+     (string? uuid-str)
+     #?(:clj
+        (UUID/fromString uuid-str)
+        :cljs
+        (if (uuid/validate uuid-str)
+          (cljs.core/uuid uuid-str)
+          (throw (ex-info "invalid UUID string" {:uuid-str uuid-str}))))
+
+     :else
+     (throw (ex-info "cannot make UUID from object" {:object uuid-str})))))
+
+(def get-type edit/get-type)
+
+;; HT: https://github.com/juji-io/editscript/blob/ddb13130d16ae920d1ead8ae77b23c24a202e92e/src/editscript/patch.cljc#L18
+(defn safe-get
+  ([x p]
+   (safe-get x p nil))
+  ([x p not-found]
+   (case (get-type x)
+     (:map :vec :set) (get x p not-found)
+     :lst             (nth x p not-found))))
+
+(def lookup-sentinel
+  #?(:clj  (Object.)
+     :cljs (js-obj)))
+
+(defn safe-get-in
+  ([m ks]
+   (safe-get-in m ks nil))
+  ([m ks not-found]
+   (loop [sentinel lookup-sentinel
+          m        m
+          ks       (seq ks)]
+     (if ks
+       (let [m (safe-get m (first ks) sentinel)]
+         (if (identical? sentinel m)
+           not-found
+           (recur sentinel m (next ks))))
+       m))))
+
+(defn first-indexed
+  [indexed]
+  (nth indexed 0 nil))
+
+(defn last-indexed
+  [indexed]
+  (nth indexed (dec (count indexed)) nil))
+
+(defn safe-pop
+  [indexed]
+  (when-not (empty? indexed)
+    (pop indexed)))
+
+(defn queue
+  [& elems]
+  (into #?(:clj  clojure.lang.PersistentQueue/EMPTY
+           :cljs (.-EMPTY PersistentQueue))
+        elems))
 
 ;;;; API
 
@@ -134,7 +210,7 @@
 
 (defn latest-id
   [log]
-  (some-> log util/last-indexed key))
+  (some-> log last-indexed key))
 
 (defn next-id
   ([log] (next-id log nil))
@@ -170,7 +246,7 @@
 
 (defn ref-root-data-from-log
   [log]
-  (-> log util/first-indexed val :data))
+  (-> log first-indexed val :data))
 
 ;;;; Patch
 

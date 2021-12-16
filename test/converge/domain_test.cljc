@@ -1,13 +1,12 @@
 (ns converge.domain-test
   (:require #?(:clj  [clojure.test :refer [deftest is testing]]
                :cljs [cljs.test :refer-macros [deftest is testing]])
-            [converge.util  :as util]
             [converge.domain :as domain]))
 
 (deftest lamport-timestamps
-  (let [a (util/uuid)
-        b (util/uuid)
-        c (util/uuid)]
+  (let [a (domain/uuid)
+        b (domain/uuid)
+        c (domain/uuid)]
     (testing "latest-id with absolute max counter"
       (let [ops (domain/make-log
                  (domain/make-id a 0) :foo

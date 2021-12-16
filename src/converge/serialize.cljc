@@ -15,7 +15,6 @@
   "Handlers for serializing to e.g. Transit."
   (:require [clojure.data.avl :as avl]
             [converge.domain :as domain]
-            [converge.util :as util]
             [converge.opset.interpret :as interpret]
             [converge.opset.ref :as opset]
             [converge.editscript.ref :as editscript]))
@@ -58,9 +57,9 @@
 (defn read-opset-convergent-ref
   [{:keys [state meta]}]
   (opset/->OpsetConvergentRef
-   (util/uuid)
+   (domain/uuid)
    state
-   (util/queue)
+   (domain/queue)
    meta
    nil
    nil))
@@ -68,9 +67,9 @@
 (defn read-editscript-convergent-ref
   [{:keys [state meta]}]
   (editscript/->EditscriptConvergentRef
-   (util/uuid)
+   (domain/uuid)
    state
-   (util/queue)
+   (domain/queue)
    meta
    nil
    nil))

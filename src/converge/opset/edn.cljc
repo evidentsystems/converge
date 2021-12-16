@@ -15,7 +15,6 @@
   "API for converting an OpSet interpretation as EDN data."
   (:require [clojure.data.avl :as avl]
             [converge.domain :as domain]
-            [converge.util :as util]
             [converge.opset.interpret :as interpret]))
 
 #?(:clj  (set! *warn-on-reflection* true)
@@ -25,7 +24,7 @@
   (fn [{:keys [values]} entity]
     (some-> values
             (get-in [entity :value])
-            util/get-type))
+            domain/get-type))
   :default ::default)
 
 (defmethod -edn ::default

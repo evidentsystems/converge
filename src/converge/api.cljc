@@ -18,7 +18,6 @@
   refs."
   (:refer-clojure :exclude [ref])
   (:require [converge.domain :as domain]
-            [converge.util :as util]
             converge.opset.ref
             converge.editscript.ref))
 
@@ -60,11 +59,11 @@
           "Option `:actor`, if provided, must be a UUID")
   (assert (or (nil? backend) (backends backend))
           (str "Option `:backend`, if provided, must be one of " backends))
-  (let [actor* (or actor (util/uuid))
+  (let [actor* (or actor (domain/uuid))
         backend* (or backend default-backend)
         log      (domain/make-log
                   (domain/make-id)
-                  (domain/root-op (or id (util/uuid)) actor* backend*))
+                  (domain/root-op (or id (domain/uuid)) actor* backend*))
         r        (domain/make-ref (assoc options
                                          :log log
                                          :actor actor*
@@ -100,7 +99,7 @@
         r   (domain/make-ref-from-ops
              (assoc options
                     :backend (-> log domain/ref-root-data-from-log :backend)
-                    :actor (or actor (util/uuid))
+                    :actor (or actor (domain/uuid))
                     :ops log))]
     @r
     r))

@@ -13,7 +13,6 @@
 ;; limitations under the License.
 (ns converge.opset.ref
   (:require [converge.domain :as domain]
-            [converge.util :as util]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
             [converge.opset.patch :as patch])
@@ -218,7 +217,7 @@
   [{:keys [log actor initial-value meta validator]}]
   (let [r (->OpsetConvergentRef actor
                                 (domain/->ConvergentState log nil nil false)
-                                (util/queue)
+                                (domain/queue)
                                 meta
                                 validator
                                 nil)]
@@ -229,7 +228,7 @@
   [{:keys [ops actor meta validator]}]
   (->OpsetConvergentRef actor
                         (domain/->ConvergentState ops nil nil true)
-                        (util/queue)
+                        (domain/queue)
                         meta
                         validator
                         nil))

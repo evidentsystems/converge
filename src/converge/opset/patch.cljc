@@ -15,7 +15,6 @@
   (:require [clojure.data.avl :as avl]
             [editscript.core :as e]
             [converge.domain :as domain]
-            [converge.util :as util]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
             [converge.opset.ops :as ops]))
@@ -31,7 +30,7 @@
 
 (defn get-insertion-id
   [o n]
-  (some-> o meta :converge/insertions (util/safe-get n)))
+  (some-> o meta :converge/insertions (domain/safe-get n)))
 
 (defn update-context
   [context ops]
@@ -55,7 +54,7 @@
 
 (defmulti -add-value-ops
   (fn [_context value _root?]
-    (util/get-type value))
+    (domain/get-type value))
   :default ::default)
 
 (defn add-value-ops
@@ -112,7 +111,7 @@
             (add-insert-op ctx1 after-id)
 
             ctx3
-            (util/first-indexed
+            (domain/first-indexed
              (add-assign-op ctx2 list-id insert-id value-id))]
         (recur ctx3
                insert-id
@@ -143,7 +142,7 @@
               (add-key-op ctx k)
               [ctx2 value-id]
               (add-value-ops ctx1 v)]
-          (util/first-indexed
+          (domain/first-indexed
            (add-assign-op ctx2 map-id key-id value-id))))
       (update-context context ops)
       the-map)
@@ -168,7 +167,7 @@
       (fn [ctx k]
         (let [[ctx1 key-id]
               (add-key-op ctx k)]
-          (util/first-indexed
+          (domain/first-indexed
            (add-assign-op ctx1 set-id key-id))))
       (update-context context ops)
       the-set)
@@ -190,7 +189,7 @@
   "Returns a vector of tuples of [id op] that represent the given Editscript edit."
   (fn [_context edit entity]
     [(nth edit 1)
-     (util/get-type entity)]))
+     (domain/get-type entity)]))
 
 (defmethod -edit-to-ops :default
   [_context edit entity]
@@ -199,7 +198,7 @@
             {:edit   edit
              :entity entity
              :op     (nth edit 1)
-             :type   (util/get-type entity)})))
+             :type   (domain/get-type entity)})))
 
 ;;;; Add
 
@@ -225,39 +224,39 @@
   [{{:keys [key-cache]} :interpretation
     :as context}
    [path] the-map]
-  (util/first-indexed
+  (domain/first-indexed
    (add-remove-op context
                   (get-id the-map)
                   (get key-cache
-                       (util/last-indexed path)))))
+                       (domain/last-indexed path)))))
 
 (defmethod -edit-to-ops [:- :vec]
   [context [path] the-vector]
-  (util/first-indexed
+  (domain/first-indexed
    (add-remove-op context
                   (get-id the-vector)
                   (get-insertion-id
                    the-vector
-                   (util/last-indexed path)))))
+                   (domain/last-indexed path)))))
 
 (defmethod -edit-to-ops [:- :set]
   [{{:keys [key-cache]} :interpretation
     :as context}
    [path] the-set]
-  (util/first-indexed
+  (domain/first-indexed
    (add-remove-op context
                   (get-id the-set)
                   (get key-cache
-                       (util/last-indexed path)))))
+                       (domain/last-indexed path)))))
 
 (defmethod -edit-to-ops [:- :lst]
   [context [path] the-list]
-  (util/first-indexed
+  (domain/first-indexed
    (add-remove-op context
                   (get-id the-list)
                   (get-insertion-id
                    the-list
-                   (util/last-indexed path)))))
+                   (domain/last-indexed path)))))
 
 ;;;; Replace
 
@@ -359,7 +358,7 @@
   [ops actor path new-value the-list]
   (if (empty? path)
     ;; Replacing the root list...
-    (if (= (util/get-type new-value) :list)
+    (if (= (domain/get-type new-value) :list)
       ;; ...with minimal ops while retaining list identity, since new value is also a list
       (list-diff-ops ops actor (get-id the-list) the-list new-value)
       ;; ...entirely with a new value with :root? true
@@ -367,13 +366,13 @@
             ops*     (value-to-ops ops value-id new-value)]
         (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
     ;; Replacing a key within this list...
-    (let [k         (util/last-indexed path)
-          old-value (util/safe-get the-list k)]
-      (if (= (util/get-type old-value)
-             (util/get-type new-value))
+    (let [k         (domain/last-indexed path)
+          old-value (domain/safe-get the-list k)]
+      (if (= (domain/get-type old-value)
+             (domain/get-type new-value))
         ;; ...with minimal ops while attempting to retain value
         ;; identity, since new value is same type
-        (case (util/get-type old-value)
+        (case (domain/get-type old-value)
           :map (map-diff-ops ops actor (get-id old-value) old-value new-value)
           (:vec :lst) (list-diff-ops ops actor (get-id old-value) old-value new-value)
           :set (set-diff-ops ops actor (get-id old-value) old-value new-value)
@@ -397,7 +396,7 @@
   context
   #_(if (empty? path)
       ;; Replacing the root map...
-      (if (= (util/get-type new-value) :map)
+      (if (= (domain/get-type new-value) :map)
         ;; ...with minimal ops while retaining map identity, since new value is also a map
         (map-diff-ops ops actor (get-id the-map) the-map new-value)
         ;; ...entirely with a new value with :root? true
@@ -405,13 +404,13 @@
               ops*     (value-to-ops ops value-id new-value)]
           (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
       ;; Replacing a key within this map...
-      (let [k         (util/last-indexed path)
+      (let [k         (domain/last-indexed path)
             old-value (get the-map k)]
-        (if (= (util/get-type old-value)
-               (util/get-type new-value))
+        (if (= (domain/get-type old-value)
+               (domain/get-type new-value))
           ;; ...with minimal ops while attempting to retain value
           ;; identity, since new value is same type
-          (case (util/get-type old-value)
+          (case (domain/get-type old-value)
             :map (map-diff-ops ops actor (get-id old-value) old-value new-value)
             (:vec :lst) (list-diff-ops ops actor (get-id old-value) old-value new-value)
             :set (set-diff-ops ops actor (get-id old-value) old-value new-value)
@@ -442,7 +441,7 @@
   context
   #_(if (empty? path)
       ;; Replacing the root set...
-      (if (= (util/get-type new-value) :set)
+      (if (= (domain/get-type new-value) :set)
         ;; ...with minimal ops while retaining set identity, since new value is also a set
         (set-diff-ops ops actor (get-id the-set) the-set new-value)
         ;; ...entirely with a new value with :root? true
@@ -459,7 +458,7 @@
 
 (defmethod -edit-to-ops [:r :val]
   [context [path _ value] _entity]
-  (util/first-indexed (add-value-ops context value (empty? path))))
+  (domain/first-indexed (add-value-ops context value (empty? path))))
 
 (defn recompute-root
   [{:keys [interpretation] :as context}]
@@ -469,7 +468,7 @@
   [{:keys [root] :as context} [path :as edit]]
   (-> context
       (-edit-to-ops edit
-                    (util/safe-get-in root (util/safe-pop path)))
+                    (domain/safe-get-in root (domain/safe-pop path)))
       recompute-root))
 
 (defn make-patch
@@ -501,10 +500,10 @@
 (comment
 
   (def ref-id
-    (util/uuid))
+    (domain/uuid))
 
   (def creator
-    (util/uuid))
+    (domain/uuid))
 
   (def log1
     (domain/make-log
@@ -513,7 +512,7 @@
 
   (edn/edn (interpret/interpret log1))
 
-  (def actor (util/uuid))
+  (def actor (domain/uuid))
 
   (def val1 '{:empty-m {}, :empty-l [], :a :key, :another {:nested {:key [1 2 3]}}, :a-list [:foo "bar" baz {:nested :inalist}], :a-set #{1 4 3 2 5}})
 
