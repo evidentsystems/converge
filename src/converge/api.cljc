@@ -193,3 +193,30 @@
   (let [p (peek-patches cr)]
     (core/-pop-patches! cr)
     p))
+
+(defn clock
+  "Returns a vector clock (convergent.core.Clock) for the given convergent ref."
+  [cr]
+  (core/->Clock
+   (ref-id cr)
+   (persistent!
+    (reduce (fn [clock id]
+              (assoc! clock (:actor id) id))
+            (transient {})
+            (keys (core/-log cr))))))
+
+(defn patch-from-clock
+  "Provided the given clock's source matches the given convergent ref,
+  returns a Patch of all ops included in this ref after the clock."
+  [cr {:keys [source clock] :as _foreign-clock}]
+  (if (= (ref-id cr) source)
+    (core/->Patch
+     source
+     (core/log-ops-after-clock
+      (core/-log cr)
+      clock))
+    (throw
+     (ex-info
+      "Clock source doesn't match ref id!"
+      {:clock-source source
+       :ref-id (ref-id cr)}))))

@@ -205,6 +205,44 @@
             (is (> (count (convergent/ref-log d))
                    (count (convergent/ref-log cr))))))))))
 
+(deftest sync-protocols
+  (doseq [backend convergent/backends]
+    (testing (str "Creating clock with backend: " backend)
+      (let [r      (convergent/ref a :backend backend)
+            actor1 (convergent/ref-actor r)
+            last1  (util/last-indexed (convergent/ref-log r))
+            actor2 (util/uuid)
+            _      (convergent/set-actor! r actor2)
+            _      (swap! r assoc
+                          :b :another-key
+                          :a :foo)
+            last2  (util/last-indexed (convergent/ref-log r))
+            clock  (convergent/clock r)]
+        (is (= (-> clock :clock (dissoc core/null-uuid))
+               {actor1 (key last1)
+                actor2 (key last2)}))
+        (is (= (-> clock :source)
+               (convergent/ref-id r)))))
+    (testing (str "Creating patch from clock with backend: " backend)
+      (let [r      (convergent/ref a :backend backend)
+            actor1 (convergent/ref-actor r)
+            last1  (util/last-indexed (convergent/ref-log r))
+            actor2 (util/uuid)
+            _      (convergent/set-actor! r actor2)
+            _      (swap! r assoc
+                          :b :another-key
+                          :a :foo)
+            last2  (util/last-indexed (convergent/ref-log r))
+            clock  (convergent/clock r)
+            actor3 (util/uuid)
+            _      (convergent/set-actor! r actor3)
+            _      (swap! r dissoc :b :a)
+            patch  (convergent/patch-from-clock r clock)]
+        ;; opset -> two removals; editscript -> one edit
+        (is (>= 2 (count (:ops patch))))
+        (is (= (convergent/ref-id r)
+               (:source patch)))))))
+
 (defspec newly-constructed-ref-id-and-backend 10
   (prop/for-all
    [a       (gen/map gen/any-equatable gen/any-equatable)
