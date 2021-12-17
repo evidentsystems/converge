@@ -213,7 +213,7 @@
   (if (or (= (ref-id cr) source)
           (empty? clock))
     (core/->Patch
-     source
+     (ref-id cr)
      (core/log-ops-after-clock
       (core/-log cr)
       clock))
