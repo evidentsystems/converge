@@ -194,16 +194,16 @@
     p))
 
 (defn clock
-  "Returns a vector clock (convergent.core.Clock) for the given convergent ref."
+  "Returns a vector clock (convergent.domain.Clock) for the given convergent ref."
   [cr]
   (when cr
-    (core/->Clock
+    (domain/->Clock
      (ref-id cr)
      (persistent!
       (reduce (fn [clock id]
                 (assoc! clock (:actor id) id))
               (transient {})
-              (keys (core/-log cr)))))))
+              (keys (domain/-log cr)))))))
 
 (defn patch-from-clock
   "Provided the given clock's source matches the given convergent ref (or is an empty clock),
@@ -211,10 +211,10 @@
   [cr {:keys [source clock] :as _foreign-clock}]
   (if (or (= (ref-id cr) source)
           (empty? clock))
-    (core/->Patch
+    (domain/->Patch
      (ref-id cr)
-     (core/log-ops-after-clock
-      (core/-log cr)
+     (domain/log-ops-after-clock
+      (domain/-log cr)
       clock))
     (throw
      (ex-info

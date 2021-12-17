@@ -209,31 +209,28 @@
     (testing (str "Creating clock with backend: " backend)
       (let [r      (convergent/ref a :backend backend)
             actor1 (convergent/ref-actor r)
-            last1  (util/last-indexed (convergent/ref-log r))
-            actor2 (util/uuid)
+            last1  (domain/last-indexed (convergent/ref-log r))
+            actor2 (domain/uuid)
             _      (convergent/set-actor! r actor2)
             _      (swap! r assoc
                           :b :another-key
                           :a :foo)
-            last2  (util/last-indexed (convergent/ref-log r))
+            last2  (domain/last-indexed (convergent/ref-log r))
             clock  (convergent/clock r)]
-        (is (= (-> clock :clock (dissoc core/null-uuid))
+        (is (= (-> clock :clock (dissoc domain/null-uuid))
                {actor1 (key last1)
                 actor2 (key last2)}))
         (is (= (-> clock :source)
                (convergent/ref-id r)))))
     (testing (str "Creating patch from clock with backend: " backend)
       (let [r      (convergent/ref a :backend backend)
-            actor1 (convergent/ref-actor r)
-            last1  (util/last-indexed (convergent/ref-log r))
-            actor2 (util/uuid)
+            actor2 (domain/uuid)
             _      (convergent/set-actor! r actor2)
             _      (swap! r assoc
                           :b :another-key
                           :a :foo)
-            last2  (util/last-indexed (convergent/ref-log r))
             clock  (convergent/clock r)
-            actor3 (util/uuid)
+            actor3 (domain/uuid)
             _      (convergent/set-actor! r actor3)
             _      (swap! r dissoc :b :a)
             patch  (convergent/patch-from-clock r clock)]

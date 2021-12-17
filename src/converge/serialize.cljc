@@ -40,7 +40,7 @@
   domain/map->Patch)
 
 (def read-clock
-  core/map->Clock)
+  domain/map->Clock)
 
 (def read-element
   interpret/map->Element)
