@@ -239,17 +239,17 @@
         (is (= (convergent/ref-id r)
                (:source patch)))))
     (testing (str "Creating patch from nil clock with backend: " backend)
-      (doseq [empty-clock [nil (core/->Clock nil nil)]]
+      (doseq [empty-clock [nil (domain/->Clock nil nil)]]
         (let [r      (convergent/ref a :backend backend)
               actor1 (convergent/ref-actor r)
-              last1  (util/last-indexed (convergent/ref-log r))
-              actor2 (util/uuid)
+              last1  (domain/last-indexed (convergent/ref-log r))
+              actor2 (domain/uuid)
               _      (convergent/set-actor! r actor2)
               _      (swap! r assoc
                             :b :another-key
                             :a :foo)
-              last2  (util/last-indexed (convergent/ref-log r))
-              actor3 (util/uuid)
+              last2  (domain/last-indexed (convergent/ref-log r))
+              actor3 (domain/uuid)
               _      (convergent/set-actor! r actor3)
               _      (swap! r dissoc :b :a)
               patch  (convergent/patch-from-clock r empty-clock)]
