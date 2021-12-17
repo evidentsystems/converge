@@ -204,7 +204,11 @@
 
 (defmethod -edit-to-ops [:+ :map]
   [context [path _ v] the-map]
-  context)
+  (let [[value-id op]
+        (if-let [existing-id (get-id v)]
+          [existing-id nil]
+          [])]
+    context))
 
 (defmethod -edit-to-ops [:+ :vec]
   [context [path _ item] the-vector]
@@ -538,10 +542,17 @@
   @r
   (reset! r [[]])
 
-  (def r (converge.api/ref [0] :backend :opset))
+  (def r (converge.api/ref nil :backend :opset))
   @r
-  (reset! r [])
+  (reset! r :foo)
+  (reset! r [:foo :bar :baz :quux 1 2 3])
+  (swap! r pop)
+
+  (e/diff @r (pop @r))
+
   (meta @r)
+
+  (converge.api/ref-log r)
 
   (reset! r #{0})
 
@@ -595,6 +606,8 @@
   (def b [{:a 5} {:b 5}])
 
   (e/diff a b {:algo :quick})
+
+  (e/diff {:foo :bar :baz :quux} {:foo :bar})
 
   ;; end
   )
