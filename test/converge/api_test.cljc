@@ -241,7 +241,24 @@
         ;; opset -> two removals; editscript -> one edit
         (is (>= 2 (count (:ops patch))))
         (is (= (convergent/ref-id r)
-               (:source patch)))))))
+               (:source patch)))))
+    (testing (str "Creating patch from nil clock with backend: " backend)
+      (doseq [empty-clock [nil (core/->Clock nil nil)]]
+        (let [r      (convergent/ref a :backend backend)
+              actor1 (convergent/ref-actor r)
+              last1  (util/last-indexed (convergent/ref-log r))
+              actor2 (util/uuid)
+              _      (convergent/set-actor! r actor2)
+              _      (swap! r assoc
+                            :b :another-key
+                            :a :foo)
+              last2  (util/last-indexed (convergent/ref-log r))
+              actor3 (util/uuid)
+              _      (convergent/set-actor! r actor3)
+              _      (swap! r dissoc :b :a)
+              patch  (convergent/patch-from-clock r empty-clock)]
+          (is (= (convergent/ref-log r)
+                 (:ops patch))))))))
 
 (defspec newly-constructed-ref-id-and-backend 10
   (prop/for-all
