@@ -78,6 +78,9 @@
 
 ;;;; Identifiers
 
+(def null-uuid
+  #uuid "00000000-0000-0000-0000-000000000000")
+
 (declare id?)
 
 (defrecord Id [^UUID actor ^long counter]
@@ -93,12 +96,12 @@
 
 (defn make-id
   ([]
-   (make-id nil))
+   (make-id null-uuid))
   ([actor]
    (make-id actor 0))
   ([actor counter]
    (assert (nat-int? counter) "The `counter` of an Id must be an integer")
-   (assert (or (nil? actor) (uuid? actor)) "The `actor` of an Id must be a UUID")
+   (assert (uuid? actor)      "The `actor` of an Id must be a UUID")
    (->Id actor counter)))
 
 (defn id?
@@ -109,7 +112,6 @@
   ([id]
    (successor-id id (:actor id)))
   ([{:keys [counter]} actor]
-   (assert (uuid? actor) "The `actor` of an Id must be a UUID")
    (make-id actor (inc counter))))
 
 (defn latest-id
@@ -163,3 +165,22 @@
 ;;;; State
 
 (defrecord ConvergentState [log cache value ^boolean dirty?])
+
+;;;; Clock
+
+(defrecord Clock [source clock])
+
+(defn log-ops-after-clock
+  [log clock]
+  (persistent!
+   (reduce-kv (fn [ops {:keys [actor] :as id} op]
+                (let [clock-id (get clock actor)]
+                  (if (or
+                       ;; the foreign clock doesn't contain any ops from this actor
+                       (nil? clock-id)
+                       ;; this op is later than the latest in the foreign clock for this actor
+                       (pos? (compare id clock-id)))
+                    (assoc! ops id op)
+                    ops)))
+              (transient {})
+              log)))

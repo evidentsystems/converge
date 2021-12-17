@@ -40,6 +40,9 @@
 (def read-patch
   core/map->Patch)
 
+(def read-clock
+  core/map->Clock)
+
 (def read-element
   interpret/map->Element)
 
