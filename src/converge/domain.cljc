@@ -177,13 +177,16 @@
       :cljs -compare)
     [_ other]
     (cond
+      (nil? other)
+      1
+
+      (identical? other highest-id)
+      -1
+
       (id? other)
       (compare
        [counter actor]
        [(:counter other) (:actor other)])
-
-      (identical? other highest-id)
-      -1
 
       :else
       0)))
