@@ -19,8 +19,11 @@
             [converge.opset.interpret :as interpret]
             [converge.opset.patch :as patch]))
 
-(deftest editscript-addition-ops)
+;; TODO
+(deftest editscript-addition-ops
+  (is true))
 
+;; TODO
 (deftest editscript-removal-ops
   (testing "Remove from map"
     (let [r         (convergent/ref {:foo :bar :baz :quux} :backend :opset)
@@ -45,17 +48,21 @@
   ;;   - replacement with collection of different type (new entity id, add new ops to patch for diff)
   ;;   - replacement of primitive with collection
   ;;   - replacement of collection with primitive
-  (testing "Replacement of root"))
+  (testing "Replacement of root"
+    (is true)))
 
 ;; cases:
-;;  - move item to new position in a list
+;;  - move primitive/collection to new position in a list
+;;  - move collection to new position in a list and edit that collection
 ;;  - move a subtree to a different position in tree (including pouring existing values from one collection into another)
 ;;  - rename a map key
 (deftest atomic-tree-move
-  )
+  (is true))
 
 ;; Ensure that opset growth remains small when many equal primitive values are added
-(deftest primitive-value-caching)
+(deftest primitive-value-caching
+  (is true))
 
 ;; Ensure that opset growth remains small when many equal keys are added
-(deftest key-caching)
+(deftest key-caching
+  (is true))

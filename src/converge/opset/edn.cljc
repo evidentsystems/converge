@@ -28,8 +28,10 @@
   :default ::default)
 
 (defmethod -edn ::default
-  [{:keys [values]} entity]
-  (get-in values [entity :value]))
+  [{:keys [values keys]} entity]
+  (if-some [value (get-in values [entity :value])]
+    value
+    (get-in keys [entity :value])))
 
 (defmethod -edn :map
   [{:keys [elements] :as interpretation} entity]
