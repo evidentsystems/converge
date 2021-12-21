@@ -12,11 +12,15 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 {:paths ["src" "resources"]
+ :deps
+ {org.clojure/clojure  {:mvn/version "1.10.3"}
+  org.clojure/data.avl {:mvn/version "0.1.0"}
+  juji/editscript      {:mvn/version "0.5.7"}
+  danlentz/clj-uuid    {:mvn/version "0.1.9"}}
  :aliases
  {:cljs
   {:extra-deps
    {thheller/shadow-cljs {:mvn/version "2.11.18"}}}
-
   :dev
   {:extra-paths ["dev"]
    ;; cf. https://github.com/clojure-goes-fast/clj-async-profiler#jvm-options
@@ -24,21 +28,15 @@
                  "-XX:+UnlockDiagnosticVMOptions"
                  "-XX:+DebugNonSafepoints"]
    :extra-deps
-   {org.clojure/tools.namespace              {:mvn/version "1.1.0"}
-    com.clojure-goes-fast/clj-async-profiler {:mvn/version "0.5.1"}}}
-
+   {org.clojure/tools.namespace              {:mvn/version "RELEASE"}
+    com.clojure-goes-fast/clj-async-profiler {:mvn/version "RELEASE"}
+    com.clojure-goes-fast/clj-memory-meter   {:mvn/version "RELEASE"}}}
   :test
   {:extra-paths ["test"]
    :extra-deps
-   {lambdaisland/kaocha        {:mvn/version "1.60.945"}
-    lambdaisland/kaocha-cljs2  {:mvn/version "0.0.35"}
-    criterium/criterium        {:mvn/version "0.4.6"}
-    org.clojure/test.check     {:mvn/version "1.1.0"}
-    com.cognitect/transit-clj  {:mvn/version "1.0.324"}
-    com.cognitect/transit-cljs {:mvn/version "0.8.269"}}}}
-
- :deps
- {org.clojure/clojure  {:mvn/version "1.10.3"}
-  org.clojure/data.avl {:mvn/version "0.1.0"}
-  juji/editscript      {:mvn/version "0.5.7"}
-  danlentz/clj-uuid    {:mvn/version "0.1.9"}}}
+   {lambdaisland/kaocha        {:mvn/version "RELEASE"}
+    lambdaisland/kaocha-cljs2  {:mvn/version "RELEASE"}
+    criterium/criterium        {:mvn/version "RELEASE"}
+    org.clojure/test.check     {:mvn/version "RELEASE"}
+    com.cognitect/transit-clj  {:mvn/version "RELEASE"}
+    com.cognitect/transit-cljs {:mvn/version "RELEASE"}}}}}

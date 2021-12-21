@@ -27,13 +27,15 @@
 (def backends #{:opset :editscript})
 (def default-backend :opset)
 
+(def random-actor domain/random-id-member)
+
 (defn ref
   "Creates and returns a ConvergentRef with an initial value of `x` and
   zero or more options (in any order):
 
   :id a UUID
 
-  :actor a UUID
+  :actor an integer between 1 and Javascript Number/MAX_SAFE_INTEGER
 
   :backend one of `backends`
 
@@ -45,7 +47,7 @@
   peers. The `actor` uniquely identifies the origin of all changes made
   on this convergent ref, and must be globally unique for all
   sites/users of the underlying CRDT. If not provided, a random actor
-  UUID will be generated. If metadata-map is supplied, it will become
+  will be generated. If metadata-map is supplied, it will become
   the metadata on the atom. validate-fn must be nil or a
   side-effect-free fn of one argument, which will be passed the
   intended new state on any state change. If the new state is
@@ -55,14 +57,14 @@
   [initial-value & {:keys [id actor backend] :as options}]
   (assert (or (nil? id) (uuid? id))
           "Option `:id`, if provided, must be a UUID")
-  (assert (or (nil? actor) (uuid? actor))
-          "Option `:actor`, if provided, must be a UUID")
+  (assert (or (nil? actor) (domain/valid-id-member? actor))
+          "Option `:actor`, if provided, must be an integer between 1 and Javascript Number/MAX_SAFE_INTEGER")
   (assert (or (nil? backend) (backends backend))
           (str "Option `:backend`, if provided, must be one of " backends))
-  (let [actor* (or actor (domain/uuid))
+  (let [actor* (or actor (random-actor))
         backend* (or backend default-backend)
         log      (domain/make-log
-                  (domain/make-id)
+                  domain/root-id
                   (domain/root-op (or id (domain/uuid)) actor* backend*))
         r        (domain/make-ref (assoc options
                                          :log log
@@ -76,7 +78,7 @@
   "Creates and returns a ConvergentRef from the given `ops` and zero
   or more options (in any order):
 
-  :actor a UUID
+  :actor an integer between 1 and Javascript Number/MAX_SAFE_INTEGER
 
   :meta metadata-map
 
@@ -84,7 +86,7 @@
 
   The actor uniquely identifies the origin of all changes made on this
   convergent ref, and must be globally unique for all sites/users of
-  the underlying CRDT. If not provided, a random actor UUID will be
+  the underlying CRDT. If not provided, a random actor will be
   generated. If metadata-map is supplied, it will become the metadata
   on the atom. validate-fn must be nil or a side-effect-free fn of one
   argument, which will be passed the intended new state on any state
@@ -92,14 +94,14 @@
   return false or throw an Error.  If either of these error conditions
   occur, then the value of the atom will not change."
   [ops & {:keys [actor] :as options}]
-  (assert (or (nil? actor) (uuid? actor))
-          "Option `:actor`, if provided, must be a UUID")
+  (assert (or (nil? actor) (domain/valid-id-member? actor))
+          "Option `:actor`, if provided, must be an integer between 1 and Javascript Number/MAX_SAFE_INTEGER")
   ;; TODO: assertions ensuring valid operation log
   (let [log (into (domain/make-log) ops)
         r   (domain/make-ref-from-ops
              (assoc options
                     :backend (-> log domain/ref-root-data-from-log :backend)
-                    :actor (or actor (domain/uuid))
+                    :actor (or actor (random-actor))
                     :ops log))]
     @r
     r))
@@ -114,6 +116,8 @@
 
 (defn set-actor!
   [cr actor]
+  (assert (domain/valid-id-member? actor)
+          "`actor` must be an integer between 1 and Javascript Number/MAX_SAFE_INTEGER")
   (domain/-set-actor! cr actor)
   cr)
 

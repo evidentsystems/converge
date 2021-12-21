@@ -144,7 +144,35 @@
 
 (comment ;; Clojure benchmarks
 
-  (require '[criterium.core :as criterium])
+  (require '[clojure.java.io :as io]
+           '[clojure.edn :as edn]
+           '[criterium.core :as criterium])
+
+  (def edn-filename "big-tree.edn")
+  (def big-tree-transit-filename "big-tree.transit.json")
+  (def convergent-ref-transit-filename "big-tree-ref.transit.json")
+
+  (def big-tree
+    (with-open [r   (io/reader edn-filename)
+                pbr (java.io.PushbackReader. r)]
+      (edn/read pbr)))
+
+  (with-open [out (io/output-stream big-tree-transit-filename)]
+    (t/write (writer out) big-tree))
+
+  (.length (io/file big-tree-transit-filename))
+  ;; => 76550
+
+  (with-open [out (io/output-stream convergent-ref-transit-filename)]
+    (t/write (writer out) (convergent/ref big-tree)))
+
+  (.length (io/file convergent-ref-transit-filename))
+  ;; => 760244 (743K !!)
+  ;; => 580265 (with integer ids)
+
+  ;; Growth factor from making a big tree into a ref
+  (quot (.length (io/file convergent-ref-transit-filename))
+        (.length (io/file big-tree-transit-filename)))
 
   (def r (convergent/ref a))
 
