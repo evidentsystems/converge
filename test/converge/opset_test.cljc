@@ -14,32 +14,50 @@
 (ns converge.opset-test
   (:require #?(:clj  [clojure.test :refer [deftest is testing]]
                :cljs [cljs.test :refer-macros [deftest is testing]])
-            [converge.api :as convergent]
-            [converge.opset.edn :as edn]
-            [converge.opset.interpret :as interpret]
-            [converge.opset.patch :as patch]))
+            [converge.api :as convergent]))
 
-;; TODO
 (deftest editscript-addition-ops
-  (is true))
+  (testing "Add to map"
+    (let [original-value {:foo :bar}
+          new-value      {:foo :bar :baz :quux}
+          r              (convergent/ref original-value :backend :opset)]
+      (is (= (reset! r new-value) new-value))))
+  (testing "Add to vector"
+    (let [original-value [:foo :bar :quux]
+          new-value      [:foo :bar :baz :quux]
+          r              (convergent/ref original-value :backend :opset)]
+      (is (= (reset! r new-value) new-value))))
+  (testing "Add to set"
+    (let [original-value #{:foo :baz}
+          new-value      #{:foo :bar :baz}
+          r              (convergent/ref original-value :backend :opset)]
+      (is (= (reset! r new-value) new-value))))
+  (testing "Add to list"
+    (let [original-value '(:foo :bar :quux)
+          new-value      '(:foo :bar :baz :quux)
+          r              (convergent/ref original-value :backend :opset)]
+      (is (= (reset! r new-value) new-value)))))
 
-;; TODO
 (deftest editscript-removal-ops
   (testing "Remove from map"
-    (let [r         (convergent/ref {:foo :bar :baz :quux} :backend :opset)
-          new-value {:foo :bar}]
+    (let [original-value {:foo :bar :baz :quux}
+          new-value      {:foo :bar}
+          r              (convergent/ref original-value :backend :opset)]
       (is (= (reset! r new-value) new-value))))
   (testing "Remove from vector"
-    (let [r         (convergent/ref [:foo :bar :baz :quux] :backend :opset)
-          new-value [:foo :bar :quux]]
+    (let [original-value [:foo :bar :baz :quux]
+          new-value      [:foo :bar :quux]
+          r              (convergent/ref original-value :backend :opset)]
       (is (= (reset! r new-value) new-value))))
   (testing "Remove from set"
-    (let [r (convergent/ref #{:foo :bar :baz} :backend :opset)
-          new-value #{:foo :baz}]
+    (let [original-value #{:foo :bar :baz}
+          new-value      #{:foo :baz}
+          r              (convergent/ref original-value :backend :opset)]
       (is (= (reset! r new-value) new-value))))
   (testing "Remove from list"
-    (let [r         (convergent/ref '(:foo :bar :baz :quux) :backend :opset)
-          new-value '(:foo :bar :quux)]
+    (let [original-value '(:foo :bar :baz :quux)
+          new-value      '(:foo :bar :quux)
+          r              (convergent/ref original-value :backend :opset)]
       (is (= (reset! r new-value) new-value)))))
 
 (deftest editscript-replacement-ops
@@ -57,7 +75,51 @@
 ;;  - move a subtree to a different position in tree (including pouring existing values from one collection into another)
 ;;  - rename a map key
 (deftest atomic-tree-move
-  (is true))
+  (testing "Move collection to new position in a tree"
+    (let [original-value [{:foo :bar :baz [{:quux "lalala"}]}]
+          r              (convergent/ref original-value :backend :opset)
+          tree-move      (fn [tree]
+                           (let [branch (get-in tree [0 :baz 0])]
+                             (-> tree
+                                 (update-in [0 :baz] pop)
+                                 (conj branch))))]
+      (swap! r tree-move)
+      (is (= (tree-move original-value) @r))))
+  (testing "Move collection to new position in a tree with edits"
+    (let [original-value [{:foo :bar :baz [{:quux "lalala"}]}]
+          r              (convergent/ref original-value :backend :opset)
+          tree-move      (fn [tree]
+                           (let [branch (get-in tree [0 :baz 0])]
+                             (-> tree
+                                 (update-in [0 :baz] pop)
+                                 (conj (assoc branch :foo :bar)))))]
+      (swap! r tree-move)
+      (is (= (tree-move original-value) @r))))
+  (testing "Concurrent movements of a collection to a new tree position"
+    (let [original-value [{:foo :bar :baz [{:quux "lalala"}]}]
+          actor1         #uuid "4836e7d6-d821-4ce9-bf1d-3fc65dc66847"
+          r1             (convergent/ref original-value
+                                         :actor actor1
+                                         :backend :opset)
+          actor2         #uuid "4836e7d6-d821-4ce9-bf1d-3fc65dc66848" ;; gt actor1
+          r2             (convergent/ref-from-ops
+                          (convergent/ref-log r1)
+                          :actor actor2)
+          tree-move1     (fn [tree]
+                           (let [branch (get-in tree [0 :baz 0])]
+                             (-> tree
+                                 (update-in [0 :baz] pop)
+                                 (conj branch))))
+          tree-move2     (fn [tree]
+                           (let [branch (get-in tree [0 :baz 0])]
+                             (-> tree
+                                 (update-in [0 :baz] pop)
+                                 (assoc-in [0 :lalala] branch))))]
+      (swap! r1 tree-move1)
+      (swap! r2 tree-move2)
+      (convergent/merge! r1 r2)
+      (convergent/merge! r2 r1)
+      (is (= @r1 @r2 (tree-move2 original-value))))))
 
 ;; Ensure that opset growth remains small when many equal primitive values are added
 (deftest primitive-value-caching

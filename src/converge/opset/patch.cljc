@@ -126,50 +126,47 @@
 
 (defmethod -add-value-ops :map
   [{:keys [log actor] :as context} the-map root?]
-  (let [map-id (domain/next-id log actor)
-        op     (ops/make-map root?)
-        ops    {map-id op}]
+  (let [map-id (domain/next-id log actor)]
     [(reduce-kv
       (fn [ctx k v]
         (let [[ctx1 key-id]
               (ensure-key-op ctx k)
+
               [ctx2 value-id]
               (add-value-ops ctx1 v)]
           (add-assign-op ctx2 map-id key-id value-id)))
-      (update-context context ops)
+      (update-context context {map-id (ops/make-map root?)})
       the-map)
      map-id]))
 
 (defmethod -add-value-ops :vec
   [{:keys [log actor] :as context} the-vector root?]
-  (let [vector-id (domain/next-id log actor)
-        op        (ops/make-vector root?)
-        ops       {vector-id op}]
-    [(populate-list (update-context context ops)
+  (let [vector-id (domain/next-id log actor)]
+    [(populate-list (update-context
+                     context
+                     {vector-id (ops/make-vector root?)})
                     vector-id
                     the-vector)
      vector-id]))
 
 (defmethod -add-value-ops :set
   [{:keys [log actor] :as context} the-set root?]
-  (let [set-id (domain/next-id log actor)
-        op     (ops/make-set root?)
-        ops    {set-id op}]
+  (let [set-id (domain/next-id log actor)]
     [(reduce
       (fn [ctx k]
         (let [[ctx1 key-id]
               (ensure-key-op ctx k)]
           (add-assign-op ctx1 set-id key-id)))
-      (update-context context ops)
+      (update-context context {set-id (ops/make-set root?)})
       the-set)
      set-id]))
 
 (defmethod -add-value-ops :lst
   [{:keys [log actor] :as context} the-list root?]
-  (let [list-id (domain/next-id log actor)
-        op      (ops/make-list root?)
-        ops     {list-id op}]
-    [(populate-list (update-context context ops)
+  (let [list-id (domain/next-id log actor)]
+    [(populate-list (update-context
+                     context
+                     {list-id (ops/make-list root?)})
                     list-id
                     the-list)
      list-id]))
@@ -214,8 +211,7 @@
 (defmethod -diff-existing :map
   [context old-map new-map]
   (let [map-id    (get-id old-map)
-        key-cache (get-in context
-                          [:interpretation :keys])]
+        key-cache (get-in context [:interpretation :keys])]
     [(reduce (fn [ctx k]
                (cond
                  (and (contains? old-map k)
@@ -227,8 +223,7 @@
 
                  (contains? new-map k)
                  (let [[context1 value-id]
-                       (ensure-value ctx
-                                     (get new-map k))
+                       (ensure-value ctx (get new-map k))
 
                        [context2 key-id]
                        (ensure-key-op context1 k)]
@@ -238,7 +233,7 @@
                                   value-id))
 
                  :else
-                 context))
+                 ctx))
              context
              (into #{} (concat (keys old-map) (keys new-map))))
      map-id]))
@@ -252,9 +247,10 @@
                items old-value
                i     0]
           (if (first items)
-            (recur (add-remove-op ctx
-                                  list-id
-                                  (get-insertion-id old-value i))
+            (recur (domain/first-indexed
+                    (add-remove-op ctx
+                                   list-id
+                                   (get-insertion-id old-value i)))
                    (next items)
                    (inc i))
             ctx))]
@@ -266,11 +262,8 @@
               (add-value-ops ctx item)
 
               [ctx2 insert-id]
-              (add-insert-op ctx1 after-id)
-
-              ctx3
-              (add-assign-op ctx2 list-id insert-id value-id)]
-          (recur ctx3
+              (add-insert-op ctx1 after-id)]
+          (recur (add-assign-op ctx2 list-id insert-id value-id)
                  insert-id
                  (next items)))
         [ctx list-id]))))
@@ -301,7 +294,7 @@
                                   key-id))
 
                  :else
-                 context))
+                 ctx))
              context
              (into old-set new-set))
      set-id]))
