@@ -97,11 +97,11 @@
       (is (= (tree-move original-value) @r))))
   (testing "Concurrent movements of a collection to a new tree position"
     (let [original-value [{:foo :bar :baz [{:quux "lalala"}]}]
-          actor1         #uuid "4836e7d6-d821-4ce9-bf1d-3fc65dc66847"
+          actor1         1
           r1             (convergent/ref original-value
                                          :actor actor1
                                          :backend :opset)
-          actor2         #uuid "4836e7d6-d821-4ce9-bf1d-3fc65dc66848" ;; gt actor1
+          actor2         2 ;; gt actor1
           r2             (convergent/ref-from-ops
                           (convergent/ref-log r1)
                           :actor actor2)

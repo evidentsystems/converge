@@ -154,9 +154,6 @@
 
 ;;;; Identifiers
 
-(def null-uuid
-  #uuid "00000000-0000-0000-0000-000000000000")
-
 (declare id?)
 
 (def highest-id
@@ -170,7 +167,23 @@
         1
         0))))
 
-(defrecord Id [^UUID actor ^long counter]
+(def max-javascript-integer
+  #?(:clj  (long (dec (Math/pow 2 53)))
+     :cljs Number/MAX_SAFE_INTEGER))
+
+(defn random-id-member
+  "Generates a random integer between 1 and `max-javascript-integer`"
+  []
+  (inc (long (* (rand) (dec max-javascript-integer)))))
+
+(defn valid-id-member?
+  [i]
+  (and (> i 0)
+       (<= i max-javascript-integer)))
+
+(declare id?)
+
+(defrecord Id [^long actor ^long counter]
   #?(:clj  Comparable
      :cljs IComparable)
   (#?(:clj  compareTo
@@ -184,21 +197,25 @@
       -1
 
       (id? other)
-      (compare
-       [counter actor]
-       [(:counter other) (:actor other)])
+      (let [c (#?(:clj Long/compare :cljs -) counter (:counter other))]
+        (if (zero? c)
+          (#?(:clj Long/compare :cljs -) actor (:actor other))
+          c))
 
       :else
       0)))
 
+(def root-id
+  (->Id 0 0))
+
 (defn make-id
   ([]
-   (make-id null-uuid))
+   (make-id 1))
   ([actor]
-   (make-id actor 0))
+   (make-id actor 1))
   ([actor counter]
-   (assert (nat-int? counter) "The `counter` of an Id must be an integer")
-   (assert (uuid? actor)      "The `actor` of an Id must be a UUID")
+   (assert (valid-id-member? counter)   "The `counter` of an Id must be an integer")
+   (assert (valid-id-member? actor) "The `actor` of an Id must be an integer")
    (->Id actor counter)))
 
 (defn id?

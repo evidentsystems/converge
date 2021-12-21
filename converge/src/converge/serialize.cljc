@@ -92,7 +92,7 @@
 (defn read-opset-convergent-ref
   [{:keys [state meta]}]
   (opset/->OpsetConvergentRef
-   (domain/uuid)
+   (domain/random-id-member)
    state
    (domain/queue)
    meta
@@ -102,7 +102,7 @@
 (defn read-editscript-convergent-ref
   [{:keys [state meta]}]
   (editscript/->EditscriptConvergentRef
-   (domain/uuid)
+   (domain/random-id-member)
    state
    (domain/queue)
    meta

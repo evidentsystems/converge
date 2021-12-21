@@ -15,12 +15,10 @@
  :deps
  {org.clojure/data.avl {:mvn/version "0.1.0"}
   juji/editscript      {:mvn/version "0.5.7"}}
-
  :aliases
  {:cljs
   {:extra-deps
    {thheller/shadow-cljs {:mvn/version "2.11.18"}}}
-
   :dev
   {:extra-paths ["dev"]
    ;; cf. https://github.com/clojure-goes-fast/clj-async-profiler#jvm-options
