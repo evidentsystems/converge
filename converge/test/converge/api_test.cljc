@@ -280,7 +280,7 @@
              (convergent/ref-creator r))
           (= backend (convergent/ref-backend r))))))
 
-(defspec reset-generated-map 1000
+(defspec reset-generated-map 100
   (prop/for-all
    [a (gen/map gen/any-equatable gen/any-equatable)
     b (gen/map gen/any-equatable gen/any-equatable)
@@ -289,7 +289,7 @@
      (reset! ref b)
      (= @ref b))))
 
-(defspec reset-generated-vector 1000
+(defspec reset-generated-vector 100
   (prop/for-all
    [a (gen/vector gen/any-equatable)
     b (gen/vector gen/any-equatable)
@@ -298,7 +298,7 @@
      (reset! ref b)
      (= @ref b))))
 
-(defspec reset-generated-set 1000
+(defspec reset-generated-set 100
   (prop/for-all
    [a (gen/set gen/any-equatable)
     b (gen/set gen/any-equatable)
@@ -307,7 +307,7 @@
      (reset! ref b)
      (= @ref b))))
 
-(defspec reset-generated-list 1000
+(defspec reset-generated-list 100
   (prop/for-all
    [a (gen/list gen/any-equatable)
     b (gen/list gen/any-equatable)
@@ -316,7 +316,7 @@
      (reset! ref b)
      (= @ref b))))
 
-(defspec reset-generated-any-container 1000
+(defspec reset-generated-any-container 100
   (prop/for-all
    [a (gen/container-type gen/any-equatable)
     b (gen/container-type gen/any-equatable)
