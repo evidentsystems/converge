@@ -14,8 +14,7 @@
 (ns converge.serialize
   "Handlers for serializing to e.g. Transit."
   (:require [clojure.data.avl :as avl]
-            [converge.core :as core]
-            [converge.util :as util]
+            [converge.domain :as domain]
             [converge.opset.interpret :as interpret]
             [converge.opset.ref :as opset]
             [converge.editscript.ref :as editscript]))
@@ -32,35 +31,35 @@
   (into (avl/sorted-set) v))
 
 (def read-id
-  core/map->Id)
+  domain/map->Id)
 
 (def read-operation
-  core/map->Op)
+  domain/map->Op)
 
 (def read-patch
-  core/map->Patch)
+  domain/map->Patch)
 
 (def read-clock
-  core/map->Clock)
+  domain/map->Clock)
 
 (def read-element
   interpret/map->Element)
 
 (def read-interpretation
-  interpret/map->Interpretation)
+  interpret/make-interpretation)
 
 (defn read-state
   [m]
-  (core/map->ConvergentState
+  (domain/map->ConvergentState
    {:log    (:log m)
     :dirty? true}))
 
 (defn read-opset-convergent-ref
   [{:keys [state meta]}]
   (opset/->OpsetConvergentRef
-   (util/uuid)
+   (domain/uuid)
    state
-   (util/queue)
+   (domain/queue)
    meta
    nil
    nil))
@@ -68,9 +67,9 @@
 (defn read-editscript-convergent-ref
   [{:keys [state meta]}]
   (editscript/->EditscriptConvergentRef
-   (util/uuid)
+   (domain/uuid)
    state
-   (util/queue)
+   (domain/queue)
    meta
    nil
    nil))
@@ -90,7 +89,7 @@
 
 (defn write-interpretation
   [interpretation]
-  (select-keys interpretation [:elements :list-links :values]))
+  (select-keys interpretation [:elements :list-links :entities :keys :values]))
 
 (defn write-state
   [state]
@@ -98,5 +97,5 @@
 
 (defn write-ref
   [r]
-  {:state (core/-state r)
+  {:state (domain/-state r)
    :meta  (meta r)})

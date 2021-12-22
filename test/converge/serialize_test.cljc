@@ -53,11 +53,12 @@
   {clojure.data.avl.AVLMap (t/write-handler (constantly "avl/map") serialize/write-avl-map)
    clojure.data.avl.AVLSet (t/write-handler (constantly "avl/set") serialize/write-avl-set)
 
-   converge.core.Id                        (t/write-handler (constantly "converge/id") tagged-map-value)
-   converge.core.Op                        (t/write-handler (constantly "converge/op") tagged-map-value)
-   converge.core.Patch                     (t/write-handler (constantly "converge/patch") serialize/write-patch)
-   converge.core.ConvergentState           (t/write-handler (constantly "converge/state") serialize/write-state)
-   converge.core.Clock                     (t/write-handler (constantly "converge/state") tagged-map-value)
+   converge.domain.Id              (t/write-handler (constantly "converge/id") tagged-map-value)
+   converge.domain.Op              (t/write-handler (constantly "converge/op") tagged-map-value)
+   converge.domain.Patch           (t/write-handler (constantly "converge/patch") serialize/write-patch)
+   converge.domain.ConvergentState (t/write-handler (constantly "converge/state") serialize/write-state)
+   converge.domain.Clock           (t/write-handler (constantly "converge/state") tagged-map-value)
+
    converge.opset.interpret.Element        (t/write-handler (constantly "opset/element") tagged-map-value)
    converge.opset.interpret.Interpretation (t/write-handler (constantly "opset/interpretation") serialize/write-interpretation)
    converge.opset.ref.OpsetConvergentRef   (t/write-handler (constantly "opset/ref") serialize/write-ref)

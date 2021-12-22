@@ -14,6 +14,5 @@
 (ns converge.editscript-test
   (:require #?(:clj  [clojure.test :refer [deftest is testing]]
                :cljs [cljs.test :refer-macros [deftest is testing]])
-            [converge.util  :as util]
-            [converge.core :as core]))
+            [converge.domain :as domain]))
 

@@ -14,33 +14,34 @@
 (ns converge.opset.edn
   "API for converting an OpSet interpretation as EDN data."
   (:require [clojure.data.avl :as avl]
-            [converge.core :as core]
-            [converge.util :as util]
+            [converge.domain :as domain]
             [converge.opset.interpret :as interpret]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
 (defmulti -edn
-  (fn [{:keys [values]} entity]
-    (some-> values
-            (get-in [entity :value])
-            util/get-type))
+  (fn [{:keys [entities values]} entity]
+    (if-some [e (get-in entities [entity :value])]
+      (domain/get-type e)
+      (domain/get-type (get-in values [entity :value]))))
   :default ::default)
 
 (defmethod -edn ::default
-  [{:keys [values]} entity]
-  (get-in values [entity :value]))
+  [{:keys [values keys]} entity]
+  (if-some [value (get-in values [entity :value])]
+    value
+    (get-in keys [entity :value])))
 
 (defmethod -edn :map
   [{:keys [elements] :as interpretation} entity]
   (let [attrs (avl/subrange elements
-                            >= (interpret/->EntityStartElement entity)
-                            <  (interpret/->EntityEndElement   entity))]
+                            >= (interpret/entity-start-element entity)
+                            <  (interpret/entity-end-element   entity))]
     (loop [i   0
            ret (transient {})]
       (if-let [element (nth attrs i nil)]
-        (let [k (:attribute element)]
+        (let [k (-edn interpretation (:attribute element))]
           (recur (inc i)
                  (assoc! ret
                          k
@@ -57,8 +58,8 @@
                          (assoc! agg attribute value))
                        (transient {})
                        (avl/subrange elements
-                                     >= (interpret/->EntityStartElement entity)
-                                     <  (interpret/->EntityEndElement   entity))))]
+                                     >= (interpret/entity-start-element entity)
+                                     <  (interpret/entity-end-element   entity))))]
     (loop [ins (get list-links entity)
            ret (transient [])
            idx (transient [])]
@@ -82,14 +83,14 @@
   (-edn-vector interpretation entity))
 
 (defmethod -edn :set
-  [{:keys [elements]} entity]
+  [{:keys [elements] :as interpretation} entity]
   (let [attrs (avl/subrange elements
-                            >= (interpret/->EntityStartElement entity)
-                            <  (interpret/->EntityEndElement   entity))]
+                            >= (interpret/entity-start-element entity)
+                            <  (interpret/entity-end-element   entity))]
     (loop [i   0
            ret (transient #{})]
       (if-let [element (nth attrs i nil)]
-        (let [member (:attribute element)]
+        (let [member (-edn interpretation (:attribute element))]
           (recur (inc i)
                  (conj! ret member)))
         (some-> ret
@@ -102,17 +103,16 @@
     (with-meta (apply list v) (meta v))))
 
 (defn root-element-id
-  [values]
-  (let [root-id (core/make-id)]
+  [{:keys [values entities]}]
+  (let [root-id (domain/make-id)]
     (reduce-kv (fn [agg id {:keys [root?]}]
                  (if root?
                    (if (nat-int? (compare id agg)) id agg)
                    agg))
                root-id
-               values)))
+               (into entities values))))
 
 (defn edn
   "Transforms an converge.opset.interpret.Interpretation into an EDN value."
-  [{:keys [values] :as interpretation}]
-  (-edn interpretation
-        (root-element-id values)))
+  [interpretation]
+  (-edn interpretation (root-element-id interpretation)))

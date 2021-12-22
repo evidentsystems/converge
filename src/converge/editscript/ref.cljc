@@ -14,8 +14,7 @@
 (ns converge.editscript.ref
   (:require [clojure.data.avl :as avl]
             [editscript.core :as e]
-            [converge.core :as core]
-            [converge.util :as util]
+            [converge.domain :as domain]
             [converge.editscript.ops :as ops])
   #?(:clj (:import [clojure.lang IAtom IReference IRef])))
 
@@ -47,7 +46,7 @@
                                            validator
                                            ^:mutable watches])
 
-  core/ConvergentRef
+  domain/ConvergentRef
   (-actor [_] actor)
   (-state [_] state)
   (-set-actor! [_ new-actor] (set! actor new-actor))
@@ -55,28 +54,28 @@
   (-apply-state! [this new-state]
     (let [old-value (:value state)]
       (set! state new-state)
-      (core/notify-w this watches old-value (:value new-state))))
+      (domain/notify-w this watches old-value (:value new-state))))
   (-make-patch
     [_ new-value]
     (when (ifn? validator)
       (assert (validator new-value) "Validator rejected reference state"))
     (let [edits (e/get-edits (e/diff (:value state) new-value {:str-diff? true}))]
       (when (pos? (count edits))
-        (core/->Patch (-> state :log core/ref-root-data-from-log :id)
-                      (avl/sorted-map
-                       (core/next-id (:log state) actor)
-                       (ops/edit edits))))))
+        (domain/->Patch (-> state :log domain/ref-root-data-from-log :id)
+                        (avl/sorted-map
+                         (domain/next-id (:log state) actor)
+                         (ops/edit edits))))))
   (-state-from-patch [_ patch]
-    (if (core/patch? patch)
+    (if (domain/patch? patch)
       (let [{:keys [ops]}
             patch
 
             new-log
             (into (:log state) ops)]
-        (core/->ConvergentState new-log
-                                nil
-                                (value-from-ops new-log)
-                                false))
+        (domain/->ConvergentState new-log
+                                  nil
+                                  (value-from-ops new-log)
+                                  false))
       state))
   (-peek-patches [_] (peek patches))
   (-pop-patches! [_] (set! patches (pop patches)))
@@ -86,11 +85,11 @@
       [IAtom
        (reset
         [this new-value]
-        (let [patch     (core/-make-patch this new-value)
-              new-state (core/-state-from-patch this patch)]
-          (core/validate-reset (:value state) new-value new-state patch)
+        (let [patch     (domain/-make-patch this new-value)
+              new-state (domain/-state-from-patch this patch)]
+          (domain/validate-reset (:value state) new-value new-state patch)
           (when patch (set! patches (conj patches patch)))
-          (core/-apply-state! this new-state)
+          (domain/-apply-state! this new-state)
           (:value new-state)))
        (swap [this f]          (.reset this (f (:value state))))
        (swap [this f a]        (.reset this (f (:value state) a)))
@@ -161,11 +160,11 @@
        IReset
        (-reset!
         [this new-value]
-        (let [patch     (core/-make-patch this new-value)
-              new-state (core/-state-from-patch this patch)]
-          (core/validate-reset (:value state) new-value new-state patch)
+        (let [patch     (domain/-make-patch this new-value)
+              new-state (domain/-state-from-patch this patch)]
+          (domain/validate-reset (:value state) new-value new-state patch)
           (when patch (set! patches (conj patches patch)))
-          (core/-apply-state! this new-state)
+          (domain/-apply-state! this new-state)
           (:value new-state)))
 
        ISwap
@@ -189,7 +188,7 @@
        IWatchable
        (-notify-watches
         [this old-value new-value]
-        (core/notify-w this watches old-value new-value))
+        (domain/notify-w this watches old-value new-value))
        (-add-watch
         [this k callback]
         (set! watches (assoc watches k callback))
@@ -202,22 +201,22 @@
        IHash
        (-hash [this] (goog/getUid this))]))
 
-(defmethod core/make-ref :editscript
+(defmethod domain/make-ref :editscript
   [{:keys [log initial-value actor meta validator]}]
   (let [r (->EditscriptConvergentRef actor
-                                     (core/->ConvergentState log nil nil true)
-                                     (util/queue)
+                                     (domain/->ConvergentState log nil nil true)
+                                     (domain/queue)
                                      meta
                                      validator
                                      nil)]
     (reset! r initial-value)
     r))
 
-(defmethod core/make-ref-from-ops :editscript
+(defmethod domain/make-ref-from-ops :editscript
   [{:keys [ops actor meta validator]}]
   (->EditscriptConvergentRef actor
-                             (core/->ConvergentState ops nil nil true)
-                             (util/queue)
+                             (domain/->ConvergentState ops nil nil true)
+                             (domain/queue)
                              meta
                              validator
                              nil))

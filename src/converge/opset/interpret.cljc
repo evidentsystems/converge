@@ -16,153 +16,83 @@
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
   (:require [clojure.data.avl :as avl]
             [converge.opset.ops :as ops]
-            [converge.core :as core])
-  #?(:clj (:import [converge.core Id])))
+            [converge.domain :as domain])
+  (:import [clojure.data.avl AVLSet]
+           #?(:clj [converge.domain Id])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defprotocol IElement
-  (-entity    [_])
-  (-attribute [_])
-  (-value     [_])
-  (-time      [_] "The operation Id"))
-
-(defn element?
-  [o]
-  (satisfies? IElement o))
-
-(defn compare-attributes
-  [x y]
-  (if #?(:clj  (identical? (class x) (class y))
-         :cljs (identical? (type x) (type y)))
-    (try
-      (cond
-        #?@(:clj  [(instance? Number x) (clojure.lang.Numbers/compare x y)])
-        #?@(:clj  [(instance? Comparable x)   (.compareTo ^Comparable x y)]
-            :cljs [(satisfies? IComparable x) (-compare x y)])
-        :else
-        (compare (hash x) (hash y)))
-      (catch #?(:clj ClassCastException :cljs :default) _
-        (compare (hash x) (hash y))))
-    #?(:clj  (compare (.getName (class x)) (.getName (class y)))
-       :cljs (compare (type->str (type x)) (type->str (type y))))))
-
 (defrecord Element [#?@(:cljs [^clj entity]
                         :clj  [^Id  entity])
-                    attribute
+                    #?@(:cljs [^clj attribute]
+                        :clj  [^Id  attribute])
                     #?@(:cljs [^clj value]
                         :clj  [^Id  value])
                     #?@(:cljs [^clj id]
                         :clj  [^Id  id])]
-  IElement
-  (-entity    [_] entity)
-  (-attribute [_] attribute)
-  (-value     [_] value)
-  (-time      [_] id)
-
   #?(:clj  Comparable
      :cljs IComparable)
   (#?(:clj  compareTo
       :cljs -compare)
     [_ other]
-    (assert (element? other))
-    (let [ec (compare entity (-entity other))]
-      (if (zero? ec)
-        (let [ac (compare-attributes attribute (-attribute other))]
-          (if (zero? ac)
-            (let [vc (compare value (-value other))]
-              (if (zero? vc)
-                (compare id (-time other))
-                vc))
-            ac))
-        ec))))
+    (assert (instance? Element other))
+    (compare
+     [entity          attribute          value          id]
+     [(:entity other) (:attribute other) (:value other) (:id other)])))
 
-(deftype EntityStartElement [#?@(:cljs [^clj entity]
-                                 :clj  [^Id  entity])]
-  IElement
-  (-entity    [_] entity)
-  (-attribute [_] nil)
-  (-value     [_] nil)
-  (-time      [_] nil)
+(defn entity-start-element
+  [entity]
+  (->Element entity nil nil nil))
 
-  #?(:clj  Comparable
-     :cljs IComparable)
-  (#?(:clj  compareTo
-      :cljs -compare)
-    [_ other]
-    (assert (element? other))
-    (let [ec (compare entity (-entity other))]
-      (if (zero? ec)
-        -1
-        ec))))
+(defn entity-end-element
+  [entity]
+  (->Element entity domain/highest-id nil nil))
 
-(deftype EntityEndElement [#?@(:cljs [^clj entity]
-                               :clj  [^Id  entity])]
-  IElement
-  (-entity    [_] entity)
-  (-attribute [_] nil)
-  (-value     [_] nil)
-  (-time      [_] nil)
+(defn entity-attribute-start-element
+  [entity attribute]
+  (->Element entity attribute nil nil))
 
-  #?(:clj  Comparable
-     :cljs IComparable)
-  (#?(:clj  compareTo
-      :cljs -compare)
-    [_ other]
-    (assert (element? other))
-    (let [ec (compare entity (-entity other))]
-      (if (zero? ec)
-        1
-        ec))))
+(defn entity-attribute-end-element
+  [entity attribute]
+  (->Element entity attribute domain/highest-id nil))
 
-(deftype EntityAttributeStartElement [#?@(:cljs [^clj entity]
-                                          :clj  [^Id  entity])
-                                      attribute]
-  IElement
-  (-entity    [_] entity)
-  (-attribute [_] attribute)
-  (-value     [_] nil)
-  (-time      [_] nil)
+(defrecord Interpretation [elements list-links
+                           parents  entities
+                           keys     key-cache
+                           values   value-cache])
 
-  #?(:clj  Comparable
-     :cljs IComparable)
-  (#?(:clj  compareTo
-      :cljs -compare)
-    [_ other]
-    (assert (element? other))
-    (if (and (= entity    (-entity other))
-             (= attribute (-attribute other)))
-      -1
-      (let [ec (compare entity (-entity other))]
-        (if (zero? ec)
-          (compare-attributes attribute (-attribute other))
-          ec)))))
-
-(deftype EntityAttributeEndElement [#?@(:cljs [^clj entity]
-                                        :clj  [^Id  entity])
-                                    attribute]
-  IElement
-  (-entity    [_] entity)
-  (-attribute [_] attribute)
-  (-value     [_] nil)
-  (-time      [_] nil)
-
-  #?(:clj  Comparable
-     :cljs IComparable)
-  (#?(:clj  compareTo
-      :cljs -compare)
-    [_ other]
-    (assert (element? other))
-    (if (and (= entity    (-entity other))
-             (= attribute (-attribute other)))
-      1
-      (let [ec (compare entity (-entity other))]
-        (if (zero? ec)
-          (compare-attributes attribute (-attribute other))
-          ec)))))
-
-(defrecord Interpretation [elements list-links values])
+(defn make-interpretation
+  [{:keys [elements list-links entities keys values]}]
+  (assert (coll? elements))
+  (assert (map? list-links))
+  (assert (map? entities))
+  (assert (map? keys))
+  (assert (map? values))
+  (let [elements* (if (instance? AVLSet elements)
+                    elements
+                    (into (avl/sorted-set) elements))]
+    (->Interpretation
+     elements*
+     list-links
+     (persistent!
+      (reduce (fn [agg element]
+                (assoc! agg (:value element) (:entity element)))
+              (transient {})
+              elements*))
+     entities
+     keys
+     (persistent!
+      (reduce-kv (fn [agg k v]
+                   (assoc! agg (:value v) k))
+                 (transient {})
+                 keys))
+     values
+     (persistent!
+      (reduce-kv (fn [agg k v]
+                   (assoc! agg (:value v) k))
+                 (transient {})
+                 values)))))
 
 (def list-end-sigil ::list-end)
 
@@ -176,27 +106,35 @@
 
 (defmethod -interpret-op ops/MAKE_MAP
   [agg id op]
-  (update agg :values assoc! id (assoc (:data op) :value {})))
+  (update agg :entities assoc! id (assoc (:data op) :value {})))
 
 (defmethod -interpret-op ops/MAKE_VECTOR
   [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :values assoc! id (assoc (:data op) :value []))))
+      (update :entities assoc! id (assoc (:data op) :value []))))
 
 (defmethod -interpret-op ops/MAKE_SET
   [agg id op]
-  (update agg :values assoc! id (assoc (:data op) :value #{})))
+  (update agg :entities assoc! id (assoc (:data op) :value #{})))
 
 (defmethod -interpret-op ops/MAKE_LIST
   [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :values assoc! id (assoc (:data op) :value ()))))
+      (update :entities assoc! id (assoc (:data op) :value ()))))
+
+(defmethod -interpret-op ops/MAKE_KEY
+  [agg id op]
+  (-> agg
+      (update :keys assoc! id (:data op))
+      (update :key-cache assoc! (-> op :data :value) id)))
 
 (defmethod -interpret-op ops/MAKE_VALUE
   [agg id op]
-  (update agg :values assoc! id (:data op)))
+  (-> agg
+      (update :values assoc! id (:data op))
+      (update :value-cache assoc! (-> op :data :value) id)))
 
 (defmethod -interpret-op ops/INSERT
   [{:keys [list-links] :as agg} id {{prev :after} :data}]
@@ -210,22 +148,44 @@
                          id next)))
       agg)))
 
+(defn is-ancestor?
+  [parents entity possible-ancestor]
+  (loop [self entity]
+    (if-some [parent (get parents self)]
+      (if (= parent possible-ancestor)
+        true
+        (recur parent))
+      false)))
+
 ;; We use the broader interpretation algorithm defined in section 3.2,
 ;; rather than the narrower tree definition defined in 5.2, since
 ;; we're generating Ops from trees. We use the adjustment for single-value register.
 (defmethod -interpret-op ops/ASSIGN
-  [{:keys [elements] :as agg} id {:keys [data]}]
+  [{:keys [elements parents entities] :as agg} id {:keys [data]}]
   (let [{:keys [entity attribute value]} data
 
-        elements* (persistent! elements)]
-    (reduce (fn [agg element]
-              (update agg :elements disj! (avl/nearest elements* >= element)))
-            (assoc agg :elements (conj!
-                                  (transient elements*)
-                                  (->Element entity attribute value id)))
-            (avl/subrange elements*
-                          >= (->EntityAttributeStartElement entity attribute)
-                          <  (->EntityAttributeEndElement   entity attribute)))))
+        elements* (persistent! elements)
+        parent    (get parents value)]
+    (if (is-ancestor? parents entity value)
+      agg
+      (reduce (fn [agg element]
+                (if (= (:value element) value)
+                  (update agg :elements disj! element)
+                  agg))
+              (reduce (fn [agg element]
+                        (update agg :elements disj! (avl/nearest elements* >= element)))
+                      (assoc agg
+                             :elements (conj!
+                                        (transient elements*)
+                                        (->Element entity attribute value id))
+                             :parents (assoc! parents value entity))
+                      (avl/subrange elements*
+                                    >= (entity-attribute-start-element entity attribute)
+                                    <  (entity-attribute-end-element   entity attribute)))
+              (when (contains? entities value)
+                (avl/subrange elements*
+                              >= (entity-start-element parent)
+                              <  (entity-end-element   parent)))))))
 
 ;; We use the broader interpretation algorithm defined in section 3.2,
 ;; rather than the narrower tree definition defined in 5.2, since
@@ -239,26 +199,42 @@
               (update agg :elements disj! (avl/nearest elements* <= element)))
             (assoc agg :elements (transient elements*))
             (avl/subrange elements*
-                          >= (->EntityAttributeStartElement entity attribute)
-                          <  (->EntityAttributeEndElement   entity attribute)))))
+                          >= (entity-attribute-start-element entity attribute)
+                          <  (entity-attribute-end-element   entity attribute)))))
 
 (defn interpret
   ([opset-log]
    (interpret nil opset-log))
-  ([{:keys [elements list-links values] :as _interpretation} ops]
-   (let [elements-init   (or elements   (avl/sorted-set))
-         list-links-init (or list-links {})
-         values          (or values     {})
-
-         {elements*   :elements
-          list-links* :list-links
-          values*     :values}
+  ([{:keys [elements list-links
+            parents  entities
+            keys     key-cache
+            values   value-cache]
+     :as   _interpretation}
+    ops]
+   (let [{elements*    :elements
+          list-links*  :list-links
+          parents*     :parents
+          entities*    :entities
+          keys*        :keys
+          key-cache*   :key-cache
+          values*      :values
+          value-cache* :value-cache}
          (reduce-kv -interpret-op
-                    {:elements   (transient elements-init)
-                     :list-links (transient list-links-init)
-                     :values     (transient values)}
+                    {:elements    (transient (or elements (avl/sorted-set)))
+                     :list-links  (transient (or list-links {}))
+                     :parents     (transient (or parents {}))
+                     :entities    (transient (or entities {}))
+                     :keys        (transient (or keys {}))
+                     :key-cache   (transient (or key-cache {}))
+                     :values      (transient (or values {}))
+                     :value-cache (transient (or value-cache {}))}
                     ops)]
      (map->Interpretation
-      {:elements   (persistent! elements*)
-       :list-links (persistent! list-links*)
-       :values     (persistent! values*)}))))
+      {:elements    (persistent! elements*)
+       :list-links  (persistent! list-links*)
+       :parents     (persistent! parents*)
+       :entities    (persistent! entities*)
+       :keys        (persistent! keys*)
+       :key-cache   (persistent! key-cache*)
+       :values      (persistent! values*)
+       :value-cache (persistent! value-cache*)}))))

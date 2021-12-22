@@ -20,8 +20,7 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
-            [converge.core :as core]
-            [converge.util :as util]))
+            [converge.domain :as domain]))
 
 (def a {:empty-m {}
         :empty-l []
@@ -169,7 +168,7 @@
   (doseq [backend convergent/backends]
     (testing (str "Merging with backend: " backend)
       (let [r (convergent/ref a :backend backend)
-            d (convergent/ref-from-ops (convergent/ref-log r) :actor (util/uuid))]
+            d (convergent/ref-from-ops (convergent/ref-log r) :actor (domain/uuid))]
         (swap! d assoc :b :another-key)
         (testing "merging nil"
           (is (= a @(convergent/merge! r nil))))
@@ -186,7 +185,7 @@
   (doseq [backend convergent/backends]
     (testing (str "Squashing with backend: " backend)
       (let [r      (convergent/ref a :backend backend)
-            d      (convergent/ref-from-ops (convergent/ref-log r) :actor (util/uuid))
+            d      (convergent/ref-from-ops (convergent/ref-log r) :actor (domain/uuid))
             _      (swap! d assoc
                           :b :another-key
                           :a :foo)
@@ -200,8 +199,8 @@
                    (count (convergent/ref-log cr))))))
         (testing "squashing a patch"
           (let [cr (convergent/ref-from-ops (convergent/ref-log r))]
-            (is (= final @(convergent/squash! cr (core/->Patch (convergent/ref-id cr)
-                                                               (merge (:ops patch1) (:ops patch2))))))
+            (is (= final @(convergent/squash! cr (domain/->Patch (convergent/ref-id cr)
+                                                                 (merge (:ops patch1) (:ops patch2))))))
             (is (> (count (convergent/ref-log d))
                    (count (convergent/ref-log cr))))))))))
 
@@ -210,31 +209,28 @@
     (testing (str "Creating clock with backend: " backend)
       (let [r      (convergent/ref a :backend backend)
             actor1 (convergent/ref-actor r)
-            last1  (util/last-indexed (convergent/ref-log r))
-            actor2 (util/uuid)
+            last1  (domain/last-indexed (convergent/ref-log r))
+            actor2 (domain/uuid)
             _      (convergent/set-actor! r actor2)
             _      (swap! r assoc
                           :b :another-key
                           :a :foo)
-            last2  (util/last-indexed (convergent/ref-log r))
+            last2  (domain/last-indexed (convergent/ref-log r))
             clock  (convergent/clock r)]
-        (is (= (-> clock :clock (dissoc core/null-uuid))
+        (is (= (-> clock :clock (dissoc domain/null-uuid))
                {actor1 (key last1)
                 actor2 (key last2)}))
         (is (= (-> clock :source)
                (convergent/ref-id r)))))
     (testing (str "Creating patch from clock with backend: " backend)
       (let [r      (convergent/ref a :backend backend)
-            actor1 (convergent/ref-actor r)
-            last1  (util/last-indexed (convergent/ref-log r))
-            actor2 (util/uuid)
+            actor2 (domain/uuid)
             _      (convergent/set-actor! r actor2)
             _      (swap! r assoc
                           :b :another-key
                           :a :foo)
-            last2  (util/last-indexed (convergent/ref-log r))
             clock  (convergent/clock r)
-            actor3 (util/uuid)
+            actor3 (domain/uuid)
             _      (convergent/set-actor! r actor3)
             _      (swap! r dissoc :b :a)
             patch  (convergent/patch-from-clock r clock)]
@@ -243,17 +239,17 @@
         (is (= (convergent/ref-id r)
                (:source patch)))))
     (testing (str "Creating patch from nil clock with backend: " backend)
-      (doseq [empty-clock [nil (core/->Clock nil nil)]]
+      (doseq [empty-clock [nil (domain/->Clock nil nil)]]
         (let [r      (convergent/ref a :backend backend)
               actor1 (convergent/ref-actor r)
-              last1  (util/last-indexed (convergent/ref-log r))
-              actor2 (util/uuid)
+              last1  (domain/last-indexed (convergent/ref-log r))
+              actor2 (domain/uuid)
               _      (convergent/set-actor! r actor2)
               _      (swap! r assoc
                             :b :another-key
                             :a :foo)
-              last2  (util/last-indexed (convergent/ref-log r))
-              actor3 (util/uuid)
+              last2  (domain/last-indexed (convergent/ref-log r))
+              actor3 (domain/uuid)
               _      (convergent/set-actor! r actor3)
               _      (swap! r dissoc :b :a)
               patch  (convergent/patch-from-clock r empty-clock)]
@@ -276,7 +272,7 @@
    (let [o (convergent/ref a :backend backend)
          r (convergent/ref-from-ops
             (convergent/ref-log o)
-            :actor (util/uuid))]
+            :actor (domain/uuid))]
      (and (uuid? (convergent/ref-id r))
           (= (convergent/ref-id o)
              (convergent/ref-id r))

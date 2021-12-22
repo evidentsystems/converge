@@ -14,8 +14,7 @@
 (ns converge.opset.patch
   (:require [clojure.data.avl :as avl]
             [editscript.core :as e]
-            [converge.core :as core]
-            [converge.util :as util]
+            [converge.domain :as domain]
             [converge.opset.edn :as edn]
             [converge.opset.interpret :as interpret]
             [converge.opset.ops :as ops]))
@@ -23,90 +22,7 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-;;;; Value to Ops
-
-(defmulti value-to-ops
-  (fn [_ops _value-id value] (util/get-type value))
-  :default ::default)
-
-(defmethod value-to-ops ::default
-  [ops value-id value]
-  (assoc ops value-id (ops/make-value value)))
-
-(defn assign-key-ops
-  [ops map-id assign-id k val-id]
-  (assoc ops assign-id (ops/assign map-id k val-id)))
-
-(defn create-value-and-assign-key-ops
-  [ops map-id k val-id v]
-  (let [ops-after-val (value-to-ops ops val-id v)]
-    (assign-key-ops ops-after-val map-id (core/next-id ops-after-val) k val-id)))
-
-(defn assign-set-member-ops
-  [ops set-id assign-id member]
-  (assoc ops assign-id (ops/assign set-id member)))
-
-(defn insert-list-item-ops
-  [ops list-id insert-id after-id item-id]
-  (let [ops-after-insert (assoc ops insert-id (ops/insert after-id))
-        assign-id        (core/next-id ops-after-insert)]
-    (assoc ops-after-insert assign-id (ops/assign list-id insert-id item-id))))
-
-(defn create-and-insert-list-item-ops
-  [ops list-id insert-id after-id item]
-  (let [ops-after-insert (assoc ops insert-id (ops/insert after-id))
-        item-id          (core/next-id ops-after-insert)
-        ops-after-item   (value-to-ops ops-after-insert item-id item)
-        assign-id        (core/next-id ops-after-item)]
-    (assoc ops-after-item assign-id (ops/assign list-id insert-id item-id))))
-
-(defn remove-key-ops
-  [ops entity-id remove-id key-id]
-  (assoc ops remove-id (ops/remove entity-id key-id)))
-
-(defn populate-list-ops
-  [ops* list-id the-list start-id]
-  (loop [ops       ops*
-         insert-id start-id
-         after-id  list-id
-         items     the-list]
-    (if-some [item (first items)]
-      (let [next-ops (create-and-insert-list-item-ops ops list-id insert-id after-id item)]
-        (recur next-ops
-               (core/next-id next-ops)
-               insert-id
-               (next items)))
-      ops)))
-
-(defmethod value-to-ops :map
-  [ops map-id the-map]
-  (reduce-kv (fn [agg k v]
-               (create-value-and-assign-key-ops agg map-id k (core/next-id agg) v))
-             (assoc ops map-id (ops/make-map))
-             the-map))
-
-(defmethod value-to-ops :vec
-  [ops vector-id the-vector]
-  (populate-list-ops (assoc ops vector-id (ops/make-vector))
-                     vector-id
-                     the-vector
-                     (core/successor-id vector-id)))
-
-(defmethod value-to-ops :set
-  [ops set-id the-set]
-  (reduce (fn [agg item]
-            (assign-set-member-ops agg set-id (core/next-id agg) item))
-          (assoc ops set-id (ops/make-set))
-          the-set))
-
-(defmethod value-to-ops :lst
-  [ops list-id the-list]
-  (populate-list-ops (assoc ops list-id (ops/make-list))
-                     list-id
-                     the-list
-                     (core/successor-id list-id)))
-
-;;;; Edit to Ops
+;;;; Util
 
 (defn get-id
   [o]
@@ -114,335 +30,504 @@
 
 (defn get-insertion-id
   [o n]
-  (some-> o meta :converge/insertions (util/safe-get n)))
+  (some-> o meta :converge/insertions (domain/safe-get n)))
+
+(defn update-context
+  [context ops]
+  (-> context
+      (update :log merge ops)
+      (update :interpretation interpret/interpret ops)))
+
+;;;; Value to Ops
+
+(defn ensure-key-op
+  [{:keys               [log actor]
+    {:keys [key-cache]} :interpretation
+    :as                 context}
+   k]
+  (if-let [existing-id (get key-cache k)]
+    [context existing-id]
+    (let [key-id (domain/next-id log actor)]
+      (-> context
+          (update-context
+           {key-id (ops/make-key k)})
+          (vector key-id)))))
+
+(defmulti -add-value-ops
+  (fn [_context value _root?]
+    (domain/get-type value))
+  :default ::default)
+
+(defn add-value-ops
+  ([context value]
+   (add-value-ops context value false))
+  ([context value root?]
+   (-add-value-ops context value root?)))
+
+(defmethod -add-value-ops ::default
+  [{:keys                 [log actor]
+    {:keys [value-cache]} :interpretation
+    :as                   context}
+   value root?]
+  (if-let [existing-id (get value-cache value)]
+    [context existing-id]
+    (let [value-id (domain/next-id log actor)]
+      (-> context
+          (update-context
+           {value-id (ops/make-value value root?)})
+          (vector value-id)))))
+
+(defn add-assign-op
+  "Unlike the other add-*-op, this doesn't return a tuple of [context
+  op-id], but rather just a bare context."
+  ([ctx entity-id attribute-id]
+   (add-assign-op ctx entity-id attribute-id nil))
+  ([{:keys [log actor] :as context} entity-id attribute-id val-id]
+   (let [assign-id (domain/next-id log actor)
+         ops {assign-id
+              (ops/assign entity-id attribute-id val-id)}]
+     (update-context context ops))))
+
+(defn add-remove-op
+  [{:keys [log actor] :as context} entity-id attribute-id]
+  (let [remove-id (domain/next-id log actor)
+        ops {remove-id
+             (ops/remove entity-id attribute-id)}]
+    (-> context
+        (update-context ops)
+        (vector remove-id))))
+
+(defn add-insert-op
+  [{:keys [log actor] :as context} after-id]
+  (let [insert-id (domain/next-id log actor)
+        ops       {insert-id (ops/insert after-id)}]
+    (-> context
+        (update-context ops)
+        (vector insert-id))))
+
+(defn populate-list
+  [ctx* list-id the-list]
+  (loop [ctx       ctx*
+         after-id  list-id
+         items     the-list]
+    (if-some [item (first items)]
+      (let [[ctx1 value-id]
+            (add-value-ops ctx item)
+
+            [ctx2 insert-id]
+            (add-insert-op ctx1 after-id)
+
+            ctx3
+            (add-assign-op ctx2 list-id insert-id value-id)]
+        (recur ctx3
+               insert-id
+               (next items)))
+      ctx)))
+
+(defmethod -add-value-ops :map
+  [{:keys [log actor] :as context} the-map root?]
+  (let [map-id (domain/next-id log actor)]
+    [(reduce-kv
+      (fn [ctx k v]
+        (let [[ctx1 key-id]
+              (ensure-key-op ctx k)
+
+              [ctx2 value-id]
+              (add-value-ops ctx1 v)]
+          (add-assign-op ctx2 map-id key-id value-id)))
+      (update-context context {map-id (ops/make-map root?)})
+      the-map)
+     map-id]))
+
+(defmethod -add-value-ops :vec
+  [{:keys [log actor] :as context} the-vector root?]
+  (let [vector-id (domain/next-id log actor)]
+    [(populate-list (update-context
+                     context
+                     {vector-id (ops/make-vector root?)})
+                    vector-id
+                    the-vector)
+     vector-id]))
+
+(defmethod -add-value-ops :set
+  [{:keys [log actor] :as context} the-set root?]
+  (let [set-id (domain/next-id log actor)]
+    [(reduce
+      (fn [ctx k]
+        (let [[ctx1 key-id]
+              (ensure-key-op ctx k)]
+          (add-assign-op ctx1 set-id key-id)))
+      (update-context context {set-id (ops/make-set root?)})
+      the-set)
+     set-id]))
+
+(defmethod -add-value-ops :lst
+  [{:keys [log actor] :as context} the-list root?]
+  (let [list-id (domain/next-id log actor)]
+    [(populate-list (update-context
+                     context
+                     {list-id (ops/make-list root?)})
+                    list-id
+                    the-list)
+     list-id]))
+
+;;;; Diff existing
+
+(defmulti -diff-existing
+  "Returns a tuple of [new-context entity-id]"
+  (fn [_context old-value _new-value]
+    (domain/get-type old-value))
+  :default ::default)
+
+;; TODO: Pour existing values from list/vector into a vector/list if merely
+;; changing entity type?
+(defn diff-existing
+  [context old-value new-value]
+  (when (= (domain/get-type old-value)
+           (domain/get-type new-value))
+    (-diff-existing context old-value new-value)))
+
+(defn ensure-value
+  "Returns a tuple of [new-context value-id] by either creating a new
+  value in the context, or getting and updating an existing entity."
+  ([context value]
+   (ensure-value context value false))
+  ([context value root?]
+   (if-let [existing-id (get-id value)]
+     (or (diff-existing context
+                        (edn/-edn (:interpretation context)
+                                  existing-id)
+                        value)
+         (add-value-ops context value root?))
+     (add-value-ops context value root?))))
+
+(defmethod -diff-existing ::default
+  [_ old-value new-value]
+  (throw
+   (ex-info "Don't know how diff this existing value"
+            {:old-value old-value
+             :new-value new-value})))
+
+(defmethod -diff-existing :map
+  [context old-map new-map]
+  (let [map-id    (get-id old-map)
+        key-cache (get-in context [:interpretation :keys])]
+    [(reduce (fn [ctx k]
+               (cond
+                 (and (contains? old-map k)
+                      (not (contains? new-map k)))
+                 (domain/first-indexed
+                  (add-remove-op ctx
+                                 map-id
+                                 (get key-cache k)))
+
+                 (contains? new-map k)
+                 (let [[context1 value-id]
+                       (ensure-value ctx (get new-map k))
+
+                       [context2 key-id]
+                       (ensure-key-op context1 k)]
+                   (add-assign-op context2
+                                  map-id
+                                  key-id
+                                  value-id))
+
+                 :else
+                 ctx))
+             context
+             (into #{} (concat (keys old-map) (keys new-map))))
+     map-id]))
+
+(defn list-diff
+  [context old-value new-value]
+  (let [list-id (get-id old-value)
+
+        context1
+        (loop [ctx   context
+               items old-value
+               i     0]
+          (if (first items)
+            (recur (domain/first-indexed
+                    (add-remove-op ctx
+                                   list-id
+                                   (get-insertion-id old-value i)))
+                   (next items)
+                   (inc i))
+            ctx))]
+    (loop [ctx       context1
+           after-id  list-id
+           items     new-value]
+      (if-let [item (first items)]
+        (let [[ctx1 value-id]
+              (add-value-ops ctx item)
+
+              [ctx2 insert-id]
+              (add-insert-op ctx1 after-id)]
+          (recur (add-assign-op ctx2 list-id insert-id value-id)
+                 insert-id
+                 (next items)))
+        [ctx list-id]))))
+
+(defmethod -diff-existing :vec
+  [context old-value new-value]
+  (list-diff context old-value new-value))
+
+(defmethod -diff-existing :set
+  [context old-set new-set]
+  (let [set-id    (get-id old-set)
+        key-cache (get-in context
+                          [:interpretation :keys])]
+    [(reduce (fn [ctx k]
+               (cond
+                 (and (contains? old-set k)
+                      (not (contains? new-set k)))
+                 (domain/first-indexed
+                  (add-remove-op ctx
+                                 set-id
+                                 (get key-cache k)))
+
+                 (contains? new-set k)
+                 (let [[context1 key-id]
+                       (ensure-key-op ctx k)]
+                   (add-assign-op context1
+                                  set-id
+                                  key-id))
+
+                 :else
+                 ctx))
+             context
+             (into old-set new-set))
+     set-id]))
+
+(defmethod -diff-existing :lst
+  [context old-value new-value]
+  (list-diff context old-value new-value))
+
+;;;; Edit to Ops
 
 (defmulti -edit-to-ops
-  "Returns a vector of tuples of [id op] that represent the given Editscript edit."
-  (fn [_ops _actor edit entity]
+  "Returns a new context incorporating the given edit."
+  (fn [_context edit entity]
     [(nth edit 1)
-     (util/get-type entity)]))
+     (domain/get-type entity)]))
 
 (defmethod -edit-to-ops :default
-  [_ops _actor edit entity]
+  [_context edit entity]
   (throw
    (ex-info "Unknown edit operation"
             {:edit   edit
              :entity entity
              :op     (nth edit 1)
-             :type   (util/get-type entity)})))
+             :type   (domain/get-type entity)})))
 
 ;;;; Add
 
 (defmethod -edit-to-ops [:+ :map]
-  [ops actor [path _ v] the-map]
-  (create-value-and-assign-key-ops
-   ops
-   (get-id the-map)
-   (util/last-indexed path)
-   (core/next-id ops actor)
-   v))
+  [context [path _ v] the-map]
+  (let [[context1 value-id]
+        (ensure-value context v)
+
+        [context2 key-id]
+        (ensure-key-op context1 (domain/last-indexed path))]
+    (add-assign-op context2
+                   (get-id the-map)
+                   key-id
+                   value-id)))
 
 (defmethod -edit-to-ops [:+ :vec]
-  [ops actor [path _ item] the-vector]
-  (let [entity-id (get-id the-vector)]
-    (create-and-insert-list-item-ops
-     ops
-     entity-id
-     (core/next-id ops actor)
-     (or (some->> path
-                  util/last-indexed
-                  dec
-                  (get-insertion-id the-vector))
-         entity-id)
-     item)))
+  [context [path _ item] the-vector]
+  (let [[context1 value-id]
+        (ensure-value context item)
+
+        [context2 insert-id]
+        (add-insert-op context1
+                       (or (some->> path
+                                    domain/last-indexed
+                                    dec
+                                    (get-insertion-id the-vector))
+                           (get-id the-vector)))]
+    (add-assign-op context2
+                   (get-id the-vector)
+                   insert-id
+                   value-id)))
 
 (defmethod -edit-to-ops [:+ :set]
-  [ops actor [_ _ item] the-set]
-  (assign-set-member-ops ops (get-id the-set) (core/next-id ops actor) item))
+  [context [_ _ item] the-set]
+  (let [[context1 key-id]
+        (ensure-key-op context item)]
+    (add-assign-op context1
+                   (get-id the-set)
+                   key-id)))
 
 (defmethod -edit-to-ops [:+ :lst]
-  [ops actor [path _ item] the-list]
-  (let [entity-id (get-id the-list)]
-    (create-and-insert-list-item-ops
-     ops
-     entity-id
-     (core/next-id ops actor)
-     (or (some->> path
-                  util/last-indexed
-                  dec
-                  (get-insertion-id the-list))
-         entity-id)
-     item)))
+  [context [path _ item] the-list]
+  (let [[context1 value-id]
+        (ensure-value context item)
+
+        [context2 insert-id]
+        (add-insert-op context1
+                       (or (some->> path
+                                    domain/last-indexed
+                                    dec
+                                    (get-insertion-id the-list))
+                           (get-id the-list)))]
+    (add-assign-op context2
+                   (get-id the-list)
+                   insert-id
+                   value-id)))
 
 ;;;; Remove
 
 (defmethod -edit-to-ops [:- :map]
-  [ops actor [path] the-map]
-  (remove-key-ops ops
+  [{{:keys [key-cache]} :interpretation
+    :as context}
+   [path] the-map]
+  (domain/first-indexed
+   (add-remove-op context
                   (get-id the-map)
-                  (core/next-id ops actor)
-                  (util/last-indexed path)))
+                  (get key-cache
+                       (domain/last-indexed path)))))
 
 (defmethod -edit-to-ops [:- :vec]
-  [ops actor [path] the-vector]
-  (remove-key-ops ops
+  [context [path] the-vector]
+  (domain/first-indexed
+   (add-remove-op context
                   (get-id the-vector)
-                  (core/next-id ops actor)
-                  (->> path
-                       util/last-indexed
-                       (get-insertion-id the-vector))))
+                  (get-insertion-id
+                   the-vector
+                   (domain/last-indexed path)))))
 
 (defmethod -edit-to-ops [:- :set]
-  [ops actor [path] the-set]
-  (remove-key-ops ops
+  [{{:keys [key-cache]} :interpretation
+    :as context}
+   [path] the-set]
+  (domain/first-indexed
+   (add-remove-op context
                   (get-id the-set)
-                  (core/next-id ops actor)
-                  (util/last-indexed path)))
+                  (get key-cache
+                       (domain/last-indexed path)))))
 
 (defmethod -edit-to-ops [:- :lst]
-  [ops actor [path] the-list]
-  (remove-key-ops ops
+  [context [path] the-list]
+  (domain/first-indexed
+   (add-remove-op context
                   (get-id the-list)
-                  (core/next-id ops actor)
-                  (->> path
-                       util/last-indexed
-                       (get-insertion-id the-list))))
+                  (get-insertion-id
+                   the-list
+                   (domain/last-indexed path)))))
 
 ;;;; Replace
 
-(defn map-diff-ops
-  [ops* actor map-id old-map new-map]
-  (reduce (fn [ops k]
-            (if (and (contains? old-map k)
-                     (not (contains? new-map k)))
-              (remove-key-ops ops
-                              map-id
-                              (core/next-id ops actor)
-                              k)
-              (let [value (get new-map k)]
-                (if-let [val-id (get-id value)]
-                  (assign-key-ops
-                   ops
-                   map-id
-                   (core/next-id ops actor)
-                   k
-                   val-id)
-                  (create-value-and-assign-key-ops
-                   ops
-                   map-id
-                   k
-                   (core/next-id ops actor)
-                   value)))))
-          ops*
-          (into #{} (concat (keys old-map) (keys new-map)))))
-
-;; TODO: Can we make this better?  Preserve existing insertions/assignments/values?
-(defn list-diff-ops
-  [ops* actor list-id old-list new-list]
-  (let [ops-after-removals
-        (loop [ops ops*
-               items old-list
-               i    0]
-          (if (first items)
-            (recur (remove-key-ops ops
-                                   list-id
-                                   (core/next-id ops actor)
-                                   (get-insertion-id old-list i))
-                   (next items)
-                   (inc i))
-            ops))]
-    (loop [ops       ops-after-removals
-           insert-id (core/next-id ops-after-removals actor)
-           after-id  list-id
-           items     new-list]
-      (if-let [item (first items)]
-        (let [next-ops (if-let [id (get-id item)]
-                         (insert-list-item-ops
-                          ops list-id insert-id after-id id)
-                         (create-and-insert-list-item-ops
-                          ops list-id insert-id after-id item))]
-          (recur next-ops
-                 (core/next-id next-ops)
-                 insert-id
-                 (next new-list)))
-        ops))))
-
-(defn set-diff-ops
-  [ops* actor set-id old-set new-set]
-  (reduce (fn [ops k]
-            (cond
-              (and (contains? old-set k)
-                   (not (contains? new-set k)))
-              (remove-key-ops ops
-                              set-id
-                              (core/next-id ops actor)
-                              k)
-
-              (and (not (contains? old-set k))
-                   (contains? new-set k))
-              (assign-set-member-ops ops
-                                     set-id
-                                     (core/next-id ops actor)
-                                     k)
-
-              :else ops))
-          ops*
-          (into old-set new-set)))
-
-(defn replace-in-list-ops
-  [ops actor path new-value the-list]
-  (if (empty? path)
-    ;; Replacing the root list...
-    (if (= (util/get-type new-value) :list)
-      ;; ...with minimal ops while retaining list identity, since new value is also a list
-      (list-diff-ops ops actor (get-id the-list) the-list new-value)
-      ;; ...entirely with a new value with :root? true
-      (let [value-id (core/next-id ops actor)
-            ops*     (value-to-ops ops value-id new-value)]
-        (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
-    ;; Replacing a key within this list...
-    (let [k         (util/last-indexed path)
-          old-value (util/safe-get the-list k)]
-      (if (= (util/get-type old-value)
-             (util/get-type new-value))
-        ;; ...with minimal ops while attempting to retain value
-        ;; identity, since new value is same type
-        (case (util/get-type old-value)
-          :map (map-diff-ops ops actor (get-id old-value) old-value new-value)
-          (:vec :lst) (list-diff-ops ops actor (get-id old-value) old-value new-value)
-          :set (set-diff-ops ops actor (get-id old-value) old-value new-value)
-          ;; else replace a primitive type
-          (create-value-and-assign-key-ops ops
-                                           (get-id the-list)
-                                           (get-insertion-id the-list k)
-                                           (core/next-id ops actor)
-                                           new-value))
-        ;; TODO: attempt to retain inner values when converting from one collection type to another?
-        ;; TODO: more broadly, should we cache and re-use scalar (not including tracking text/string) values?
-        ;; ... with an entirely new value
-        (create-value-and-assign-key-ops ops
-                                         (get-id the-list)
-                                         (get-insertion-id the-list k)
-                                         (core/next-id ops actor)
-                                         new-value)))))
-
 (defmethod -edit-to-ops [:r :map]
-  [ops actor [path _ new-value] the-map]
+  [context [path _ new-value] the-map]
   (if (empty? path)
-    ;; Replacing the root map...
-    (if (= (util/get-type new-value) :map)
-      ;; ...with minimal ops while retaining map identity, since new value is also a map
-      (map-diff-ops ops actor (get-id the-map) the-map new-value)
-      ;; ...entirely with a new value with :root? true
-      (let [value-id (core/next-id ops actor)
-            ops*     (value-to-ops ops value-id new-value)]
-        (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
-    ;; Replacing a key within this map...
-    (let [k         (util/last-indexed path)
-          old-value (get the-map k)]
-      (if (= (util/get-type old-value)
-             (util/get-type new-value))
-        ;; ...with minimal ops while attempting to retain value
-        ;; identity, since new value is same type
-        (case (util/get-type old-value)
-          :map (map-diff-ops ops actor (get-id old-value) old-value new-value)
-          (:vec :lst) (list-diff-ops ops actor (get-id old-value) old-value new-value)
-          :set (set-diff-ops ops actor (get-id old-value) old-value new-value)
-          ;; else replace a primitive type
-          (create-value-and-assign-key-ops ops
-                                           (get-id the-map)
-                                           k
-                                           (core/next-id ops actor)
-                                           new-value))
-        ;; TODO: attempt to retain inner values when converting from one collection type to another?
-        ;; TODO: more broadly, should we cache and re-use scalar (not including tracking text/string) values?
-        ;; ... with an entirely new value
-        (create-value-and-assign-key-ops ops
-                                         (get-id the-map)
-                                         k
-                                         (core/next-id ops actor)
-                                         new-value)))))
+    (domain/first-indexed
+     (ensure-value context new-value true))
+    (let [[context1 value-id]
+          (ensure-value context new-value)
+
+          [context2 key-id]
+          (ensure-key-op context1 (domain/last-indexed path))]
+      (add-assign-op context2
+                     (get-id the-map)
+                     key-id
+                     value-id))))
 
 (defmethod -edit-to-ops [:r :vec]
-  [ops actor [path _ value] the-vector]
-  (replace-in-list-ops ops actor path value the-vector))
+  [context [path _ new-value] the-vector]
+  (if (empty? path)
+    (domain/first-indexed
+     (ensure-value context new-value true))
+    (let [[context1 value-id]
+          (ensure-value context new-value)]
+      (add-assign-op context1
+                     (get-id the-vector)
+                     (get-insertion-id the-vector
+                                       (domain/last-indexed path))
+                     value-id))))
 
 (defmethod -edit-to-ops [:r :set]
-  [ops actor [path _ new-value] the-set]
+  [context [path _ new-value] the-set]
   (if (empty? path)
-    ;; Replacing the root set...
-    (if (= (util/get-type new-value) :set)
-      ;; ...with minimal ops while retaining set identity, since new value is also a set
-      (set-diff-ops ops actor (get-id the-set) the-set new-value)
-      ;; ...entirely with a new value with :root? true
-      (let [value-id (core/next-id ops actor)
-            ops*     (value-to-ops ops value-id new-value)]
-        (assoc ops* value-id (assoc-in (get ops* value-id) [:data :root?] true))))
-    ;; We don't replace keys within set...
-    ops))
+    (domain/first-indexed
+     (ensure-value context new-value true))
+    (let [[context1 key-id]
+          (ensure-key-op context (domain/last-indexed path))]
+      (add-assign-op context1
+                     (get-id the-set)
+                     key-id))))
 
 (defmethod -edit-to-ops [:r :lst]
-  [ops actor [path _ value] the-list]
-  (replace-in-list-ops ops actor path value the-list))
+  [context [path _ new-value] the-list]
+  (if (empty? path)
+    (domain/first-indexed
+     (ensure-value context new-value true))
+    (let [[context1 value-id]
+          (ensure-value context new-value)]
+      (add-assign-op context1
+                     (get-id the-list)
+                     (get-insertion-id the-list
+                                       (domain/last-indexed path))
+                     value-id))))
 
 (defmethod -edit-to-ops [:r :val]
-  [ops actor [path _ value] _entity]
-  (let [id   (core/next-id ops actor)
-        ops* (value-to-ops ops id value)]
-    (if (empty? path)
-      (if-let [op (get ops* id)]
-        (assoc ops* id (assoc-in op [:data :root?] true))
-        ops*)
-      ops*)))
+  [context [path _ value] _entity]
+  (domain/first-indexed
+   (add-value-ops context value (empty? path))))
 
-;; TODO: Use transient log, for performance? (would need to figure out nth on transient AVL map)
+(defn recompute-root
+  [{:keys [interpretation] :as context}]
+  (assoc context :root (edn/edn interpretation)))
+
 (defn edit-to-ops
-  [log actor root [path :as edit]]
-  (-edit-to-ops log
-                actor
-                edit
-                (util/safe-get-in root (util/safe-pop path))))
+  [{:keys [root] :as context} [path :as edit]]
+  (-> context
+      (-edit-to-ops edit
+                    (domain/safe-get-in root (domain/safe-pop path)))
+      recompute-root))
 
 (defn make-patch
   [log-orig interpretation actor old-value new-value]
-  (loop [edits  (e/get-edits (e/diff old-value new-value))
-         value  old-value
-         log    log-orig
-         interp (or interpretation (interpret/interpret log-orig))]
-    (if-let [edit (util/first-indexed edits)]
-      (let [next-log    (edit-to-ops log actor value edit)
-            next-interp (interpret/interpret
-                         interp
-                         (avl/subrange next-log > (core/latest-id log)))]
-        (recur (subvec edits 1)
-               (edn/edn next-interp)
-               next-log
-               next-interp))
-      (let [ops (avl/subrange log > (core/latest-id log-orig))]
-        (when-not (empty? ops)
-          (core/map->Patch {:source         (-> log-orig
-                                                core/ref-root-data-from-log
-                                                :id)
-                            :ops            ops
-                            :interpretation interp
-                            :value          value}))))))
+  (let [context (reduce edit-to-ops
+                        {:actor actor
+                         :log   log-orig
+                         :root  old-value
+                         :interpretation
+                         (or interpretation (interpret/interpret log-orig))}
+                        (e/get-edits
+                         (e/diff old-value new-value)))
+        ops     (avl/subrange (:log context) > (domain/latest-id log-orig))]
+    (if (= (:root context) new-value)
+      (when-not (empty? ops)
+        (domain/map->Patch
+         {:source         (-> log-orig
+                              domain/ref-root-data-from-log
+                              :id)
+          :ops            ops
+          :interpretation (:interpretation context)
+          :value          (:root context)}))
+      (throw (ex-info "Invalid patch: new-value computed from patch doesn't match the provided new-value."
+                      {:ops                 ops
+                       :old-value           old-value
+                       :new-value           new-value
+                       :new-value-for-patch (:root context)})))))
 
 (comment
 
   (def ref-id
-    (util/uuid))
+    (domain/uuid))
 
   (def creator
-    (util/uuid))
+    (domain/uuid))
 
   (def log1
-    (core/make-log
-     (core/make-id)
-     (core/root-op ref-id creator :opset)))
+    (domain/make-log
+     (domain/make-id)
+     (domain/root-op ref-id creator :opset)))
 
   (edn/edn (interpret/interpret log1))
 
-  (def actor (util/uuid))
+  (def actor (domain/uuid))
 
   (def val1 '{:empty-m {}, :empty-l [], :a :key, :another {:nested {:key [1 2 3]}}, :a-list [:foo "bar" baz {:nested :inalist}], :a-set #{1 4 3 2 5}})
 
@@ -468,10 +553,17 @@
   @r
   (reset! r [[]])
 
-  (def r (converge.api/ref [0] :backend :opset))
+  (def r (converge.api/ref nil :backend :opset))
   @r
-  (reset! r [])
+  (reset! r :foo)
+  (reset! r [:foo :bar :baz :quux 1 2 3])
+  (swap! r pop)
+
+  (e/diff @r (pop @r))
+
   (meta @r)
+
+  (converge.api/ref-log r)
 
   (reset! r #{0})
 
@@ -525,6 +617,8 @@
   (def b [{:a 5} {:b 5}])
 
   (e/diff a b {:algo :quick})
+
+  (e/diff {:foo :bar :baz :quux} {:foo :bar})
 
   ;; end
   )
