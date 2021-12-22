@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-set -e
-
-cd "${0%/*}/.."
-
-clojure -M:test -m kaocha.runner --config-file test/tests.edn "$@"
