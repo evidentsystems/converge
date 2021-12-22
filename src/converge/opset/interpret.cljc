@@ -58,33 +58,36 @@
   (->Element entity attribute domain/highest-id nil))
 
 (defrecord Interpretation [elements list-links
+                           parents  entities
                            keys     key-cache
                            values   value-cache])
 
 (defn make-interpretation
-  [{:keys [elements list-links
-           keys     key-cache
-           values   value-cache]}]
+  [{:keys [elements list-links entities keys values]}]
   (assert (coll? elements))
   (assert (map? list-links))
+  (assert (map? entities))
   (assert (map? keys))
   (assert (map? values))
-  (->Interpretation
-   (if (instance? AVLSet elements)
-     elements
-     (into (avl/sorted-set) elements))
-   list-links
-   keys
-   (if (map? key-cache)
-     key-cache
+  (let [elements* (if (instance? AVLSet elements)
+                    elements
+                    (into (avl/sorted-set) elements))]
+    (->Interpretation
+     elements*
+     list-links
+     (persistent!
+      (reduce (fn [agg element]
+                (assoc! agg (:value element) (:entity element)))
+              (transient {})
+              elements*))
+     entities
+     keys
      (persistent!
       (reduce-kv (fn [agg k v]
                    (assoc! agg (:value v) k))
                  (transient {})
-                 keys)))
-   values
-   (if (map? value-cache)
-     value-cache
+                 keys))
+     values
      (persistent!
       (reduce-kv (fn [agg k v]
                    (assoc! agg (:value v) k))
@@ -103,23 +106,23 @@
 
 (defmethod -interpret-op ops/MAKE_MAP
   [agg id op]
-  (update agg :values assoc! id (assoc (:data op) :value {})))
+  (update agg :entities assoc! id (assoc (:data op) :value {})))
 
 (defmethod -interpret-op ops/MAKE_VECTOR
   [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :values assoc! id (assoc (:data op) :value []))))
+      (update :entities assoc! id (assoc (:data op) :value []))))
 
 (defmethod -interpret-op ops/MAKE_SET
   [agg id op]
-  (update agg :values assoc! id (assoc (:data op) :value #{})))
+  (update agg :entities assoc! id (assoc (:data op) :value #{})))
 
 (defmethod -interpret-op ops/MAKE_LIST
   [agg id op]
   (-> agg
       (update :list-links assoc! id list-end-sigil)
-      (update :values assoc! id (assoc (:data op) :value ()))))
+      (update :entities assoc! id (assoc (:data op) :value ()))))
 
 (defmethod -interpret-op ops/MAKE_KEY
   [agg id op]
@@ -145,22 +148,44 @@
                          id next)))
       agg)))
 
+(defn is-ancestor?
+  [parents entity possible-ancestor]
+  (loop [self entity]
+    (if-some [parent (get parents self)]
+      (if (= parent possible-ancestor)
+        true
+        (recur parent))
+      false)))
+
 ;; We use the broader interpretation algorithm defined in section 3.2,
 ;; rather than the narrower tree definition defined in 5.2, since
 ;; we're generating Ops from trees. We use the adjustment for single-value register.
 (defmethod -interpret-op ops/ASSIGN
-  [{:keys [elements] :as agg} id {:keys [data]}]
+  [{:keys [elements parents entities] :as agg} id {:keys [data]}]
   (let [{:keys [entity attribute value]} data
 
-        elements* (persistent! elements)]
-    (reduce (fn [agg element]
-              (update agg :elements disj! (avl/nearest elements* >= element)))
-            (assoc agg :elements (conj!
-                                  (transient elements*)
-                                  (->Element entity attribute value id)))
-            (avl/subrange elements*
-                          >= (entity-attribute-start-element entity attribute)
-                          <  (entity-attribute-end-element   entity attribute)))))
+        elements* (persistent! elements)
+        parent    (get parents value)]
+    (if (is-ancestor? parents entity value)
+      agg
+      (reduce (fn [agg element]
+                (if (= (:value element) value)
+                  (update agg :elements disj! element)
+                  agg))
+              (reduce (fn [agg element]
+                        (update agg :elements disj! (avl/nearest elements* >= element)))
+                      (assoc agg
+                             :elements (conj!
+                                        (transient elements*)
+                                        (->Element entity attribute value id))
+                             :parents (assoc! parents value entity))
+                      (avl/subrange elements*
+                                    >= (entity-attribute-start-element entity attribute)
+                                    <  (entity-attribute-end-element   entity attribute)))
+              (when (contains? entities value)
+                (avl/subrange elements*
+                              >= (entity-start-element parent)
+                              <  (entity-end-element   parent)))))))
 
 ;; We use the broader interpretation algorithm defined in section 3.2,
 ;; rather than the narrower tree definition defined in 5.2, since
@@ -180,31 +205,35 @@
 (defn interpret
   ([opset-log]
    (interpret nil opset-log))
-  ([{:keys [elements list-links keys key-cache values value-cache] :as _interpretation} ops]
-   (let [elements-init   (or elements    (avl/sorted-set))
-         list-links-init (or list-links  {})
-         keys            (or keys        {})
-         key-cache       (or key-cache   {})
-         values          (or values      {})
-         value-cache     (or value-cache {})
-
-         {elements*    :elements
+  ([{:keys [elements list-links
+            parents  entities
+            keys     key-cache
+            values   value-cache]
+     :as   _interpretation}
+    ops]
+   (let [{elements*    :elements
           list-links*  :list-links
+          parents*     :parents
+          entities*    :entities
           keys*        :keys
           key-cache*   :key-cache
           values*      :values
           value-cache* :value-cache}
          (reduce-kv -interpret-op
-                    {:elements    (transient elements-init)
-                     :list-links  (transient list-links-init)
-                     :keys        (transient keys)
-                     :key-cache   (transient key-cache)
-                     :values      (transient values)
-                     :value-cache (transient value-cache)}
+                    {:elements    (transient (or elements (avl/sorted-set)))
+                     :list-links  (transient (or list-links {}))
+                     :parents     (transient (or parents {}))
+                     :entities    (transient (or entities {}))
+                     :keys        (transient (or keys {}))
+                     :key-cache   (transient (or key-cache {}))
+                     :values      (transient (or values {}))
+                     :value-cache (transient (or value-cache {}))}
                     ops)]
      (map->Interpretation
       {:elements    (persistent! elements*)
        :list-links  (persistent! list-links*)
+       :parents     (persistent! parents*)
+       :entities    (persistent! entities*)
        :keys        (persistent! keys*)
        :key-cache   (persistent! key-cache*)
        :values      (persistent! values*)

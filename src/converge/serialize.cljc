@@ -89,7 +89,7 @@
 
 (defn write-interpretation
   [interpretation]
-  (select-keys interpretation [:elements :list-links :values]))
+  (select-keys interpretation [:elements :list-links :entities :keys :values]))
 
 (defn write-state
   [state]

@@ -92,7 +92,7 @@
                            (let [branch (get-in tree [0 :baz 0])]
                              (-> tree
                                  (update-in [0 :baz] pop)
-                                 (conj (assoc branch :foo :bar)))))]
+                                 (conj (assoc branch :new :key)))))]
       (swap! r tree-move)
       (is (= (tree-move original-value) @r))))
   (testing "Concurrent movements of a collection to a new tree position"
@@ -119,7 +119,17 @@
       (swap! r2 tree-move2)
       (convergent/merge! r1 r2)
       (convergent/merge! r2 r1)
-      (is (= @r1 @r2 (tree-move2 original-value))))))
+      (is (= @r1 @r2 (tree-move2 original-value)))))
+  (testing "Move collection to new position in a tree with edits forcing replace"
+    (let [original-value [{:foo :bar :baz [{:quux "lalala"}]}]
+          r              (convergent/ref original-value :backend :opset)
+          tree-move      (fn [tree]
+                           (let [branch (get-in tree [0 :baz 0])]
+                             (-> tree
+                                 (update-in [0 :baz] pop)
+                                 (conj (assoc branch :foo :bar)))))]
+      (swap! r tree-move)
+      (is (= (tree-move original-value) @r)))))
 
 ;; Ensure that opset growth remains small when many equal primitive values are added
 (deftest primitive-value-caching

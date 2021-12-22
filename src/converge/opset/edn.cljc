@@ -21,10 +21,10 @@
    :cljs (set! *warn-on-infer* true))
 
 (defmulti -edn
-  (fn [{:keys [values]} entity]
-    (some-> values
-            (get-in [entity :value])
-            domain/get-type))
+  (fn [{:keys [entities values]} entity]
+    (if-some [e (get-in entities [entity :value])]
+      (domain/get-type e)
+      (domain/get-type (get-in values [entity :value]))))
   :default ::default)
 
 (defmethod -edn ::default
@@ -103,17 +103,16 @@
     (with-meta (apply list v) (meta v))))
 
 (defn root-element-id
-  [values]
+  [{:keys [values entities]}]
   (let [root-id (domain/make-id)]
     (reduce-kv (fn [agg id {:keys [root?]}]
                  (if root?
                    (if (nat-int? (compare id agg)) id agg)
                    agg))
                root-id
-               values)))
+               (into entities values))))
 
 (defn edn
   "Transforms an converge.opset.interpret.Interpretation into an EDN value."
-  [{:keys [values] :as interpretation}]
-  (-edn interpretation
-        (root-element-id values)))
+  [interpretation]
+  (-edn interpretation (root-element-id interpretation)))
