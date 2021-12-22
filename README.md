@@ -44,7 +44,10 @@ various communication channels:
 * Websocket
 * HTTP
 
-We also plan to provide a means of tracking/diffing/merging structured
+We also plan to support other serialization mechanisms like
+[Fressian](https://github.com/clojure/data.fressian/).
+
+Finally, we plan to provide a means of tracking/diffing/merging structured
 data (EDN) alongside the semi-structured data (files, lines,
 directories) in a Git repository.
 
