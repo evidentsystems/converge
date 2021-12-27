@@ -91,5 +91,8 @@
 
 (defn remove
   [entity attribute]
-  (assert (domain/id? entity) "`entity` must be an Id")
+  (assert (domain/id? entity)
+          "`entity` must be an Id")
+  (assert (domain/id? attribute)
+          "`attribute` must be an Id")
   (domain/op REMOVE {:entity entity :attribute attribute}))
