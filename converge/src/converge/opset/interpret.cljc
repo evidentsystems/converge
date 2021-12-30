@@ -157,9 +157,7 @@
         (recur parent))
       false)))
 
-;; We use the broader interpretation algorithm defined in section 3.2,
-;; rather than the narrower tree definition defined in 5.2, since
-;; we're generating Ops from trees. We use the adjustment for single-value register.
+;; We use the adjustment for single-value register defined in 3.2
 (defmethod -interpret-op ops/ASSIGN
   [{:keys [elements parents entities] :as agg} id {:keys [data]}]
   (let [{:keys [entity attribute value]} data
@@ -173,7 +171,7 @@
                   (update agg :elements disj! element)
                   agg))
               (reduce (fn [agg element]
-                        (update agg :elements disj! (avl/nearest elements* >= element)))
+                        (update agg :elements disj! element))
                       (assoc agg
                              :elements (conj!
                                         (transient elements*)
@@ -187,16 +185,14 @@
                               >= (entity-start-element parent)
                               <  (entity-end-element   parent)))))))
 
-;; We use the broader interpretation algorithm defined in section 3.2,
-;; rather than the narrower tree definition defined in 5.2, since
-;; we're generating Ops from trees. We use the adjustment for single-value register.
+;; We use the adjustment for single-value register defined in 3.2
 (defmethod -interpret-op ops/REMOVE
   [{:keys [elements] :as agg} _id {:keys [data]}]
   (let [{:keys [entity attribute]} data
 
         elements* (persistent! elements)]
     (reduce (fn [agg element]
-              (update agg :elements disj! (avl/nearest elements* <= element)))
+              (update agg :elements disj! element))
             (assoc agg :elements (transient elements*))
             (avl/subrange elements*
                           >= (entity-attribute-start-element entity attribute)
