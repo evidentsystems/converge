@@ -134,6 +134,7 @@
   [agg id op]
   (-> agg
       (update :values assoc! id (:data op))
+      ;; TODO: take (:root? op) into account when caching
       (update :value-cache assoc! (-> op :data :value) id)))
 
 (defmethod -interpret-op ops/INSERT
@@ -168,9 +169,11 @@
       agg
       (reduce (fn [agg element]
                 (if (= (:value element) value)
+                  ;; TODO: update parents here?
                   (update agg :elements disj! element)
                   agg))
               (reduce (fn [agg element]
+                        ;; TODO: update parents here?
                         (update agg :elements disj! element))
                       (assoc agg
                              :elements (conj!
@@ -192,6 +195,7 @@
 
         elements* (persistent! elements)]
     (reduce (fn [agg element]
+              ;; TODO: update parents here?
               (update agg :elements disj! element))
             (assoc agg :elements (transient elements*))
             (avl/subrange elements*
