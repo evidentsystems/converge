@@ -3,6 +3,20 @@
 Converge is a set of libraries for working with convergent replicated
 datatypes (CRDTs) in Clojure and ClojureScript.
 
+### Modules:
+https://clojure.org/reference/deps_and_cli#_dependencies
+Both modules can be imported by specifying a :git/url, :sha, and :deps/root in your deps.edn :deps like the following example:
+
+```
+evidentsystems/converge         {:git/url   "https://github.com/Shearerbeard/converge"
+                                 :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                 :deps/root "./converge"}
+
+evidentsystems/converge-transit {:git/url   "https://github.com/Shearerbeard/converge"
+                                 :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                 :deps/root "./transit"}
+```
+
 ## Main module: `converge` (path `converge/`)
 
 The main module, `converge`, provides a convergent reference type for
