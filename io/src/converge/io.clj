@@ -4,7 +4,9 @@
             [cognitect.transit :as t]
             [converge.api :as convergent]
             [converge.domain :as domain]
-            [converge.transit :as transit]))
+            [converge.transit :as transit])
+  (:import [java.security MessageDigest]
+           [java.io ByteArrayOutputStream]))
 
 (def formats
   #{:edn
@@ -68,6 +70,21 @@
        :transit-msgpack
        (t/write (t/writer System/out :msgpack) value)))))
 
+(def file-hash-algo
+  "SHA3-256")
+
+(defn file-hash
+  [^bytes file-bytes]
+  (let [digest     (MessageDigest/getInstance file-hash-algo)
+        hash-bytes (.digest digest file-bytes)
+        sb         (StringBuilder. (* 2 (alength file-bytes)))]
+    (doseq [b hash-bytes]
+      (let [hex (Integer/toHexString (bit-and 0xff b))]
+        (when (= (count hex) 1)
+          (.append sb "0"))
+        (.append sb hex)))
+    (.toString sb)))
+
 (defn sync-directory
   [source-ref dirname]
   (assert (convergent/convergent? source-ref) "First argument to sync-directory must be a ConvergentRef")
@@ -75,10 +92,13 @@
     (let [patch (convergent/patch-from-clock source-ref
                                              (convergent/clock dest-ref))]
       (when patch
-        (let [file (io/file dirname (str (hash patch) ".converge"))]
+        (let [baos (ByteArrayOutputStream.)
+              _    (t/write (t/writer baos :msgpack {:handlers transit/write-handlers})
+                            patch)
+              file (io/file dirname (str (file-hash (.toByteArray baos))
+                                         ".converge"))]
           (with-open [output-stream (io/output-stream file)]
-            (t/write (t/writer output-stream :msgpack {:handlers transit/write-handlers})
-                     patch))
+            (.writeTo baos output-stream))
           (.getName file))))
     (let [file (root-file dirname)]
       (.mkdirs (io/file dirname))
