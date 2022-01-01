@@ -53,7 +53,7 @@
    Op              (transit/write-handler (constantly "c/o") tagged-map-value)
    Patch           (transit/write-handler (constantly "converge/patch") serialize/write-patch)
    ConvergentState (transit/write-handler (constantly "converge/state") serialize/write-state)
-   Clock           (transit/write-handler (constantly "converge/state") tagged-map-value)
+   Clock           (transit/write-handler (constantly "converge/clock") tagged-map-value)
 
    Element            (transit/write-handler (constantly "c/e") tagged-map-value)
    Interpretation     (transit/write-handler (constantly "opset/interpretation") serialize/write-interpretation)
