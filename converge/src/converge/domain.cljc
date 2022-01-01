@@ -14,6 +14,7 @@
 (ns converge.domain
   "Datatypes and functions implementing a serializable, Atom-like
   convergent reference type."
+  #?(:cljs (:refer-clojure :exclude [uuid]))
   (:require [clojure.data.avl :as avl]
             [clojure.string :as string]
             [editscript.edit :as edit]

@@ -14,11 +14,12 @@
 (ns converge.opset.interpret
   "Functions for interpreting an OpSet as per sections 3.2 and 5.2 of
   the [OpSets paper](https://arxiv.org/pdf/1805.04263.pdf)"
-  (:require [clojure.data.avl :as avl]
+  (:require [clojure.data.avl :as avl #?@(:cljs [:refer [AVLSet]])]
             [converge.opset.ops :as ops]
             [converge.domain :as domain])
-  (:import [clojure.data.avl AVLSet]
-           #?(:clj [converge.domain Id])))
+  #?(:clj (:import
+           [clojure.data.avl AVLSet]
+           [converge.domain Id])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))

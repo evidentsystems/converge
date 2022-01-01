@@ -14,12 +14,19 @@
 (ns converge.transit
   (:require clojure.data.avl
             [converge.serialize :as serialize]
-            [cognitect.transit :as transit])
-  (:import [clojure.data.avl AVLMap AVLSet]
+            [cognitect.transit :as transit]
+            #?@(:cljs
+                [[clojure.data.avl :refer [AVLMap AVLSet]]
+                 [converge.domain :refer [Id Op Patch ConvergentState Clock]]
+                 [converge.editscript.ref :refer [EditscriptConvergentRef]]
+                 [converge.opset.interpret :refer [Element Interpretation]]
+                 [converge.opset.ref :refer [OpsetConvergentRef]]]))
+  #?(:clj (:import
+           [clojure.data.avl AVLMap AVLSet]
            [converge.domain Id Op Patch ConvergentState Clock]
            [converge.editscript.ref EditscriptConvergentRef]
            [converge.opset.interpret Element Interpretation]
-           [converge.opset.ref OpsetConvergentRef]))
+           [converge.opset.ref OpsetConvergentRef])))
 
 (defn tagged-map-value
   [rec]
