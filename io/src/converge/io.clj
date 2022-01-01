@@ -21,9 +21,12 @@
   [^java.io.File file]
   (when (.isFile file)
     (try
-      (with-open [input-stream (io/input-stream file)]
-        (t/read (t/reader input-stream :msgpack {:handlers transit/read-handlers})))
-      (catch Exception _ nil))))
+      (with-open [in (io/input-stream file)]
+        (t/read (t/reader in :msgpack {:handlers transit/read-handlers})))
+      (catch Exception e
+        (binding [*out* *err*]
+          (println (.getLocalizedMessage e)))
+        nil))))
 
 (defn ^java.io.File root-file
   [dirname]
@@ -31,7 +34,7 @@
 
 (defn from-directory
   [dirname]
-  (let [dir  (io/file dirname)
+  (let [dir (io/file dirname)
         {id       :source
          root-ops :ops}
         (some-> dirname
@@ -56,19 +59,20 @@
   ([dirname]
    (pr-directory dirname default-value-format))
   ([dirname value-format]
-   (let [value @(from-directory dirname)]
-     (case value-format
-       :edn
-       (pr value)
+   (when-let [cref (from-directory dirname)]
+     (let [value @cref]
+       (case value-format
+         :edn
+         (pr value)
 
-       :transit-json
-       (t/write (t/writer System/out :json) value)
+         :transit-json
+         (t/write (t/writer System/out :json) value)
 
-       :transit-json-verbose
-       (t/write (t/writer System/out :json-verbose) value)
+         :transit-json-verbose
+         (t/write (t/writer System/out :json-verbose) value)
 
-       :transit-msgpack
-       (t/write (t/writer System/out :msgpack) value)))))
+         :transit-msgpack
+         (t/write (t/writer System/out :msgpack) value))))))
 
 (def file-hash-algo
   "SHA3-256")
