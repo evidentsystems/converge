@@ -104,6 +104,45 @@
 
   (criterium/bench (read-str (write-str r)))
 
+  (require '[clojure.edn :as edn]
+           '[clojure.java.io :as io])
+
+  (def value
+    (with-open [pbr (java.io.PushbackReader. (io/reader (io/file "big-tree.edn")))]
+      (edn/read pbr)))
+
+  (with-open [os (io/output-stream (io/file "big-tree.transit.json"))]
+    (t/write (t/writer os :json {:handlers converge-transit/write-handlers})
+             value))
+
+  (with-open [os (io/output-stream (io/file "big-tree.transit.msgpack"))]
+    (t/write (t/writer os :msgpack {:handlers converge-transit/write-handlers})
+             value))
+
+  (def r (convergent/ref value))
+
+  (with-open [os (io/output-stream (io/file "big-tree-convergent-ref.transit.json"))]
+    (t/write (t/writer os :json {:handlers converge-transit/write-handlers})
+             r))
+
+  (with-open [os (io/output-stream (io/file "big-tree-convergent-ref.transit.msgpack"))]
+    (t/write (t/writer os :msgpack {:handlers converge-transit/write-handlers})
+             r))
+
+  (.length (io/file "big-tree.edn"))
+
+  (.length (io/file "big-tree.transit.json"))
+  (.length (io/file "big-tree-convergent-ref.transit.json"))
+
+  (quot (.length (io/file "big-tree-convergent-ref.transit.json"))
+        (.length (io/file "big-tree.transit.json")))
+
+  (.length (io/file "big-tree.transit.msgpack"))
+  (.length (io/file "big-tree-convergent-ref.transit.msgpack"))
+
+  (quot (.length (io/file "big-tree-convergent-ref.transit.msgpack"))
+        (.length (io/file "big-tree.transit.msgpack")))
+
   ;; README usage
 
   (require '[cognitect.transit :as transit]
