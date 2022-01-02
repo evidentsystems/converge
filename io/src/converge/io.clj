@@ -8,15 +8,6 @@
   (:import [java.security MessageDigest]
            [java.io ByteArrayOutputStream]))
 
-(def formats
-  #{:edn
-    :transit-json
-    :transit-json-verbose
-    :transit-msgpack})
-
-(def default-value-format
-  :edn)
-
 (defn read-file
   [^java.io.File file]
   (when (.isFile file)
@@ -57,7 +48,7 @@
 
 (defn pr-directory
   ([dirname]
-   (pr-directory dirname default-value-format))
+   (pr-directory dirname :edn))
   ([dirname value-format]
    (when-let [cref (from-directory dirname)]
      (let [value @cref]
