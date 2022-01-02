@@ -65,17 +65,14 @@
    (-add-value-ops context value root?)))
 
 (defmethod -add-value-ops ::default
-  [{:keys                 [log actor]
-    {:keys [value-cache]} :interpretation
-    :as                   context}
+  [{:keys [log actor]
+    :as   context}
    value root?]
-  (if-let [existing-id (get value-cache value)]
-    [context existing-id]
-    (let [value-id (domain/next-id log actor)]
-      (-> context
-          (update-context
-           {value-id (ops/make-value value root?)})
-          (vector value-id)))))
+  (let [value-id (domain/next-id log actor)]
+    (-> context
+        (update-context
+         {value-id (ops/make-value value root?)})
+        (vector value-id))))
 
 (defn add-assign-op
   "Unlike the other add-*-op, this doesn't return a tuple of [context

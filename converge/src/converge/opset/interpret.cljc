@@ -60,7 +60,7 @@
 (defrecord Interpretation [elements list-links
                            parents  entities
                            keys     key-cache
-                           values   value-cache])
+                           values])
 
 (defn make-interpretation
   [{:keys [elements list-links entities keys values]}]
@@ -87,12 +87,7 @@
                    (assoc! agg (:value v) k))
                  (transient {})
                  keys))
-     values
-     (persistent!
-      (reduce-kv (fn [agg k v]
-                   (assoc! agg (:value v) k))
-                 (transient {})
-                 values)))))
+     values)))
 
 (def list-end-sigil ::list-end)
 
@@ -132,9 +127,7 @@
 
 (defmethod -interpret-op ops/MAKE_VALUE
   [agg id op]
-  (-> agg
-      (update :values assoc! id (:data op))
-      (update :value-cache assoc! (-> op :data :value) id)))
+  (update agg :values assoc! id (:data op)))
 
 (defmethod -interpret-op ops/INSERT
   [{:keys [list-links] :as agg} id {{prev :after} :data}]
@@ -192,7 +185,9 @@
 
         elements* (persistent! elements)]
     (reduce (fn [agg element]
-              (update agg :elements disj! element))
+              (-> agg
+                  (update :elements disj! element)
+                  (update :parents dissoc! (:value element))))
             (assoc agg :elements (transient elements*))
             (avl/subrange elements*
                           >= (entity-attribute-start-element entity attribute)
@@ -204,33 +199,30 @@
   ([{:keys [elements list-links
             parents  entities
             keys     key-cache
-            values   value-cache]
+            values]
      :as   _interpretation}
     ops]
-   (let [{elements*    :elements
-          list-links*  :list-links
-          parents*     :parents
-          entities*    :entities
-          keys*        :keys
-          key-cache*   :key-cache
-          values*      :values
-          value-cache* :value-cache}
+   (let [{elements*   :elements
+          list-links* :list-links
+          parents*    :parents
+          entities*   :entities
+          keys*       :keys
+          key-cache*  :key-cache
+          values*     :values}
          (reduce-kv -interpret-op
-                    {:elements    (transient (or elements (avl/sorted-set)))
-                     :list-links  (transient (or list-links {}))
-                     :parents     (transient (or parents {}))
-                     :entities    (transient (or entities {}))
-                     :keys        (transient (or keys {}))
-                     :key-cache   (transient (or key-cache {}))
-                     :values      (transient (or values {}))
-                     :value-cache (transient (or value-cache {}))}
+                    {:elements   (transient (or elements (avl/sorted-set)))
+                     :list-links (transient (or list-links {}))
+                     :parents    (transient (or parents {}))
+                     :entities   (transient (or entities {}))
+                     :keys       (transient (or keys {}))
+                     :key-cache  (transient (or key-cache {}))
+                     :values     (transient (or values {}))}
                     ops)]
      (map->Interpretation
-      {:elements    (persistent! elements*)
-       :list-links  (persistent! list-links*)
-       :parents     (persistent! parents*)
-       :entities    (persistent! entities*)
-       :keys        (persistent! keys*)
-       :key-cache   (persistent! key-cache*)
-       :values      (persistent! values*)
-       :value-cache (persistent! value-cache*)}))))
+      {:elements   (persistent! elements*)
+       :list-links (persistent! list-links*)
+       :parents    (persistent! parents*)
+       :entities   (persistent! entities*)
+       :keys       (persistent! keys*)
+       :key-cache  (persistent! key-cache*)
+       :values     (persistent! values*)}))))
