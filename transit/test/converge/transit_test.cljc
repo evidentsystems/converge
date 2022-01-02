@@ -16,9 +16,11 @@
                :cljs [cljs.test :refer-macros [deftest is testing]])
             #?(:clj  [clojure.test.check.clojure-test :refer [defspec]]
                :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
+            [clojure.spec.alpha :as spec]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [converge.api :as convergent]
+            [converge.opset.interpret :as interpret]
             [converge.transit :as converge-transit]
             [cognitect.transit :as t])
   #?(:clj (:import [java.io ByteArrayInputStream ByteArrayOutputStream])))
@@ -60,40 +62,37 @@
        (let [in (ByteArrayInputStream. (.getBytes s "utf-8"))]
          (t/read (reader in))))))
 
-(def a {:empty-m {}
-        :empty-l []
-        :a       :key
-        :another {:nested {:key [1 2 3]}}
-        :a-list  [:foo "bar" 'baz {:nested :inalist}]
-        :a-set   #{1 2 3 4 5}})
-
-(def b [{}
-        []
-        :key
-        {:nested {:key [1 2 3]}}
-        [:foo "bar" 'baz {:nested :inalist}]
-        #{1 2 3 4 5}])
-
-(deftest transit-roundtrip-example
-  (testing "map"
-    (let [ref (convergent/ref a)
-          rt  (read-str (write-str ref))]
-      (is (= a @ref @rt))))
-  (testing "list"
-    (let [ref (convergent/ref b)
-          rt  (read-str (write-str ref))]
-      (is (= b @ref @rt)))))
-
-(defspec transit-roundtrip 100
+(defspec ref-roundtrip 100
   (prop/for-all
-   [v (gen/one-of [(gen/vector gen/any-equatable)
-                   (gen/map gen/any-equatable gen/any-equatable)
-                   (gen/set gen/any-equatable)
-                   (gen/list gen/any-equatable)
-                   (gen/container-type gen/any-equatable)])]
-   (let [ref (convergent/ref v)
-         rt  (read-str (write-str ref))]
-     (= v @ref @rt))))
+   [v (gen/one-of [(gen/container-type gen/any-equatable)
+                   gen/any-equatable])
+    backend (spec/gen convergent/backends)]
+   (let [cr (convergent/ref v :backend backend)
+         rt (read-str (write-str cr))]
+     (= v @cr @rt))))
+
+(defspec interpretation-roundtrip 100
+  (prop/for-all
+   [v (gen/one-of [(gen/container-type gen/any-equatable)
+                   gen/any-equatable])
+    backend (spec/gen convergent/backends)]
+   (let [cr (convergent/ref v :backend backend)
+         i  (interpret/interpret (convergent/ref-log cr))
+         rt (read-str (write-str i))]
+     (when-not (= i rt)
+       (prn :i i :rt rt))
+     (= i rt))))
+
+(defspec patch-roundtrip 100
+  (prop/for-all
+   [v (gen/map gen/any-equatable gen/any-equatable)
+    backend (spec/gen convergent/backends)]
+   (let [cr  (convergent/ref v :backend backend)
+         cr2 (convergent/ref-from-ops (convergent/ref-log cr))
+         _   (swap! cr assoc :baz :quux)
+         p   (convergent/patch-from-clock cr (convergent/clock cr2))
+         rt  (read-str (write-str p))]
+     (= p rt))))
 
 ;; clj
 (comment

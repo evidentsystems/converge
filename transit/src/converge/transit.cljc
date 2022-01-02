@@ -12,17 +12,14 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 (ns converge.transit
-  (:require clojure.data.avl
-            [converge.serialize :as serialize]
+  (:require [converge.serialize :as serialize]
             [cognitect.transit :as transit]
             #?@(:cljs
-                [[clojure.data.avl :refer [AVLMap AVLSet]]
-                 [converge.domain :refer [Id Op Patch ConvergentState Clock]]
+                [[converge.domain :refer [Id Op Patch ConvergentState Clock]]
                  [converge.editscript.ref :refer [EditscriptConvergentRef]]
                  [converge.opset.interpret :refer [Element Interpretation]]
                  [converge.opset.ref :refer [OpsetConvergentRef]]]))
   #?(:clj (:import
-           [clojure.data.avl AVLMap AVLSet]
            [converge.domain Id Op Patch ConvergentState Clock]
            [converge.editscript.ref EditscriptConvergentRef]
            [converge.opset.interpret Element Interpretation]
@@ -33,9 +30,7 @@
   (transit/tagged-value "map" rec))
 
 (def read-handlers
-  {"avl/map"              (transit/read-handler serialize/read-avl-map)
-   "avl/set"              (transit/read-handler serialize/read-avl-set)
-   "c/i"                  (transit/read-handler serialize/read-id)
+  {"c/i"                  (transit/read-handler serialize/read-id)
    "c/o"                  (transit/read-handler serialize/read-operation)
    "converge/patch"       (transit/read-handler serialize/read-patch)
    "converge/state"       (transit/read-handler serialize/read-state)
@@ -46,10 +41,7 @@
    "editscript/ref"       (transit/read-handler serialize/read-editscript-convergent-ref)})
 
 (def write-handlers
-  {AVLMap (transit/write-handler (constantly "avl/map") serialize/write-avl-map)
-   AVLSet (transit/write-handler (constantly "avl/set") serialize/write-avl-set)
-
-   Id              (transit/write-handler (constantly "c/i") tagged-map-value)
+  {Id              (transit/write-handler (constantly "c/i") tagged-map-value)
    Op              (transit/write-handler (constantly "c/o") tagged-map-value)
    Patch           (transit/write-handler (constantly "converge/patch") serialize/write-patch)
    ConvergentState (transit/write-handler (constantly "converge/state") serialize/write-state)

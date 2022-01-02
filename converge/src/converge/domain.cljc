@@ -264,6 +264,11 @@
 
 (defrecord ConvergentState [log cache value ^boolean dirty?])
 
+(defn make-state
+  [{:keys [log] :as state}]
+  (map->ConvergentState
+   (assoc state :log (into (avl/sorted-map) log))))
+
 ;;;; Clock
 
 (defrecord Clock [source clock])
