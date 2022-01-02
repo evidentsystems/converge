@@ -94,6 +94,15 @@
          rt  (read-str (write-str p))]
      (= p rt))))
 
+(defspec clock-roundtrip 100
+  (prop/for-all
+   [v (gen/map gen/any-equatable gen/any-equatable)
+    backend (spec/gen convergent/backends)]
+   (let [cr  (convergent/ref v :backend backend)
+         c   (convergent/clock cr)
+         rt  (read-str (write-str c))]
+     (= c rt))))
+
 ;; clj
 (comment
   ;; Benchmark
