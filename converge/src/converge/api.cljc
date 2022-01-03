@@ -211,11 +211,13 @@
   [cr {:keys [source clock] :as _foreign-clock}]
   (if (or (= (ref-id cr) source)
           (empty? clock))
-    (domain/->Patch
-     (ref-id cr)
-     (domain/log-ops-after-clock
-      (domain/-log cr)
-      clock))
+    (let [ops (domain/log-ops-after-clock
+               (domain/-log cr)
+               clock)]
+      (when (seq ops)
+        (domain/->Patch
+         (ref-id cr)
+         ops)))
     (throw
      (ex-info
       "Clock source doesn't match ref id!"

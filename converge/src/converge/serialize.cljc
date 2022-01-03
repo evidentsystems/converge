@@ -13,22 +13,13 @@
 ;; limitations under the License.
 (ns converge.serialize
   "Handlers for serializing to e.g. Transit."
-  (:require [clojure.data.avl :as avl]
-            [converge.domain :as domain]
+  (:require [converge.domain :as domain]
             [converge.opset.interpret :as interpret]
             [converge.opset.ref :as opset]
             [converge.editscript.ref :as editscript]))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
-
-(defn read-avl-map
-  [v]
-  (into (avl/sorted-map) v))
-
-(defn read-avl-set
-  [v]
-  (into (avl/sorted-set) v))
 
 (def read-id
   domain/map->Id)
@@ -50,7 +41,7 @@
 
 (defn read-state
   [m]
-  (domain/map->ConvergentState
+  (domain/make-state
    {:log    (:log m)
     :dirty? true}))
 
@@ -74,14 +65,6 @@
    nil
    nil))
 
-(defn write-avl-map
-  [m]
-  (into [] m))
-
-(defn write-avl-set
-  [s]
-  (into [] s))
-
 (defn write-patch
   [patch]
   {:ops    (:ops patch)
@@ -89,11 +72,13 @@
 
 (defn write-interpretation
   [interpretation]
-  (select-keys interpretation [:elements :list-links :entities :keys :values]))
+  (-> interpretation
+      (select-keys [:elements :list-links :entities :keys :values])
+      (update :elements vec)))
 
 (defn write-state
   [state]
-  {:log (:log state)})
+  {:log (-> state :log vec)})
 
 (defn write-ref
   [r]

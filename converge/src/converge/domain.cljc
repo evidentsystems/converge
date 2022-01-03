@@ -14,6 +14,7 @@
 (ns converge.domain
   "Datatypes and functions implementing a serializable, Atom-like
   convergent reference type."
+  #?(:cljs (:refer-clojure :exclude [uuid]))
   (:require [clojure.data.avl :as avl]
             [clojure.string :as string]
             [editscript.edit :as edit]
@@ -262,6 +263,11 @@
 ;;;; State
 
 (defrecord ConvergentState [log cache value ^boolean dirty?])
+
+(defn make-state
+  [{:keys [log] :as state}]
+  (map->ConvergentState
+   (assoc state :log (into (avl/sorted-map) log))))
 
 ;;;; Clock
 

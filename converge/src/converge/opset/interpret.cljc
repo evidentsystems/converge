@@ -17,8 +17,7 @@
   (:require [clojure.data.avl :as avl]
             [converge.opset.ops :as ops]
             [converge.domain :as domain])
-  (:import [clojure.data.avl AVLSet]
-           #?(:clj [converge.domain Id])))
+  #?(:clj (:import [converge.domain Id])))
 
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
@@ -69,9 +68,7 @@
   (assert (map? entities))
   (assert (map? keys))
   (assert (map? values))
-  (let [elements* (if (instance? AVLSet elements)
-                    elements
-                    (into (avl/sorted-set) elements))]
+  (let [elements* (into (avl/sorted-set) elements)]
     (->Interpretation
      elements*
      list-links
