@@ -81,7 +81,7 @@
    :cljs (deftest ref-roundtrip
            (doseq [backend convergent/backends]
              (testing (str "Transit ref roundtrip with backend: " backend)
-               (let [cr (convergent/ref v :backend backend)
+               (let [cr (convergent/ref a :backend backend)
                      rt (read-str (write-str cr))]
                  (= a @cr @rt))))))
 
