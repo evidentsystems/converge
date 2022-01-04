@@ -6,11 +6,12 @@
             converge.nippy
             [converge.api :as convergent]
             [converge.domain :as domain])
-  (:import [java.security MessageDigest]))
+  (:import [java.io File]
+           [java.security MessageDigest]))
 
 ;; TODO: validate filename hash against content?
 (defn read-file
-  [^java.io.File file]
+  [^File file]
   (when (.isFile file)
     (try
       (nippy/thaw-from-file file)
@@ -19,9 +20,9 @@
           (println (.getLocalizedMessage e)))
         nil))))
 
-(defn ^java.io.File root-file
-  [^java.io.File dir]
-  (some (fn [^java.io.File f]
+(defn ^File root-file
+  [^File dir]
+  (some (fn [^File f]
           (and (string/ends-with? (.getName f) ".root.converge")
                f))
         (file-seq dir)))
@@ -38,7 +39,7 @@
                (uuid? id)
                (seq root-ops))
       (convergent/ref-from-ops
-       (reduce (fn [agg file]
+       (reduce (fn [agg ^File file]
                  (if (.isFile file)
                    (let [{:keys [source ops]}
                          (read-file file)]
@@ -80,7 +81,7 @@
         file (io/file dirname (str (file-hash ba) (when root? ".root") ".converge"))]
     (.mkdirs (io/file dirname))
     (with-open [output-stream (io/output-stream file)]
-      (.write output-stream ba))
+      (.write output-stream ^bytes ba))
     (.getName file)))
 
 (comment
