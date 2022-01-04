@@ -21,29 +21,73 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(def read-id
-  domain/map->Id)
+(defn write-id
+  [id]
+  [(:actor id) (:counter id)])
 
-(def read-operation
-  domain/map->Op)
+(defn read-id
+  [[actor counter]]
+  (domain/->Id actor counter))
+
+(defn write-operation
+  [op]
+  [(:action op) (:data op)])
+
+(defn read-operation
+  [[action data]]
+  (domain/->Op action data))
+
+(defn write-patch
+  [patch]
+  {:ops    (:ops patch)
+   :source (:source patch)})
 
 (def read-patch
   domain/map->Patch)
 
+(defn write-clock
+  [clock]
+  {:source (:source clock)
+   :clock  (:clock clock)})
+
 (def read-clock
   domain/map->Clock)
 
-(def read-element
-  interpret/map->Element)
+(defn write-element
+  [element]
+  [(:entity element)
+   (:attribute element)
+   (:value element)
+   (:id element)])
+
+(defn read-element
+  [[entity attribute value id]]
+  (interpret/->Element entity attribute value id))
+
+(defn write-interpretation
+  [interpretation]
+  (into {}
+        (-> interpretation
+            (select-keys [:elements :list-links :entities :keys :values])
+            (update :elements vec))))
 
 (def read-interpretation
   interpret/make-interpretation)
+
+(defn write-state
+  [state]
+  (-> state :log vec))
 
 (defn read-state
   [log]
   (domain/make-state
    {:log    log
     :dirty? true}))
+
+(defn write-ref
+  [r]
+  {:meta  (meta r)
+   :state (domain/-state r)})
 
 (defn read-opset-convergent-ref
   [{:keys [state meta]}]
@@ -64,24 +108,3 @@
    meta
    nil
    nil))
-
-(defn write-patch
-  [patch]
-  {:ops    (:ops patch)
-   :source (:source patch)})
-
-(defn write-interpretation
-  [interpretation]
-  (into {}
-        (-> interpretation
-            (select-keys [:elements :list-links :entities :keys :values])
-            (update :elements vec))))
-
-(defn write-state
-  [state]
-  (-> state :log vec))
-
-(defn write-ref
-  [r]
-  {:meta  (meta r)
-   :state (domain/-state r)})
