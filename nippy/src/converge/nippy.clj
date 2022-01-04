@@ -1,52 +1,39 @@
 (ns converge.nippy
   (:require [converge.serialize :as serialize]
             [taoensso.nippy :as nippy])
-  (:import [converge.domain ConvergentState]
+  (:import [converge.domain Id Op Patch Clock ConvergentState]
            [converge.editscript.ref EditscriptConvergentRef]
-           [converge.opset.interpret Interpretation]
+           [converge.opset.interpret Element Interpretation]
            [converge.opset.ref OpsetConvergentRef]))
 
 (set! *warn-on-reflection* true)
 
-(nippy/extend-freeze
- ConvergentState :converge/state
- [x out]
- (nippy/freeze-to-out! out (serialize/write-state x)))
+(defmacro extend-nippy
+  [handler-data]
+  (let [extentions
+        (for [[t s write-fn read-fn] handler-data]
+          `(do
+             (nippy/extend-freeze
+                 ~t ~s
+                 [x# out#]
+                 (nippy/freeze-to-out! out# (~write-fn x#)))
 
-(nippy/extend-thaw
- :converge/state
- [in]
- (serialize/read-state (nippy/thaw-from-in! in)))
+             (nippy/extend-thaw
+              ~s
+              [in#]
+              (~read-fn (nippy/thaw-from-in! in#)))))]
+    `(do ~@extentions)))
 
-(nippy/extend-freeze
- Interpretation :opset/interpretation
- [x out]
- (nippy/freeze-to-out! out (serialize/write-interpretation x)))
-
-(nippy/extend-thaw
- :opset/interpretation
- [in]
- (serialize/read-interpretation (nippy/thaw-from-in! in)))
-
-(nippy/extend-freeze
- OpsetConvergentRef :opset/ref
- [x out]
- (nippy/freeze-to-out! out (serialize/write-ref x)))
-
-(nippy/extend-thaw
- :opset/ref
- [in]
- (serialize/read-opset-convergent-ref (nippy/thaw-from-in! in)))
-
-(nippy/extend-freeze
- EditscriptConvergentRef :editscript/ref
- [x out]
- (nippy/freeze-to-out! out (serialize/write-ref x)))
-
-(nippy/extend-thaw
- :editscript/ref
- [in]
- (serialize/read-editscript-convergent-ref (nippy/thaw-from-in! in)))
+(extend-nippy
+ [[Id :converge/id serialize/write-id serialize/read-id]
+  [Op :converge/op serialize/write-operation serialize/read-operation]
+  [Patch :converge/patch serialize/write-patch serialize/read-patch]
+  [Clock :converge/clock serialize/write-clock serialize/read-clock]
+  [ConvergentState :converge/state serialize/write-state serialize/read-state]
+  [Element :opset/element serialize/write-element serialize/read-element]
+  [Interpretation :opset/interpretation serialize/write-interpretation serialize/read-interpretation]
+  [OpsetConvergentRef :opset/ref serialize/write-ref serialize/read-opset-convergent-ref]
+  [EditscriptConvergentRef :editscript/ref serialize/write-ref serialize/read-editscript-convergent-ref]])
 
 (comment
 
