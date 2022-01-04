@@ -25,6 +25,9 @@
            [converge.opset.interpret Element Interpretation]
            [converge.opset.ref OpsetConvergentRef])))
 
+#?(:clj  (set! *warn-on-reflection* true)
+   :cljs (set! *warn-on-infer* true))
+
 (defn tagged-map-value
   [rec]
   (transit/tagged-value "map" rec))
