@@ -40,9 +40,9 @@
   interpret/make-interpretation)
 
 (defn read-state
-  [m]
+  [log]
   (domain/make-state
-   {:log    (:log m)
+   {:log    log
     :dirty? true}))
 
 (defn read-opset-convergent-ref
@@ -72,15 +72,16 @@
 
 (defn write-interpretation
   [interpretation]
-  (-> interpretation
-      (select-keys [:elements :list-links :entities :keys :values])
-      (update :elements vec)))
+  (into {}
+        (-> interpretation
+            (select-keys [:elements :list-links :entities :keys :values])
+            (update :elements vec))))
 
 (defn write-state
   [state]
-  {:log (-> state :log vec)})
+  (-> state :log vec))
 
 (defn write-ref
   [r]
-  {:state (domain/-state r)
-   :meta  (meta r)})
+  {:meta  (meta r)
+   :state (domain/-state r)})
