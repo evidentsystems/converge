@@ -53,6 +53,21 @@ The `converge-nippy` module wires up the serialization handlers to
 work with [`nippy`](https://github.com/ptaoussanis/nippy/)
 serialization in Clojure.
 
+## Module: `converge-storage` (path `storage/`)
+
+The `converge-storage` module defines a small API for storing,
+synchronizing, and fetching convergent refs to/from various storage
+systems:
+
+* The local filesystem (also useful with `git` and other VCS) via:
+  * `converge.storage.filesystem/sync-directory`: initializes new
+    convergent reference storage directory or patches an existing one
+    (by adding a new file to the directory) as needed based on the
+    state of the given in-memory convergent ref
+  * `converge.storage.filesystem/from-directory`: creates an in-memory
+    convergent reference from contents of a previously sync'd directory
+* Other storage systems are under consideration
+
 ## Module: `converge-transit` (path `transit/`)
 
 The `converge-transit` module wires up the serialization handlers to
