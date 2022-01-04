@@ -1,4 +1,4 @@
-(ns converge.io
+(ns converge.storage.filesystem
   (:refer-clojure :exclude [read])
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
@@ -76,13 +76,14 @@
           [(domain/->Patch
             (convergent/ref-id source-ref)
             (into {} (convergent/ref-log source-ref)))
-           true])
-        ba   (nippy/freeze patch)
-        file (io/file dirname (str (file-hash ba) (when root? ".root") ".converge"))]
-    (.mkdirs (io/file dirname))
-    (with-open [output-stream (io/output-stream file)]
-      (.write output-stream ^bytes ba))
-    (.getName file)))
+           true])]
+    (when patch
+      (let [ba   (nippy/freeze patch)
+            file (io/file dirname (str (file-hash ba) (when root? ".root") ".converge"))]
+        (.mkdirs (io/file dirname))
+        (with-open [output-stream (io/output-stream file)]
+          (.write output-stream ^bytes ba))
+        (.getName file)))))
 
 (comment
 
