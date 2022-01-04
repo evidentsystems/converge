@@ -24,39 +24,29 @@ default: ci
 
 .PHONY: bootstrap
 bootstrap:
-	-brew install clojure tokei
-	wget "https://github.com/lambdaisland/funnel/releases/download/v0.1.42/funnel.darwin-amd64" -O bin/funnel
-	chmod +x bin/funnel
-
-.PHONY: outdated
-outdated:
-	clojure -M:dev:test:outdated
-
-# Clean
-
-.PHONY: clean
-clean:
-	rm -rf target
-
-# Development Workflow
-
-CLJ_REPL_ALIAS:=
-
-.PHONY: dev
-dev:
-	clojure -M:dev:test${CLJ_REPL_ALIAS}
+	-brew install tokei
 
 # Tests
 
 .PHONY: test
 test:
-	clojure -T:build test :aliases [:clj]
+	$(MAKE) -C nippy test
+	$(MAKE) -C transit test
+	$(MAKE) -C storage test
+	$(MAKE) -C converge test
 
 .PHONY: ci
-ci: test
+ci:
+	$(MAKE) -C nippy ci
+	$(MAKE) -C transit ci
+	$(MAKE) -C storage ci
+	$(MAKE) -C converge ci
 
 # Project info
 
 .PHONY: loc
 loc:
-	tokei dev/ src/ test/ Makefile *.edn
+	$(MAKE) -C converge loc
+	$(MAKE) -C storage loc
+	$(MAKE) -C nippy loc
+	$(MAKE) -C transit loc

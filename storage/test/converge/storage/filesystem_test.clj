@@ -1,1 +1,2 @@
-(ns converge.filesystem-test)
+(ns converge.storage.filesystem-test
+  (:require converge.storage.filesystem))
