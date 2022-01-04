@@ -65,7 +65,7 @@ cljs-dev: node_modules/.yarn-integrity shadow-start
 
 .PHONY: clj-test
 clj-test:
-	clojure -T:build test :aliases [:clj]
+	bin/kaocha unit-clj
 
 .PHONY: cljs-test-harness
 cljs-test-harness: shadow-start
