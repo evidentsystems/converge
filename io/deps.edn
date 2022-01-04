@@ -40,4 +40,4 @@
  :deps
  {org.clojure/clojure {:mvn/version "1.10.3"}
   converge/converge   {:local/root "../converge"}
-  converge/transit    {:local/root "../transit"}}}
+  converge/nippy      {:local/root "../nippy"}}}
