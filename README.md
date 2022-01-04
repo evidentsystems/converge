@@ -8,13 +8,16 @@ https://clojure.org/reference/deps_and_cli#_dependencies
 Both modules can be imported by specifying a :git/url, :sha, and :deps/root in your deps.edn :deps like the following example:
 
 ```
-evidentsystems/converge         {:git/url   "https://github.com/Shearerbeard/converge"
-                                 :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                 :deps/root "./converge"}
+converge/core    {:git/url   "https://github.com/evidentsystems/converge"
+                  :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  :deps/root "./converge"}
 
-evidentsystems/converge-transit {:git/url   "https://github.com/Shearerbeard/converge"
-                                 :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                 :deps/root "./transit"}
+converge/transit {:git/url   "https://github.com/evidentsystems/converge"
+                  :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  :deps/root "./transit"}
+
+;; etc.
+
 ```
 
 ## Main module: `converge` (path `converge/`)
@@ -39,14 +42,22 @@ operations.
 This module also provides two functions for synchronizing convergent
 references: `converge.api/clock` and `converge.api/patch-from-clock`.
 
+Finally, this main module provides the `converge.serialize` namespace,
+which contains generic functions for transforming converge types in
+preparation for serialization/deserialization (used by `transit`,
+`nippy`, etc. modules).
+
+## Module: `converge-nippy` (path `nippy/`)
+
+The `converge-nippy` module wires up the serialization handlers to
+work with [`nippy`](https://github.com/ptaoussanis/nippy/)
+serialization in Clojure.
+
 ## Module: `converge-transit` (path `transit/`)
 
-The main module provides the `converge.serialize` namespace, which
-contains generic functions for transforming converge types in
-preparation for serialization/deserialization.  The `converge-transit`
-module wires these serialization handlers to work with
-[`transit-clj`](https://github.com/cognitect/transit-clj/) and
-[`transit-cljs`](https://github.com/cognitect/transit-cljs/).
+The `converge-transit` module wires up the serialization handlers to
+work with [`transit-clj`](https://github.com/cognitect/transit-clj/)
+and [`transit-cljs`](https://github.com/cognitect/transit-cljs/).
 
 ## More modules to come!
 
