@@ -25,17 +25,15 @@
                  "-XX:+DebugNonSafepoints"]
    :extra-deps
    {org.clojure/tools.namespace              {:mvn/version "1.1.0"}
+    criterium/criterium                      {:mvn/version "0.4.6"}
     com.clojure-goes-fast/clj-async-profiler {:mvn/version "0.5.1"}}}
 
   :test
   {:extra-paths ["test"]
    :extra-deps
-   {lambdaisland/kaocha        {:mvn/version "1.60.945"}
-    lambdaisland/kaocha-cljs2  {:mvn/version "0.0.35"}
-    criterium/criterium        {:mvn/version "0.4.6"}
-    org.clojure/test.check     {:mvn/version "1.1.0"}
-    com.cognitect/transit-clj  {:mvn/version "1.0.324"}
-    com.cognitect/transit-cljs {:mvn/version "0.8.269"}}}}
+   {lambdaisland/kaocha       {:mvn/version "1.60.945"}
+    lambdaisland/kaocha-cljs2 {:mvn/version "0.0.35"}
+    org.clojure/test.check    {:mvn/version "1.1.0"}}}}
 
  :deps
  {org.clojure/clojure  {:mvn/version "1.10.3"}

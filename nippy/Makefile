@@ -30,7 +30,7 @@ bootstrap:
 
 .PHONY: outdated
 outdated:
-	clojure -M:cljs:dev:test:outdated
+	clojure -M:dev:test:outdated
 
 # Clean
 
@@ -42,60 +42,21 @@ clean:
 
 CLJ_REPL_ALIAS:=
 
-.PHONY: clj-dev
-clj-dev:
+.PHONY: dev
+dev:
 	clojure -M:dev:test${CLJ_REPL_ALIAS}
-
-node_modules/.yarn-integrity: yarn.lock package.json
-	yarn install
-
-.PHONY: shadow-start
-shadow-start:
-	yarn shadow-cljs -A:dev:test start
-
-.PHONY: shadow-stop
-shadow-stop:
-	yarn shadow-cljs -A:dev:test stop
-
-.PHONY: cljs-dev
-cljs-dev: node_modules/.yarn-integrity shadow-start
-	yarn shadow-cljs -A:dev:test watch lib
 
 # Tests
 
-.PHONY: clj-test
-clj-test: clean
-	bin/kaocha unit-clj
-
-.PHONY: cljs-test-harness
-cljs-test-harness: shadow-start
-	bin/funnel
-
-.PHONY: cljs-test
-cljs-test: clean
-	yarn shadow-cljs -A:test release test
-#	open "http://localhost:8008"
-	bin/kaocha unit-cljs
-
 .PHONY: test
-test: clj-test cljs-test
-
-.PHONY: cljs-ci
-cljs-ci: clean
-	yarn shadow-cljs -A:test compile ci
-	yarn karma start --single-run
+test:
+	clojure -T:build test :aliases [:clj]
 
 .PHONY: ci
-ci: clj-test cljs-ci
-
-target/dist/js/converge.js: deps.edn shadow-cljs.edn node_modules/.yarn-integrity src/
-	yarn shadow-cljs -A:test release lib
-
-.PHONY: build
-build: target/dist/js/converge.js
+ci: test
 
 # Project info
 
 .PHONY: loc
 loc:
-	tokei dev/ resources/ src/ test/ Makefile *.edn
+	tokei dev/ src/ test/ Makefile *.edn

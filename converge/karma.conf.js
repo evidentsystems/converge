@@ -11,9 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+const puppeteer = require('puppeteer');
+process.env.CHROME_BIN = puppeteer.executablePath();
+
 module.exports = function (config) {
     config.set({
         browsers: ['ChromeHeadless'],
+        pingTimeout: 60000,
+        browserNoActivityTimeout: 60000,
         // The directory where the output file lives
         basePath: 'target/ci/js',
         // The file itself

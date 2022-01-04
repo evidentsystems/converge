@@ -8,13 +8,16 @@ https://clojure.org/reference/deps_and_cli#_dependencies
 Both modules can be imported by specifying a :git/url, :sha, and :deps/root in your deps.edn :deps like the following example:
 
 ```
-evidentsystems/converge         {:git/url   "https://github.com/Shearerbeard/converge"
-                                 :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                 :deps/root "./converge"}
+converge/core    {:git/url   "https://github.com/evidentsystems/converge"
+                  :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  :deps/root "./converge"}
 
-evidentsystems/converge-transit {:git/url   "https://github.com/Shearerbeard/converge"
-                                 :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                 :deps/root "./transit"}
+converge/transit {:git/url   "https://github.com/evidentsystems/converge"
+                  :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  :deps/root "./transit"}
+
+;; etc.
+
 ```
 
 ## Main module: `converge` (path `converge/`)
@@ -39,14 +42,37 @@ operations.
 This module also provides two functions for synchronizing convergent
 references: `converge.api/clock` and `converge.api/patch-from-clock`.
 
+Finally, this main module provides the `converge.serialize` namespace,
+which contains generic functions for transforming converge types in
+preparation for serialization/deserialization (used by `transit`,
+`nippy`, etc. modules).
+
+## Module: `converge-nippy` (path `nippy/`)
+
+The `converge-nippy` module wires up the serialization handlers to
+work with [`nippy`](https://github.com/ptaoussanis/nippy/)
+serialization in Clojure.
+
+## Module: `converge-storage` (path `storage/`)
+
+The `converge-storage` module defines a small API for storing,
+synchronizing, and fetching convergent refs to/from various storage
+systems:
+
+* The local filesystem (also useful with `git` and other VCS) via:
+  * `converge.storage.filesystem/sync-directory`: initializes new
+    convergent reference storage directory or patches an existing one
+    (by adding a new file to the directory) as needed based on the
+    state of the given in-memory convergent ref
+  * `converge.storage.filesystem/from-directory`: creates an in-memory
+    convergent reference from contents of a previously sync'd directory
+* Other storage systems are under consideration
+
 ## Module: `converge-transit` (path `transit/`)
 
-The main module provides the `converge.serialize` namespace, which
-contains generic functions for transforming converge types in
-preparation for serialization/deserialization.  The `converge-transit`
-module wires these serialization handlers to work with
-[`transit-clj`](https://github.com/cognitect/transit-clj/) and
-[`transit-cljs`](https://github.com/cognitect/transit-cljs/).
+The `converge-transit` module wires up the serialization handlers to
+work with [`transit-clj`](https://github.com/cognitect/transit-clj/)
+and [`transit-cljs`](https://github.com/cognitect/transit-cljs/).
 
 ## More modules to come!
 
