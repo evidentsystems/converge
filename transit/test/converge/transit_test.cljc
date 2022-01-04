@@ -62,26 +62,46 @@
        (let [in (ByteArrayInputStream. (.getBytes s "utf-8"))]
          (t/read (reader in))))))
 
-(defspec ref-roundtrip 100
-  (prop/for-all
-   [v (gen/one-of [(gen/container-type gen/any-equatable)
-                   gen/any-equatable])
-    backend (spec/gen convergent/backends)]
-   (let [cr (convergent/ref v :backend backend)
-         rt (read-str (write-str cr))]
-     (= v @cr @rt))))
+#?(:cljs (def a {:empty-m {}
+                 :empty-l []
+                 :a       :key
+                 :another {:nested {:key [1 2 3]}}
+                 :a-list  [:foo "bar" 'baz {:nested :inalist}]
+                 :a-set   #{1 2 3 4 5}}))
 
-(defspec interpretation-roundtrip 100
-  (prop/for-all
-   [v (gen/one-of [(gen/container-type gen/any-equatable)
-                   gen/any-equatable])
-    backend (spec/gen convergent/backends)]
-   (let [cr (convergent/ref v :backend backend)
-         i  (interpret/interpret (convergent/ref-log cr))
-         rt (read-str (write-str i))]
-     (when-not (= i rt)
-       (prn :i i :rt rt))
-     (= i rt))))
+;; TODO: CLJS test failing due to https://github.com/cognitect/transit-js/issues/36
+#?(:clj  (defspec ref-roundtrip 100
+           (prop/for-all
+            [v (gen/one-of [(gen/container-type gen/any-equatable)
+                            gen/any-equatable])
+             backend (spec/gen convergent/backends)]
+            (let [cr (convergent/ref v :backend backend)
+                  rt (read-str (write-str cr))]
+              (= v @cr @rt))))
+   :cljs (deftest ref-roundtrip
+           (doseq [backend convergent/backends]
+             (testing (str "Transit ref roundtrip with backend: " backend)
+               (let [cr (convergent/ref v :backend backend)
+                     rt (read-str (write-str cr))]
+                 (= a @cr @rt))))))
+
+;; TODO: CLJS test failing due to https://github.com/cognitect/transit-js/issues/36
+#?(:clj  (defspec interpretation-roundtrip 100
+           (prop/for-all
+            [v (gen/one-of [(gen/container-type gen/any-equatable)
+                            gen/any-equatable])
+             backend (spec/gen convergent/backends)]
+            (let [cr (convergent/ref v :backend backend)
+                  i  (interpret/interpret (convergent/ref-log cr))
+                  rt (read-str (write-str i))]
+              (= i rt))))
+   :cljs (deftest interpretation-roundtrip
+           (doseq [backend convergent/backends]
+             (testing (str "Transit interpretation roundtrip with backend: " backend)
+               (let [cr (convergent/ref a :backend backend)
+                     i  (interpret/interpret (convergent/ref-log cr))
+                     rt (read-str (write-str i))]
+                 (= i rt))))))
 
 (defspec patch-roundtrip 100
   (prop/for-all
