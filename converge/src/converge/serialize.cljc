@@ -39,7 +39,7 @@
 
 (defn write-patch
   [patch]
-  {:ops    (:ops patch)
+  {:ops    (into {} (:ops patch))
    :source (:source patch)})
 
 (def read-patch

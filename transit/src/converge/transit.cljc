@@ -28,10 +28,6 @@
 #?(:clj  (set! *warn-on-reflection* true)
    :cljs (set! *warn-on-infer* true))
 
-(defn tagged-map-value
-  [rec]
-  (transit/tagged-value "map" rec))
-
 (def read-handlers
   {"c/i"                  (transit/read-handler serialize/read-id)
    "c/o"                  (transit/read-handler serialize/read-operation)
