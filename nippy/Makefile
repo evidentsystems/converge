@@ -25,8 +25,6 @@ default: ci
 .PHONY: bootstrap
 bootstrap:
 	-brew install clojure tokei
-	wget "https://github.com/lambdaisland/funnel/releases/download/v0.1.42/funnel.darwin-amd64" -O bin/funnel
-	chmod +x bin/funnel
 
 .PHONY: outdated
 outdated:
