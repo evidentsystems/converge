@@ -14,8 +14,7 @@
 (ns converge.opset-test
   (:require #?(:clj  [clojure.test :refer [deftest is testing]]
                :cljs [cljs.test :refer-macros [deftest is testing]])
-            [converge.api :as convergent]
-            [converge.opset.interpret :as interpret]))
+            [converge.api :as convergent]))
 
 (deftest editscript-addition-ops
   (testing "Add to map"

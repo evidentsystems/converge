@@ -17,19 +17,37 @@
  :dev-http {8000 ["dev/public" "target"]}
 
  :builds
- {:lib  {:target     :browser
-         :output-dir "target/dist/js"
-         :asset-path "/dist/js"
-         :modules    {:converge {:entries [converge.api]}}
-         :dev        {:closure-defines {"goog.DEBUG" true}}
-         :devtools   {:open-file-command
-                      ["emacsclient" "-n" ["+%s:%s" :line :column] :file]}}
-  :test {:target    :browser-test
-         :runner-ns kaocha.cljs2.shadow-runner
-         :test-dir  "target/test/js"
-         :ns-regexp ".*-test$"
-         :devtools  {:http-port 8008
-                     :http-root "target/test/js"
-                     :preloads  [lambdaisland.chui.remote]}}
-  :ci   {:target    :karma
-         :output-to "target/ci/js/ci.js"}}}
+ {:lib   {:target     :browser
+          :output-dir "target/dist/js"
+          :asset-path "/dist/js"
+          :modules    {:converge {:entries [converge.api]}}
+          :dev        {:closure-defines {"goog.DEBUG" true}}
+          :devtools   {:open-file-command
+                       ["emacsclient" "-n" ["+%s:%s" :line :column] :file]}}
+  :test  {:target    :browser-test
+          :runner-ns kaocha.cljs2.shadow-runner
+          :test-dir  "target/test/js"
+          :ns-regexp ".*-test$"
+          :devtools  {:http-port 8008
+                      :http-root "target/test/js"
+                      :preloads  [lambdaisland.chui.remote]}}
+  :ci    {:target    :karma
+          :output-to "target/ci/js/ci.js"}
+  :bench {:target    :node-script
+          :main      converge.bench/-main
+          :output-to "target/bench/js/bench.js"
+          :exports   {:ref              converge.api/ref
+                      :ref_from_ops     converge.api/ref-from-ops
+                      :is_convergent    converge.api/convergent?
+                      :ref_actor        converge.api/ref-actor
+                      :set_actor        converge.api/set-actor!
+                      :ref_log          converge.api/ref-log
+                      :ref_id           converge.api/ref-id
+                      :ref_creator      converge.api/ref-creator
+                      :ref_backend      converge.api/ref-backend
+                      :merge            converge.api/merge!
+                      :squash           converge.api/squash!
+                      :peek_patches     converge.api/peek-patches
+                      :pop_patches      converge.api/pop-patches!
+                      :clock            converge.api/clock
+                      :patch_from_clock converge.api/patch-from-clock}}}}

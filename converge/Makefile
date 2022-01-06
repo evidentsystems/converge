@@ -59,7 +59,7 @@ shadow-stop:
 
 .PHONY: cljs-dev
 cljs-dev: node_modules/.yarn-integrity shadow-start
-	yarn shadow-cljs -A:dev:test watch lib
+	yarn shadow-cljs -A:dev:test${CLJ_REPL_ALIAS} watch lib
 
 # Tests
 
@@ -88,8 +88,24 @@ cljs-ci: clean
 .PHONY: ci
 ci: clj-test cljs-ci
 
+BENCH_EDN_FILE:=../big-tree.edn
+
+.PHONY: clj-bench
+clj-bench:
+	clojure -M:bench -m converge.bench $(BENCH_EDN_FILE)
+
+target/bench/js/bench.js: deps.edn shadow-cljs.edn node_modules/.yarn-integrity src/
+	yarn shadow-cljs -A:bench release bench
+
+.PHONY: cljs-bench
+cljs-bench: target/bench/js/bench.js
+	node target/bench/js/bench.js $(BENCH_EDN_FILE)
+
+.PHONY: bench
+bench: clj-bench cljs-bench
+
 target/dist/js/converge.js: deps.edn shadow-cljs.edn node_modules/.yarn-integrity src/
-	yarn shadow-cljs -A:test release lib
+	yarn shadow-cljs release lib
 
 .PHONY: build
 build: target/dist/js/converge.js

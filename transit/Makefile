@@ -59,7 +59,7 @@ shadow-stop:
 
 .PHONY: cljs-dev
 cljs-dev: node_modules/.yarn-integrity shadow-start
-	yarn shadow-cljs -A:cljs:dev:test watch lib
+	yarn shadow-cljs -A:cljs:dev:test${CLJ_REPL_ALIAS} watch lib
 
 # Tests
 
