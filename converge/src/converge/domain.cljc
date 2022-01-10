@@ -18,8 +18,7 @@
   (:require [clojure.data.avl :as avl]
             [clojure.string :as string]
             [editscript.edit :as edit]
-            #?(:clj  [clj-uuid :as uuid]
-               :cljs [uuid :as uuid]))
+            #?(:cljs [uuid :as uuid]))
   #?(:clj (:import java.util.UUID)))
 
 #?(:clj  (set! *warn-on-reflection* true)
@@ -29,7 +28,7 @@
 
 (defn uuid
   ([]
-   #?(:clj  (uuid/v4)
+   #?(:clj  (UUID/randomUUID)
       :cljs (random-uuid)))
   ([uuid-str]
    (cond

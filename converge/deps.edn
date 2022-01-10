@@ -11,7 +11,12 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
-{:paths ["src" "resources"]
+{:paths ["src"]
+ :deps
+ {org.clojure/clojure  {:mvn/version "1.10.3"}
+  org.clojure/data.avl {:mvn/version "0.1.0"}
+  juji/editscript      {:mvn/version "0.5.7"}}
+
  :aliases
  {:cljs
   {:extra-deps
@@ -38,10 +43,4 @@
   :bench
   {:extra-paths ["bench"]
    :extra-deps
-   {criterium/criterium {:mvn/version "0.4.6"}}}}
-
- :deps
- {org.clojure/clojure  {:mvn/version "1.10.3"}
-  org.clojure/data.avl {:mvn/version "0.1.0"}
-  juji/editscript      {:mvn/version "0.5.7"}
-  danlentz/clj-uuid    {:mvn/version "0.1.9"}}}
+   {criterium/criterium {:mvn/version "0.4.6"}}}}}
