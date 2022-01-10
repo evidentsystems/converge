@@ -26,10 +26,6 @@ default: ci
 bootstrap:
 	-brew install clojure tokei
 
-.PHONY: outdated
-outdated:
-	clojure -M:dev:test:outdated
-
 # Clean
 
 .PHONY: clean
@@ -42,16 +38,17 @@ CLJ_REPL_ALIAS:=
 
 .PHONY: dev
 dev:
-	clojure -M:dev:test${CLJ_REPL_ALIAS}
+	clojure -M:local:dev${CLJ_REPL_ALIAS}
 
 # Tests
 
 .PHONY: test
 test:
-	clojure -T:build test :aliases [:clj]
+	clojure -T:local:build test :aliases [:clj]
 
 .PHONY: ci
-ci: test
+ci:
+	clojure -T:build test :aliases [:clj]
 
 # Project info
 

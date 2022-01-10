@@ -1,4 +1,4 @@
-;; Copyright 2020 Evident Systems LLC
+
 
 ;; Licensed under the Apache License, Version 2.0 (the "License");
 ;; you may not use this file except in compliance with the License.
@@ -16,17 +16,12 @@
             [clojure.pprint :refer [pprint]]
             [clojure.spec.test.alpha :as stest]
             [clojure.tools.namespace.repl :refer [refresh refresh-all set-refresh-dirs]]
-            [kaocha.repl :as kaocha]
             [criterium.core :as criterium]
             [clj-async-profiler.core :as profiler]))
 
 (set! *warn-on-reflection* true)
 
 (ns-unmap *ns* 'test)
-
-(defn test []
-  (refresh)
-  (kaocha/run :unit-clj {:config-file "test/tests.edn"}))
 
 (defn instrument
   []

@@ -42,11 +42,20 @@ ci:
 	$(MAKE) -C storage ci
 	$(MAKE) -C converge ci
 
+# Build
+
+.PHONY: clean
+clean:
+	$(MAKE) -C nippy clean
+	$(MAKE) -C transit clean
+	$(MAKE) -C storage clean
+	$(MAKE) -C converge clean
+
 # Project info
 
 .PHONY: loc
 loc:
-	$(MAKE) -C converge loc
-	$(MAKE) -C storage loc
 	$(MAKE) -C nippy loc
 	$(MAKE) -C transit loc
+	$(MAKE) -C storage loc
+	$(MAKE) -C converge loc

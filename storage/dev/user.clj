@@ -16,17 +16,12 @@
             [clojure.pprint :refer [pprint]]
             [clojure.spec.test.alpha :as stest]
             [clojure.tools.namespace.repl :refer [refresh refresh-all set-refresh-dirs]]
-            [kaocha.repl :as kaocha]
             [criterium.core :as criterium]
             [clj-async-profiler.core :as profiler]))
 
 (set! *warn-on-reflection* true)
 
 (ns-unmap *ns* 'test)
-
-(defn test []
-  (refresh)
-  (kaocha/run :unit-clj {:config-file "test/tests.edn"}))
 
 (defn instrument
   []
