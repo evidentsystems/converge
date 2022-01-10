@@ -12,8 +12,7 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 {:paths ["src"]
- :deps  {org.clojure/clojure {:mvn/version "1.10.3"}
-         converge/converge   {:local/root "../converge"}}
+ :deps  {converge/converge {:local/root "../converge"}}
  :aliases
  {:dev
   {:extra-paths ["dev"]

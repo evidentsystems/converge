@@ -12,9 +12,8 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 {:paths ["src"]
- :deps  {org.clojure/clojure {:mvn/version "1.10.3"}
-         com.taoensso/nippy  {:mvn/version "3.1.1"}
-         converge/converge   {:local/root "../converge"}}
+ :deps  {com.taoensso/nippy {:mvn/version "3.1.1"}
+         converge/converge  {:local/root "../converge"}}
 
  :aliases
  {:dev
