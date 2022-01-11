@@ -12,11 +12,18 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 {:paths ["src"]
- :deps  {org.clojure/clojure {:mvn/version "1.10.3"}
-         converge/converge   {:local/root "../converge"}
-         converge/nippy      {:local/root "../nippy"}}
+ :deps  {converge/nippy    {:git/url   "https://github.com/evidentsystems/converge.git"
+                            :git/sha   "2c18eae54322555c8db58b129c1b1f2995635de1"
+                            :deps/root "./nippy"}
+         converge/converge {:git/url   "https://github.com/evidentsystems/converge.git"
+                            :git/sha   "2c18eae54322555c8db58b129c1b1f2995635de1"
+                            :deps/root "./converge"}}
  :aliases
- {:dev
+ {:local
+  {:override-deps {converge/nippy    {:local/root "../nippy"}
+                   converge/converge {:local/root "../converge"}}}
+
+  :dev
   {:extra-paths ["dev"]
    ;; cf. https://github.com/clojure-goes-fast/clj-async-profiler#jvm-options
    :jvm-opts    ["-Djdk.attach.allowAttachSelf"
@@ -29,9 +36,10 @@
 
   :test
   {:extra-paths ["test"]
-   :extra-deps  {org.clojure/test.check {:mvn/version "1.1.0"}
-                 io.github.cognitect-labs/test-runner
-                 {:git/tag "v0.5.0" :git/sha "48c3c67"}}}
+   :extra-deps
+   {org.clojure/test.check {:mvn/version "1.1.0"}
+    io.github.cognitect-labs/test-runner
+    {:git/tag "v0.5.0" :git/sha "48c3c67"}}}
 
   :build
   {:deps       {io.github.seancorfield/build-clj

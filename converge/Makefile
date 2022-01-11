@@ -25,8 +25,6 @@ default: ci
 .PHONY: bootstrap
 bootstrap:
 	-brew install clojure tokei
-	wget "https://github.com/lambdaisland/funnel/releases/download/v0.1.42/funnel.darwin-amd64" -O bin/funnel
-	chmod +x bin/funnel
 
 .PHONY: outdated
 outdated:
@@ -65,28 +63,24 @@ cljs-dev: node_modules/.yarn-integrity shadow-start
 
 .PHONY: clj-test
 clj-test: clean
-	bin/kaocha unit-clj
-
-.PHONY: cljs-test-harness
-cljs-test-harness: shadow-start
-	bin/funnel
+	clojure -T:build test :aliases [:clj]
 
 .PHONY: cljs-test
 cljs-test: clean
-	yarn shadow-cljs -A:test release test
-#	open "http://localhost:8008"
-	bin/kaocha unit-cljs
+	yarn shadow-cljs -A:test compile ci
+	yarn karma start --single-run
 
 .PHONY: test
 test: clj-test cljs-test
 
+.PHONY: clj-ci
+clj-ci: clj-test
+
 .PHONY: cljs-ci
-cljs-ci: clean
-	yarn shadow-cljs -A:test compile ci
-	yarn karma start --single-run
+cljs-ci: cljs-test
 
 .PHONY: ci
-ci: clj-test cljs-ci
+ci: clj-ci cljs-ci
 
 BENCH_EDN_FILE:=../big-tree.edn
 
