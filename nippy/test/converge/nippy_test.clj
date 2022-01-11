@@ -70,16 +70,16 @@
   ;; Benchmark
   (require '[criterium.core :as criterium])
 
-  (def r (convergent/ref a))
-
-  (criterium/bench (read-str (write-str r)))
-
   (require '[clojure.edn :as edn]
            '[clojure.java.io :as io])
 
   (def value
-    (with-open [pbr (java.io.PushbackReader. (io/reader (io/file "big-tree.edn")))]
+    (with-open [pbr (java.io.PushbackReader. (io/reader (io/file "../big-tree.edn")))]
       (edn/read pbr)))
+
+  (def r (convergent/ref value))
+
+  (criterium/bench (nippy/thaw (nippy/freeze r)))
 
   (with-open [os (io/output-stream (io/file "big-tree.transit.json"))]
     (t/write (t/writer os :json {:handlers converge-transit/write-handlers})
@@ -99,7 +99,7 @@
     (t/write (t/writer os :msgpack {:handlers converge-transit/write-handlers})
              r))
 
-  (.length (io/file "big-tree.edn"))
+  (.length (io/file "../big-tree.edn"))
 
   (.length (io/file "big-tree.transit.json"))
   (.length (io/file "big-tree-convergent-ref.transit.json"))
