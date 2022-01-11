@@ -13,7 +13,7 @@
 ;; limitations under the License.
 {:paths ["src"]
  :deps  {converge/converge {:git/url   "https://github.com/evidentsystems/converge.git"
-                            :sha       "63a44e4f6e5fd8e2a32f6ba16c54cd8c47776495"
+                            :sha       "69912399a6e67083ac901bce648bd2dbd653f4d0"
                             :deps/root "./converge"}}
  :aliases
  {:local
