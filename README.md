@@ -8,13 +8,13 @@ https://clojure.org/reference/deps_and_cli#_dependencies
 Both modules can be imported by specifying a :git/url, :sha, and :deps/root in your deps.edn :deps like the following example:
 
 ```
-converge/core    {:git/url   "https://github.com/evidentsystems/converge"
-                  :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  :deps/root "./converge"}
+converge/converge {:git/url   "https://github.com/evidentsystems/converge"
+                   :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                   :deps/root "./converge"}
 
-converge/transit {:git/url   "https://github.com/evidentsystems/converge"
-                  :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  :deps/root "./transit"}
+converge/transit  {:git/url   "https://github.com/evidentsystems/converge"
+                   :sha       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                   :deps/root "./transit"}
 
 ;; etc.
 
