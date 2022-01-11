@@ -13,7 +13,7 @@
 ;; limitations under the License.
 {:paths ["src"]
  :deps  {converge/nippy    {:git/url   "https://github.com/evidentsystems/converge.git"
-                            :sha       "69912399a6e67083ac901bce648bd2dbd653f4d0"
+                            :sha       "12479029d20c091a8262a2195831bcff73616eab"
                             :deps/root "./nippy"}
          converge/converge {:git/url   "https://github.com/evidentsystems/converge.git"
                             :sha       "69912399a6e67083ac901bce648bd2dbd653f4d0"
