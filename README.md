@@ -93,8 +93,7 @@ directories) in a Git repository.
 
 ## Status
 
-> :warning: Converge is pre-alpha quality software. Its API and implementation are
-changing rapidly. Use at your own risk!
+> :warning: Converge is beta quality software. Its API and implementation may change. Use at your own risk!
 
 Evident Systems is using Converge in [oNote](https://onote.com) to
 support real-time and async/repository-based collaboration.
