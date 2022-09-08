@@ -9,39 +9,44 @@ import kotlin.random.Random
 @JvmInline
 value class Actor private constructor(val value: Long) {
     companion object {
+        val MIN = of(0)
+        val MAX = of(Long.MAX_VALUE)
+
         fun of(value: Long) = if (value >= 0) {
             Actor(value)
         } else {
             throw IllegalArgumentException("Actor value must be >= 0, but was $value")
         }
 
-        fun lowest() = Actor.of(0)
-        fun highest() = Actor.of(Long.MAX_VALUE)
-
         fun random() =
-            Actor.of(Random.nextLong())
+            of(Random.nextLong())
     }
 }
 
 @JvmInline
 value class Counter private constructor(val value: Long) {
-    fun next() = Counter.of(value + 1)
+    fun next() = of(value + 1)
 
     companion object {
+        val MIN = of(0)
+        val MAX = of(Long.MAX_VALUE)
+
         fun of(value: Long) = if (value >= 0) {
             Counter(value)
         } else {
             throw IllegalArgumentException("Counter value must be >= 0, but was $value")
         }
 
-        fun lowest() = Counter.of(0)
-        fun highest() = Counter.of(Long.MAX_VALUE)
-
-        fun next(value: Long) = Counter.of(value).next()
+        fun next(value: Long) = of(value).next()
     }
 }
 
-data class Id(val counter: Counter, val actor: Actor)
+data class Id(val counter: Counter, val actor: Actor) {
+    companion object {
+        val MIN = Id(Counter.MIN, Actor.MIN)
+        val MAX = Id(Counter.MAX, Actor.MAX)
+    }
+}
 
 sealed class Op {
     data class Root(val id: Uuid, val creator: Actor): Op()
@@ -69,6 +74,24 @@ expect class TreeMap<K, V>(): SortedMap<K, V> {
     constructor(m: SortedMap<K, V>)
 }
 
+private fun isAncestor(
+    parents: Map<Id, Id>,
+    entity: Id,
+    possibleAncestor: Id
+): Boolean {
+    var i = entity
+    var parent = parents[i]
+    while(parent != null) {
+        if (parent == possibleAncestor) {
+            return true
+        } else {
+            i = parent
+            parent = parents[i]
+        }
+    }
+    return false
+}
+
 class OpSet {
     private val ops: SortedMap<Id, Op>
 
@@ -77,7 +100,7 @@ class OpSet {
         id: Uuid = uuid4(),
     ) {
         ops = TreeMap()
-        ops[Id(Counter.lowest(), Actor.lowest())] = Op.Root(id, creator)
+        this[Id.MIN] = Op.Root(id, creator)
     }
     constructor(ops: SortedMap<Id, Op>) {
         this.ops = TreeMap(ops)
@@ -101,7 +124,60 @@ class OpSet {
     }
 
     @Synchronized
-    fun interpret(): Interpretation = TODO()
+    fun interpret(startingInterpretation: Interpretation?): Interpretation {
+        val elements = TreeSet<Element>()
+        val listLinks = mutableMapOf<ListLink, ListLink>()
+        val parents = mutableMapOf<Id, Id>()
+        val entities = mutableMapOf<Id, Op>()
+        val keys = mutableMapOf<Id, Op>()
+        val keyCache = mutableMapOf<Any, Id>()
+        val values = mutableMapOf<Id, Op>()
+        for ((id, op) in ops) {
+            when(op) {
+                is Op.Root -> {}
+                is Op.MakeMap, is Op.MakeSet, is Op.MakeText -> {
+                    entities[id] = op
+                }
+                is Op.MakeList, is Op.MakeVector -> {
+                    entities[id] = op
+                    listLinks[ListLink.Link(id)] = ListLink.End
+                }
+                is Op.MakeKey -> {
+                    keys[id] = op
+                    keyCache[op.value] = id
+                }
+                is Op.MakeValue -> {
+                    values[id] = op
+                }
+                is Op.Insert -> {
+                    val prev = ListLink.Link(op.id)
+                    listLinks.remove(prev)?.let { next ->
+                        listLinks[prev] = ListLink.Link(id)
+                        listLinks[ListLink.Link(id)] = next
+                    }
+                }
+                is Op.Assign -> {
+                    if (!isAncestor(parents, op.entity, op.value)) {
+                        // Add new element and parent relationship
+                        parents[op.value] = op.entity
+                        elements.add(Element(op.entity, op.attribute, op.value, id))
+                        // Remove elements with matching entity and attribute (from subrange of entity+attribute)
+                        TODO("Remove elements with matching entity and attribute (from subrange of entity+attribute)")
+                        // If value is already in the entities map, remove all elements having this value (from subrange of entity)
+                        TODO("If value is already in the entities map, remove all elements having this value (from subrange of entity)")
+                    }
+                }
+                is Op.Remove -> {
+                    // Remove elements and (parents of the element's value?) with matching entity and attribute (from subrange of entity+attribute)
+                    TODO("Remove elements and (parents of the element's value?) with matching entity and attribute (from subrange of entity+attribute)")
+                }
+            }
+        }
+        return Interpretation(
+            elements, listLinks, parents,
+            entities, keys, keyCache, values
+        )
+    }
 }
 
 data class Element(val e: Id, val a: Id, val v: Id, val t: Id)
@@ -124,6 +200,4 @@ class Interpretation(
     val keys: EntityLookup,
     val keyCache: Map<Any, Id>,
     val values: EntityLookup,
-) {
-
-}
+)
