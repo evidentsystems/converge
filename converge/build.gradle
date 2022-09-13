@@ -1,0 +1,43 @@
+plugins {
+    id("dev.clojurephant.clojure") version ("0.7.0")
+}
+
+group = "converge"
+version = "0.1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'clojars'
+        url = 'https://repo.clojars.org'
+    }
+}
+
+dependencies {
+    implementation("org.clojure:clojure:1.11.1")
+    implementation("org.clojure:data.avl:0.1.0")
+    implementation("juji:editscript:0.5.7")
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+}
+
+sourceSets {
+    main {
+        clojure.srcDirs = ['src']
+        resources.srcDirs = ['resources']
+    }
+}
+
+clojure {
+    builds {
+        main {
+            aotNamespaces.addAll("converge.api", "converge.serialize")
+            reflection = "warn"
+        }
+    }
+}
