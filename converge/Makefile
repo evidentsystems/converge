@@ -101,6 +101,12 @@ bench: clj-bench cljs-bench
 target/dist/js/converge.js: deps.edn shadow-cljs.edn node_modules/.yarn-integrity src/
 	yarn shadow-cljs release lib
 
+target/classes/domain/ConvergentRef.class:
+	clojure -T:build compile
+
+.PHONY: compile-clj
+compile-clj: target/classes/domain/ConvergentRef.class
+
 .PHONY: build
 build: target/dist/js/converge.js
 

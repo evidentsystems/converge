@@ -12,7 +12,7 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 {:paths ["src"]
- :deps  {com.taoensso/nippy {:mvn/version "3.1.1"}
+ :deps  {com.taoensso/nippy {:mvn/version "3.2.0"}
          converge/converge  {:git/url   "https://github.com/evidentsystems/converge.git"
                              :sha       "69912399a6e67083ac901bce648bd2dbd653f4d0"
                              :deps/root "./converge"}}

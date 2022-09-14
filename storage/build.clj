@@ -1,5 +1,5 @@
 (ns build
-  (:refer-clojure :exclude [test])
+  (:refer-clojure :exclude [test compile])
   (:require [clojure.tools.build.api :as b] ; for b/git-count-revs
             [org.corfield.build :as bb]))
 
@@ -15,6 +15,15 @@
       (bb/run-tests)
       (bb/clean)
       (bb/jar)))
+
+(defn compile "Compile Clojure" [opts]
+  (let [opts* (merge
+               opts
+               {:basis     (bb/default-basis (:basis opts))
+                :src-dirs  (or (:basis opts) ["src"])
+                :class-dir (bb/default-class-dir (:class-dir opts))})]
+    (b/compile-clj opts*)
+    opts*))
 
 (defn install "Install the JAR locally." [opts]
   (-> opts

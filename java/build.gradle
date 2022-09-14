@@ -1,0 +1,34 @@
+plugins {
+    id("java")
+}
+
+group = "converge"
+version = "0.1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'clojars'
+        url = 'https://repo.clojars.org'
+    }
+}
+
+dependencies {
+    implementation("org.clojure:clojure:1.11.1")
+    implementation files("../storage/target/classes") {
+        builtBy "compileStorage"
+    }
+    //implementation(project(":storage"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
+}
+
+task compileStorage(type: Exec) {
+    workingDir "../storage/"
+    commandLine "/usr/bin/make", "compile-clj"
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+}

@@ -50,6 +50,14 @@ test:
 ci:
 	clojure -T:build test :aliases [:clj]
 
+# Build
+
+target/classes/domain/ConvergentRef.class:
+	clojure -T:build compile :aliases [:local]
+
+.PHONY: compile-clj
+compile-clj: target/classes/domain/ConvergentRef.class
+
 # Project info
 
 .PHONY: loc

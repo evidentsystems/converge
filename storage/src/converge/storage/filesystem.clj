@@ -9,6 +9,8 @@
   (:import [java.io File]
            [java.security MessageDigest]))
 
+;; TODO: support multiple serialization formats
+
 ;; TODO: validate filename hash against content?
 (defn read-file
   [^File file]
