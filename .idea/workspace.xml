@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="c1f84ee5-f3ae-4390-84c7-157940280c4b" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/checksums/checksums.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/dependencies-accessors/dependencies-accessors.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/dependencies-accessors/gc.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/executionHistory/executionHistory.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/executionHistory/executionHistory.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/fileChanges/last-build.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/fileHashes/fileHashes.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/fileHashes/fileHashes.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/7.5.1/gc.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/cache.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gradle/vcs-1/gc.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/ClojureProjectResolveSettings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/converge.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/converge/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/converge/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/converge/build.clj" beforeDir="false" afterPath="$PROJECT_DIR$/converge/build.clj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/converge/build.gradle" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.jar" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradlew" beforeDir="false" afterPath="$PROJECT_DIR$/gradlew" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradlew.bat" beforeDir="false" afterPath="$PROJECT_DIR$/gradlew.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/java/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/java/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/java/gradle/wrapper/gradle-wrapper.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/java/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/java/gradlew" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/java/gradlew.bat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/java/src/main/java/converge/java/Converge.java" beforeDir="false" afterPath="$PROJECT_DIR$/java/src/main/java/converge/java/Converge.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nippy/build.gradle" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/settings.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/settings.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/storage/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/build.clj" beforeDir="false" afterPath="$PROJECT_DIR$/storage/build.clj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/build.gradle" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="DepsProjectDetails">
+    <option name="cachedModuleDetails">
+      <map>
+        <entry key="$PROJECT_DIR$/converge/deps.edn">
+          <value>
+            <ModuleDetails>
+              <option name="details" value="{:paths [&quot;/home/bobby/code/evidentsystems/converge/converge/src&quot;], :deps {org.clojure/clojure {:mvn/version &quot;1.10.3&quot;}, org.clojure/data.avl {:mvn/version &quot;0.1.0&quot;}, juji/editscript {:mvn/version &quot;0.5.7&quot;}}, :aliases {:cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot; &quot;--middleware&quot; &quot;[cider.nrepl/cider-middleware]&quot;]}, :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;antq.core&quot;]}, :check {:extra-deps {athos/clj-check {:git/url &quot;https://github.com/athos/clj-check.git&quot;, :sha &quot;0ca84df1357d71429243b99908303f45a934654c&quot;}}, :main-opts [&quot;-m&quot; &quot;clj-check.check&quot;]}, :new {:extra-deps {com.github.seancorfield/clj-new {:mvn/version &quot;1.2.362&quot;}}, :exec-fn clj-new/create, :exec-args {:template &quot;app&quot;}}, :bench {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/converge/bench&quot;], :extra-deps {criterium/criterium {:mvn/version &quot;0.4.6&quot;}}}, :cider {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}}, :build {:ns-default build, :deps {io.github.seancorfield/build-clj {:git/tag &quot;v0.5.2&quot;, :git/sha &quot;8f75b81&quot;}}}, :nrepl {:extra-deps {nrepl/nrepl {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot;]}, :depsviz {:extra-deps {cnuernber/depsviz {:mvn/version &quot;0.10&quot;}}, :main-opts [&quot;-m&quot; &quot;cnuernber.depsviz&quot; &quot;-i&quot; &quot;deps.edn&quot;]}, :runner {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :exec-fn cognitect.test-runner.api/test, :exec-args {:dirs [&quot;test&quot; &quot;src/test/clojure&quot;]}}, :socket-zero {:jvm-opts [&quot;-Dclojure.server.repl={:port,0,:accept,clojure.core.server/repl}&quot;], :main-opts [&quot;-e&quot; &quot;(.getLocalPort,(get-in,@#'clojure.core.server/servers,[\&quot;repl\&quot;,:socket]))&quot;]}, :cljs {:extra-deps {thheller/shadow-cljs {:mvn/version &quot;2.11.18&quot;}}}, :test {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/converge/test&quot;], :extra-deps {org.clojure/test.check {:mvn/version &quot;1.1.0&quot;}, io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :dev {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/converge/dev&quot;], :jvm-opts [&quot;-Djdk.attach.allowAttachSelf&quot; &quot;-XX:+UnlockDiagnosticVMOptions&quot; &quot;-XX:+DebugNonSafepoints&quot;], :extra-deps {org.clojure/tools.namespace {:mvn/version &quot;1.1.0&quot;}, criterium/criterium {:mvn/version &quot;0.4.6&quot;}, com.clojure-goes-fast/clj-async-profiler {:mvn/version &quot;0.5.1&quot;}}}, :deps {:replace-deps {org.clojure/tools.deps.alpha {:mvn/version &quot;0.11.922&quot;}, org.slf4j/slf4j-nop {:mvn/version &quot;1.7.25&quot;}}, :ns-default clojure.tools.cli.api}}, :mvn/repos {&quot;central&quot; {:url &quot;https://repo1.maven.org/maven2/&quot;}, &quot;clojars&quot; {:url &quot;https://repo.clojars.org/&quot;}}, :system-aliases #{:cider-nrepl :outdated :check :new :cider :nrepl :depsviz :runner :socket-zero :test :deps}, :resolve-exception {:via [{:type clojure.lang.ExceptionInfo, :message &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :at [clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28]}], :trace [[clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28] [clojure.lang.MultiFn invoke &quot;MultiFn.java&quot; 239] [clojure.tools.deps.alpha$canonicalize_deps$fn__430 invoke &quot;alpha.clj&quot; 363] [clojure.core.protocols$iter_reduce invokeStatic &quot;protocols.clj&quot; 49] [clojure.core.protocols$fn__8162 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8162 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [clojure.tools.deps.alpha$canonicalize_deps invokeStatic &quot;alpha.clj&quot; 362] [clojure.tools.deps.alpha$canonicalize_deps invoke &quot;alpha.clj&quot; 360] [clojure.tools.deps.alpha$resolve_deps invokeStatic &quot;alpha.clj&quot; 494] [clojure.tools.deps.alpha$resolve_deps invoke &quot;alpha.clj&quot; 475] [cursive.deps.project$project_details$calculate__1268$tree_for__1276 invoke &quot;project.clj&quot; 143] [cursive.deps.project$project_details$calculate__1268 invoke &quot;project.clj&quot; 155] [cursive.deps.relocate$with_deps_relocation invokeStatic &quot;relocate.clj&quot; 14] [cursive.deps.relocate$with_deps_relocation invoke &quot;relocate.clj&quot; 6] [cursive.deps.relocate$with_relocation invokeStatic &quot;relocate.clj&quot; 33] [cursive.deps.relocate$with_relocation invoke &quot;relocate.clj&quot; 19] [cursive.deps.project$project_details$fn__1285$fn__1292 invoke &quot;project.clj&quot; 207] [cursive.deps.project$project_details$fn__1285 invoke &quot;project.clj&quot; 206] [clojure.core.protocols$fn__8181 invokeStatic &quot;protocols.clj&quot; 168] [clojure.core.protocols$fn__8181 invoke &quot;protocols.clj&quot; 124] [clojure.core.protocols$fn__8136$G__8131__8145 invoke &quot;protocols.clj&quot; 19] [clojure.core.protocols$seq_reduce invokeStatic &quot;protocols.clj&quot; 31] [clojure.core.protocols$fn__8168 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8168 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [cursive.deps.project$project_details invokeStatic &quot;project.clj&quot; 182] [cursive.deps.project$project_details invoke &quot;project.clj&quot; 107] [clojure.lang.Var invoke &quot;Var.java&quot; 388] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 119] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 112] [cursive.shim.ShimBootstrap$Shim apply &quot;ShimBootstrap.java&quot; 53] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 177] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 176] [cursive.shim.ShimProvider withShim &quot;Shim.kt&quot; 117] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 176] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 87] [cursive.build.BuildSystemProjectDetails getProjectDetails &quot;BuildSystem.kt&quot; 45] [cursive.build.BuildSystemProjectsManager reimportAllProjects$lambda-3$lambda-2 &quot;BuildSystemManager.kt&quot; 149] [cursive.build.BuildSystemUtil$runTask$1$1 run &quot;BuildSystemUtil.kt&quot; 83] [com.intellij.openapi.progress.impl.CoreProgressManager startTask &quot;CoreProgressManager.java&quot; 442] [com.intellij.openapi.progress.impl.ProgressManagerImpl startTask &quot;ProgressManagerImpl.java&quot; 114] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcessWithProgressAsynchronously$5 &quot;CoreProgressManager.java&quot; 493] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$3 &quot;ProgressRunner.java&quot; 252] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcess$2 &quot;CoreProgressManager.java&quot; 188] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$executeProcessUnderProgress$12 &quot;CoreProgressManager.java&quot; 608] [com.intellij.openapi.progress.impl.CoreProgressManager registerIndicatorAndRun &quot;CoreProgressManager.java&quot; 683] [com.intellij.openapi.progress.impl.CoreProgressManager computeUnderProgress &quot;CoreProgressManager.java&quot; 639] [com.intellij.openapi.progress.impl.CoreProgressManager executeProcessUnderProgress &quot;CoreProgressManager.java&quot; 607] [com.intellij.openapi.progress.impl.ProgressManagerImpl executeProcessUnderProgress &quot;ProgressManagerImpl.java&quot; 60] [com.intellij.openapi.progress.impl.CoreProgressManager runProcess &quot;CoreProgressManager.java&quot; 175] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$4 &quot;ProgressRunner.java&quot; 252] [java.util.concurrent.CompletableFuture$AsyncSupply run &quot;CompletableFuture.java&quot; 1768] [java.util.concurrent.ThreadPoolExecutor runWorker &quot;ThreadPoolExecutor.java&quot; 1136] [java.util.concurrent.ThreadPoolExecutor$Worker run &quot;ThreadPoolExecutor.java&quot; 635] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 702] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 699] [java.security.AccessController doPrivileged &quot;AccessController.java&quot; 399] [java.util.concurrent.Executors$PrivilegedThreadFactory$1 run &quot;Executors.java&quot; 699] [java.lang.Thread run &quot;Thread.java&quot; 833]], :cause &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :test-paths [&quot;/home/bobby/code/evidentsystems/converge/converge/test&quot;]}" />
+              <option name="hash" value="45b668db282411065bbe7d3417e37529" />
+            </ModuleDetails>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/nippy/deps.edn">
+          <value>
+            <ModuleDetails>
+              <option name="details" value="{:paths [&quot;/home/bobby/code/evidentsystems/converge/nippy/src&quot;], :deps {org.clojure/clojure {:mvn/version &quot;1.10.3&quot;}, com.taoensso/nippy {:mvn/version &quot;3.2.0&quot;}, converge/converge {:git/url &quot;https://github.com/evidentsystems/converge.git&quot;, :sha &quot;69912399a6e67083ac901bce648bd2dbd653f4d0&quot;, :deps/root &quot;./converge&quot;}}, :aliases {:cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot; &quot;--middleware&quot; &quot;[cider.nrepl/cider-middleware]&quot;]}, :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;antq.core&quot;]}, :check {:extra-deps {athos/clj-check {:git/url &quot;https://github.com/athos/clj-check.git&quot;, :sha &quot;0ca84df1357d71429243b99908303f45a934654c&quot;}}, :main-opts [&quot;-m&quot; &quot;clj-check.check&quot;]}, :new {:extra-deps {com.github.seancorfield/clj-new {:mvn/version &quot;1.2.362&quot;}}, :exec-fn clj-new/create, :exec-args {:template &quot;app&quot;}}, :cider {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}}, :build {:deps {io.github.seancorfield/build-clj {:git/tag &quot;v0.5.2&quot;, :git/sha &quot;8f75b81&quot;}}, :ns-default build}, :nrepl {:extra-deps {nrepl/nrepl {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot;]}, :depsviz {:extra-deps {cnuernber/depsviz {:mvn/version &quot;0.10&quot;}}, :main-opts [&quot;-m&quot; &quot;cnuernber.depsviz&quot; &quot;-i&quot; &quot;deps.edn&quot;]}, :runner {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :exec-fn cognitect.test-runner.api/test, :exec-args {:dirs [&quot;test&quot; &quot;src/test/clojure&quot;]}}, :socket-zero {:jvm-opts [&quot;-Dclojure.server.repl={:port,0,:accept,clojure.core.server/repl}&quot;], :main-opts [&quot;-e&quot; &quot;(.getLocalPort,(get-in,@#'clojure.core.server/servers,[\&quot;repl\&quot;,:socket]))&quot;]}, :local {:override-deps {converge/converge {:local/root &quot;/home/bobby/code/evidentsystems/converge/nippy/../converge&quot;}}}, :test {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/nippy/test&quot;], :extra-deps {org.clojure/test.check {:mvn/version &quot;1.1.0&quot;}, io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :dev {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/nippy/dev&quot;], :jvm-opts [&quot;-Djdk.attach.allowAttachSelf&quot; &quot;-XX:+UnlockDiagnosticVMOptions&quot; &quot;-XX:+DebugNonSafepoints&quot;], :extra-deps {org.clojure/tools.namespace {:mvn/version &quot;1.1.0&quot;}, criterium/criterium {:mvn/version &quot;0.4.6&quot;}, com.clojure-goes-fast/clj-async-profiler {:mvn/version &quot;0.5.1&quot;}}}, :deps {:replace-deps {org.clojure/tools.deps.alpha {:mvn/version &quot;0.11.922&quot;}, org.slf4j/slf4j-nop {:mvn/version &quot;1.7.25&quot;}}, :ns-default clojure.tools.cli.api}}, :mvn/repos {&quot;central&quot; {:url &quot;https://repo1.maven.org/maven2/&quot;}, &quot;clojars&quot; {:url &quot;https://repo.clojars.org/&quot;}}, :system-aliases #{:cider-nrepl :outdated :check :new :cider :nrepl :depsviz :runner :socket-zero :test :deps}, :resolve-exception {:via [{:type clojure.lang.ExceptionInfo, :message &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :at [clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28]}], :trace [[clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28] [clojure.lang.MultiFn invoke &quot;MultiFn.java&quot; 239] [clojure.tools.deps.alpha$canonicalize_deps$fn__430 invoke &quot;alpha.clj&quot; 363] [clojure.core.protocols$iter_reduce invokeStatic &quot;protocols.clj&quot; 49] [clojure.core.protocols$fn__8162 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8162 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [clojure.tools.deps.alpha$canonicalize_deps invokeStatic &quot;alpha.clj&quot; 362] [clojure.tools.deps.alpha$canonicalize_deps invoke &quot;alpha.clj&quot; 360] [clojure.tools.deps.alpha$resolve_deps invokeStatic &quot;alpha.clj&quot; 494] [clojure.tools.deps.alpha$resolve_deps invoke &quot;alpha.clj&quot; 475] [cursive.deps.project$project_details$calculate__1268$tree_for__1276 invoke &quot;project.clj&quot; 143] [cursive.deps.project$project_details$calculate__1268 invoke &quot;project.clj&quot; 155] [cursive.deps.relocate$with_deps_relocation invokeStatic &quot;relocate.clj&quot; 14] [cursive.deps.relocate$with_deps_relocation invoke &quot;relocate.clj&quot; 6] [cursive.deps.relocate$with_relocation invokeStatic &quot;relocate.clj&quot; 33] [cursive.deps.relocate$with_relocation invoke &quot;relocate.clj&quot; 19] [cursive.deps.project$project_details$fn__1285$fn__1292 invoke &quot;project.clj&quot; 207] [cursive.deps.project$project_details$fn__1285 invoke &quot;project.clj&quot; 206] [clojure.core.protocols$fn__8181 invokeStatic &quot;protocols.clj&quot; 168] [clojure.core.protocols$fn__8181 invoke &quot;protocols.clj&quot; 124] [clojure.core.protocols$fn__8136$G__8131__8145 invoke &quot;protocols.clj&quot; 19] [clojure.core.protocols$seq_reduce invokeStatic &quot;protocols.clj&quot; 31] [clojure.core.protocols$fn__8168 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8168 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [cursive.deps.project$project_details invokeStatic &quot;project.clj&quot; 182] [cursive.deps.project$project_details invoke &quot;project.clj&quot; 107] [clojure.lang.Var invoke &quot;Var.java&quot; 388] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 119] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 112] [cursive.shim.ShimBootstrap$Shim apply &quot;ShimBootstrap.java&quot; 53] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 177] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 176] [cursive.shim.ShimProvider withShim &quot;Shim.kt&quot; 117] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 176] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 87] [cursive.build.BuildSystemProjectDetails getProjectDetails &quot;BuildSystem.kt&quot; 45] [cursive.build.BuildSystemProjectsManager reimportAllProjects$lambda-3$lambda-2 &quot;BuildSystemManager.kt&quot; 149] [cursive.build.BuildSystemUtil$runTask$1$1 run &quot;BuildSystemUtil.kt&quot; 83] [com.intellij.openapi.progress.impl.CoreProgressManager startTask &quot;CoreProgressManager.java&quot; 442] [com.intellij.openapi.progress.impl.ProgressManagerImpl startTask &quot;ProgressManagerImpl.java&quot; 114] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcessWithProgressAsynchronously$5 &quot;CoreProgressManager.java&quot; 493] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$3 &quot;ProgressRunner.java&quot; 252] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcess$2 &quot;CoreProgressManager.java&quot; 188] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$executeProcessUnderProgress$12 &quot;CoreProgressManager.java&quot; 608] [com.intellij.openapi.progress.impl.CoreProgressManager registerIndicatorAndRun &quot;CoreProgressManager.java&quot; 683] [com.intellij.openapi.progress.impl.CoreProgressManager computeUnderProgress &quot;CoreProgressManager.java&quot; 639] [com.intellij.openapi.progress.impl.CoreProgressManager executeProcessUnderProgress &quot;CoreProgressManager.java&quot; 607] [com.intellij.openapi.progress.impl.ProgressManagerImpl executeProcessUnderProgress &quot;ProgressManagerImpl.java&quot; 60] [com.intellij.openapi.progress.impl.CoreProgressManager runProcess &quot;CoreProgressManager.java&quot; 175] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$4 &quot;ProgressRunner.java&quot; 252] [java.util.concurrent.CompletableFuture$AsyncSupply run &quot;CompletableFuture.java&quot; 1768] [java.util.concurrent.ThreadPoolExecutor runWorker &quot;ThreadPoolExecutor.java&quot; 1136] [java.util.concurrent.ThreadPoolExecutor$Worker run &quot;ThreadPoolExecutor.java&quot; 635] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 702] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 699] [java.security.AccessController doPrivileged &quot;AccessController.java&quot; 399] [java.util.concurrent.Executors$PrivilegedThreadFactory$1 run &quot;Executors.java&quot; 699] [java.lang.Thread run &quot;Thread.java&quot; 833]], :cause &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :test-paths [&quot;/home/bobby/code/evidentsystems/converge/nippy/test&quot;]}" />
+              <option name="hash" value="43242a217c3be33529883a17a1ffb7d9" />
+            </ModuleDetails>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/storage/deps.edn">
+          <value>
+            <ModuleDetails>
+              <option name="details" value="{:paths [&quot;/home/bobby/code/evidentsystems/converge/storage/src&quot;], :deps {org.clojure/clojure {:mvn/version &quot;1.10.3&quot;}, converge/nippy {:git/url &quot;https://github.com/evidentsystems/converge.git&quot;, :sha &quot;12479029d20c091a8262a2195831bcff73616eab&quot;, :deps/root &quot;./nippy&quot;}, converge/converge {:git/url &quot;https://github.com/evidentsystems/converge.git&quot;, :sha &quot;69912399a6e67083ac901bce648bd2dbd653f4d0&quot;, :deps/root &quot;./converge&quot;}}, :aliases {:cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot; &quot;--middleware&quot; &quot;[cider.nrepl/cider-middleware]&quot;]}, :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;antq.core&quot;]}, :check {:extra-deps {athos/clj-check {:git/url &quot;https://github.com/athos/clj-check.git&quot;, :sha &quot;0ca84df1357d71429243b99908303f45a934654c&quot;}}, :main-opts [&quot;-m&quot; &quot;clj-check.check&quot;]}, :new {:extra-deps {com.github.seancorfield/clj-new {:mvn/version &quot;1.2.362&quot;}}, :exec-fn clj-new/create, :exec-args {:template &quot;app&quot;}}, :cider {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}}, :build {:deps {io.github.seancorfield/build-clj {:git/tag &quot;v0.5.2&quot;, :git/sha &quot;8f75b81&quot;}}, :ns-default build}, :nrepl {:extra-deps {nrepl/nrepl {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot;]}, :depsviz {:extra-deps {cnuernber/depsviz {:mvn/version &quot;0.10&quot;}}, :main-opts [&quot;-m&quot; &quot;cnuernber.depsviz&quot; &quot;-i&quot; &quot;deps.edn&quot;]}, :runner {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :exec-fn cognitect.test-runner.api/test, :exec-args {:dirs [&quot;test&quot; &quot;src/test/clojure&quot;]}}, :socket-zero {:jvm-opts [&quot;-Dclojure.server.repl={:port,0,:accept,clojure.core.server/repl}&quot;], :main-opts [&quot;-e&quot; &quot;(.getLocalPort,(get-in,@#'clojure.core.server/servers,[\&quot;repl\&quot;,:socket]))&quot;]}, :local {:override-deps {converge/nippy {:local/root &quot;/home/bobby/code/evidentsystems/converge/storage/../nippy&quot;}, converge/converge {:local/root &quot;/home/bobby/code/evidentsystems/converge/storage/../converge&quot;}}}, :test {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/storage/test&quot;], :extra-deps {org.clojure/test.check {:mvn/version &quot;1.1.0&quot;}, io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :dev {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/storage/dev&quot;], :jvm-opts [&quot;-Djdk.attach.allowAttachSelf&quot; &quot;-XX:+UnlockDiagnosticVMOptions&quot; &quot;-XX:+DebugNonSafepoints&quot;], :extra-deps {org.clojure/tools.namespace {:mvn/version &quot;1.1.0&quot;}, criterium/criterium {:mvn/version &quot;0.4.6&quot;}, com.clojure-goes-fast/clj-async-profiler {:mvn/version &quot;0.5.1&quot;}}}, :deps {:replace-deps {org.clojure/tools.deps.alpha {:mvn/version &quot;0.11.922&quot;}, org.slf4j/slf4j-nop {:mvn/version &quot;1.7.25&quot;}}, :ns-default clojure.tools.cli.api}}, :mvn/repos {&quot;central&quot; {:url &quot;https://repo1.maven.org/maven2/&quot;}, &quot;clojars&quot; {:url &quot;https://repo.clojars.org/&quot;}}, :system-aliases #{:cider-nrepl :outdated :check :new :cider :nrepl :depsviz :runner :socket-zero :test :deps}, :resolve-exception {:via [{:type clojure.lang.ExceptionInfo, :message &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :at [clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28]}], :trace [[clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28] [clojure.lang.MultiFn invoke &quot;MultiFn.java&quot; 239] [clojure.tools.deps.alpha$canonicalize_deps$fn__430 invoke &quot;alpha.clj&quot; 363] [clojure.core.protocols$iter_reduce invokeStatic &quot;protocols.clj&quot; 49] [clojure.core.protocols$fn__8162 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8162 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [clojure.tools.deps.alpha$canonicalize_deps invokeStatic &quot;alpha.clj&quot; 362] [clojure.tools.deps.alpha$canonicalize_deps invoke &quot;alpha.clj&quot; 360] [clojure.tools.deps.alpha$resolve_deps invokeStatic &quot;alpha.clj&quot; 494] [clojure.tools.deps.alpha$resolve_deps invoke &quot;alpha.clj&quot; 475] [cursive.deps.project$project_details$calculate__1268$tree_for__1276 invoke &quot;project.clj&quot; 143] [cursive.deps.project$project_details$calculate__1268 invoke &quot;project.clj&quot; 155] [cursive.deps.relocate$with_deps_relocation invokeStatic &quot;relocate.clj&quot; 14] [cursive.deps.relocate$with_deps_relocation invoke &quot;relocate.clj&quot; 6] [cursive.deps.relocate$with_relocation invokeStatic &quot;relocate.clj&quot; 33] [cursive.deps.relocate$with_relocation invoke &quot;relocate.clj&quot; 19] [cursive.deps.project$project_details$fn__1285$fn__1292 invoke &quot;project.clj&quot; 207] [cursive.deps.project$project_details$fn__1285 invoke &quot;project.clj&quot; 206] [clojure.core.protocols$fn__8181 invokeStatic &quot;protocols.clj&quot; 168] [clojure.core.protocols$fn__8181 invoke &quot;protocols.clj&quot; 124] [clojure.core.protocols$fn__8136$G__8131__8145 invoke &quot;protocols.clj&quot; 19] [clojure.core.protocols$seq_reduce invokeStatic &quot;protocols.clj&quot; 31] [clojure.core.protocols$fn__8168 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8168 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [cursive.deps.project$project_details invokeStatic &quot;project.clj&quot; 182] [cursive.deps.project$project_details invoke &quot;project.clj&quot; 107] [clojure.lang.Var invoke &quot;Var.java&quot; 388] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 119] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 112] [cursive.shim.ShimBootstrap$Shim apply &quot;ShimBootstrap.java&quot; 53] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 177] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 176] [cursive.shim.ShimProvider withShim &quot;Shim.kt&quot; 117] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 176] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 87] [cursive.build.BuildSystemProjectDetails getProjectDetails &quot;BuildSystem.kt&quot; 45] [cursive.build.BuildSystemProjectsManager reimportAllProjects$lambda-3$lambda-2 &quot;BuildSystemManager.kt&quot; 149] [cursive.build.BuildSystemUtil$runTask$1$1 run &quot;BuildSystemUtil.kt&quot; 83] [com.intellij.openapi.progress.impl.CoreProgressManager startTask &quot;CoreProgressManager.java&quot; 442] [com.intellij.openapi.progress.impl.ProgressManagerImpl startTask &quot;ProgressManagerImpl.java&quot; 114] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcessWithProgressAsynchronously$5 &quot;CoreProgressManager.java&quot; 493] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$3 &quot;ProgressRunner.java&quot; 252] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcess$2 &quot;CoreProgressManager.java&quot; 188] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$executeProcessUnderProgress$12 &quot;CoreProgressManager.java&quot; 608] [com.intellij.openapi.progress.impl.CoreProgressManager registerIndicatorAndRun &quot;CoreProgressManager.java&quot; 683] [com.intellij.openapi.progress.impl.CoreProgressManager computeUnderProgress &quot;CoreProgressManager.java&quot; 639] [com.intellij.openapi.progress.impl.CoreProgressManager executeProcessUnderProgress &quot;CoreProgressManager.java&quot; 607] [com.intellij.openapi.progress.impl.ProgressManagerImpl executeProcessUnderProgress &quot;ProgressManagerImpl.java&quot; 60] [com.intellij.openapi.progress.impl.CoreProgressManager runProcess &quot;CoreProgressManager.java&quot; 175] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$4 &quot;ProgressRunner.java&quot; 252] [java.util.concurrent.CompletableFuture$AsyncSupply run &quot;CompletableFuture.java&quot; 1768] [java.util.concurrent.ThreadPoolExecutor runWorker &quot;ThreadPoolExecutor.java&quot; 1136] [java.util.concurrent.ThreadPoolExecutor$Worker run &quot;ThreadPoolExecutor.java&quot; 635] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 702] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 699] [java.security.AccessController doPrivileged &quot;AccessController.java&quot; 399] [java.util.concurrent.Executors$PrivilegedThreadFactory$1 run &quot;Executors.java&quot; 699] [java.lang.Thread run &quot;Thread.java&quot; 833]], :cause &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :test-paths [&quot;/home/bobby/code/evidentsystems/converge/storage/test&quot;]}" />
+              <option name="hash" value="964a5dd002aacbf6d4c553c3898d116e" />
+            </ModuleDetails>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/transit/deps.edn">
+          <value>
+            <ModuleDetails>
+              <option name="details" value="{:paths [&quot;/home/bobby/code/evidentsystems/converge/transit/src&quot;], :deps {org.clojure/clojure {:mvn/version &quot;1.10.3&quot;}, converge/converge {:git/url &quot;https://github.com/evidentsystems/converge.git&quot;, :sha &quot;69912399a6e67083ac901bce648bd2dbd653f4d0&quot;, :deps/root &quot;./converge&quot;}}, :aliases {:cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot; &quot;--middleware&quot; &quot;[cider.nrepl/cider-middleware]&quot;]}, :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;antq.core&quot;]}, :check {:extra-deps {athos/clj-check {:git/url &quot;https://github.com/athos/clj-check.git&quot;, :sha &quot;0ca84df1357d71429243b99908303f45a934654c&quot;}}, :main-opts [&quot;-m&quot; &quot;clj-check.check&quot;]}, :new {:extra-deps {com.github.seancorfield/clj-new {:mvn/version &quot;1.2.362&quot;}}, :exec-fn clj-new/create, :exec-args {:template &quot;app&quot;}}, :cider {:extra-deps {cider/cider-nrepl {:mvn/version &quot;0.28.1&quot;}}}, :build {:ns-default build, :deps {io.github.seancorfield/build-clj {:git/tag &quot;v0.5.2&quot;, :git/sha &quot;8f75b81&quot;}}}, :nrepl {:extra-deps {nrepl/nrepl {:mvn/version &quot;RELEASE&quot;}}, :main-opts [&quot;-m&quot; &quot;nrepl.cmdline&quot;]}, :depsviz {:extra-deps {cnuernber/depsviz {:mvn/version &quot;0.10&quot;}}, :main-opts [&quot;-m&quot; &quot;cnuernber.depsviz&quot; &quot;-i&quot; &quot;deps.edn&quot;]}, :runner {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :exec-fn cognitect.test-runner.api/test, :exec-args {:dirs [&quot;test&quot; &quot;src/test/clojure&quot;]}}, :socket-zero {:jvm-opts [&quot;-Dclojure.server.repl={:port,0,:accept,clojure.core.server/repl}&quot;], :main-opts [&quot;-e&quot; &quot;(.getLocalPort,(get-in,@#'clojure.core.server/servers,[\&quot;repl\&quot;,:socket]))&quot;]}, :local {:override-deps {converge/converge {:local/root &quot;/home/bobby/code/evidentsystems/converge/transit/../converge&quot;}}}, :clj {:extra-deps {com.cognitect/transit-clj {:mvn/version &quot;RELEASE&quot;}}}, :cljs {:extra-deps {com.cognitect/transit-cljs {:mvn/version &quot;RELEASE&quot;}, thheller/shadow-cljs {:mvn/version &quot;2.11.18&quot;}}}, :test {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/transit/test&quot;], :extra-deps {org.clojure/test.check {:mvn/version &quot;1.1.0&quot;}, io.github.cognitect-labs/test-runner {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :dev {:extra-paths [&quot;/home/bobby/code/evidentsystems/converge/transit/dev&quot;], :jvm-opts [&quot;-Djdk.attach.allowAttachSelf&quot; &quot;-XX:+UnlockDiagnosticVMOptions&quot; &quot;-XX:+DebugNonSafepoints&quot;], :extra-deps {org.clojure/tools.namespace {:mvn/version &quot;1.1.0&quot;}, criterium/criterium {:mvn/version &quot;0.4.6&quot;}, com.clojure-goes-fast/clj-async-profiler {:mvn/version &quot;0.5.1&quot;}}}, :deps {:replace-deps {org.clojure/tools.deps.alpha {:mvn/version &quot;0.11.922&quot;}, org.slf4j/slf4j-nop {:mvn/version &quot;1.7.25&quot;}}, :ns-default clojure.tools.cli.api}}, :mvn/repos {&quot;central&quot; {:url &quot;https://repo1.maven.org/maven2/&quot;}, &quot;clojars&quot; {:url &quot;https://repo.clojars.org/&quot;}}, :system-aliases #{:cider-nrepl :outdated :check :new :cider :nrepl :depsviz :runner :socket-zero :test :deps}, :resolve-exception {:via [{:type clojure.lang.ExceptionInfo, :message &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}, :at [clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28]}], :trace [[clojure.tools.deps.alpha.extensions.git$eval1003$fn__1005 invoke &quot;git.clj&quot; 28] [clojure.lang.MultiFn invoke &quot;MultiFn.java&quot; 239] [clojure.tools.deps.alpha$canonicalize_deps$fn__430 invoke &quot;alpha.clj&quot; 363] [clojure.core.protocols$iter_reduce invokeStatic &quot;protocols.clj&quot; 49] [clojure.core.protocols$fn__8162 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8162 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [clojure.tools.deps.alpha$canonicalize_deps invokeStatic &quot;alpha.clj&quot; 362] [clojure.tools.deps.alpha$canonicalize_deps invoke &quot;alpha.clj&quot; 360] [clojure.tools.deps.alpha$resolve_deps invokeStatic &quot;alpha.clj&quot; 494] [clojure.tools.deps.alpha$resolve_deps invoke &quot;alpha.clj&quot; 475] [cursive.deps.project$project_details$calculate__1268$tree_for__1276 invoke &quot;project.clj&quot; 143] [cursive.deps.project$project_details$calculate__1268 invoke &quot;project.clj&quot; 155] [cursive.deps.relocate$with_deps_relocation invokeStatic &quot;relocate.clj&quot; 14] [cursive.deps.relocate$with_deps_relocation invoke &quot;relocate.clj&quot; 6] [cursive.deps.relocate$with_relocation invokeStatic &quot;relocate.clj&quot; 33] [cursive.deps.relocate$with_relocation invoke &quot;relocate.clj&quot; 19] [cursive.deps.project$project_details$fn__1285$fn__1292 invoke &quot;project.clj&quot; 207] [cursive.deps.project$project_details$fn__1285 invoke &quot;project.clj&quot; 206] [clojure.core.protocols$fn__8181 invokeStatic &quot;protocols.clj&quot; 168] [clojure.core.protocols$fn__8181 invoke &quot;protocols.clj&quot; 124] [clojure.core.protocols$fn__8136$G__8131__8145 invoke &quot;protocols.clj&quot; 19] [clojure.core.protocols$seq_reduce invokeStatic &quot;protocols.clj&quot; 31] [clojure.core.protocols$fn__8168 invokeStatic &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8168 invoke &quot;protocols.clj&quot; 75] [clojure.core.protocols$fn__8110$G__8105__8123 invoke &quot;protocols.clj&quot; 13] [clojure.core$reduce invokeStatic &quot;core.clj&quot; 6830] [clojure.core$reduce invoke &quot;core.clj&quot; 6812] [cursive.deps.project$project_details invokeStatic &quot;project.clj&quot; 182] [cursive.deps.project$project_details invoke &quot;project.clj&quot; 107] [clojure.lang.Var invoke &quot;Var.java&quot; 388] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 119] [org.projectodd.shimdandy.impl.ClojureRuntimeShimImpl invoke &quot;ClojureRuntimeShimImpl.java&quot; 112] [cursive.shim.ShimBootstrap$Shim apply &quot;ShimBootstrap.java&quot; 53] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 177] [cursive.deps.DepsProjectDetails$doGetDetails$details$1 invoke &quot;Project.kt&quot; 176] [cursive.shim.ShimProvider withShim &quot;Shim.kt&quot; 117] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 176] [cursive.deps.DepsProjectDetails doGetDetails &quot;Project.kt&quot; 87] [cursive.build.BuildSystemProjectDetails getProjectDetails &quot;BuildSystem.kt&quot; 45] [cursive.build.BuildSystemProjectsManager reimportAllProjects$lambda-3$lambda-2 &quot;BuildSystemManager.kt&quot; 149] [cursive.build.BuildSystemUtil$runTask$1$1 run &quot;BuildSystemUtil.kt&quot; 83] [com.intellij.openapi.progress.impl.CoreProgressManager startTask &quot;CoreProgressManager.java&quot; 442] [com.intellij.openapi.progress.impl.ProgressManagerImpl startTask &quot;ProgressManagerImpl.java&quot; 114] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcessWithProgressAsynchronously$5 &quot;CoreProgressManager.java&quot; 493] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$3 &quot;ProgressRunner.java&quot; 252] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$runProcess$2 &quot;CoreProgressManager.java&quot; 188] [com.intellij.openapi.progress.impl.CoreProgressManager lambda$executeProcessUnderProgress$12 &quot;CoreProgressManager.java&quot; 608] [com.intellij.openapi.progress.impl.CoreProgressManager registerIndicatorAndRun &quot;CoreProgressManager.java&quot; 683] [com.intellij.openapi.progress.impl.CoreProgressManager computeUnderProgress &quot;CoreProgressManager.java&quot; 639] [com.intellij.openapi.progress.impl.CoreProgressManager executeProcessUnderProgress &quot;CoreProgressManager.java&quot; 607] [com.intellij.openapi.progress.impl.ProgressManagerImpl executeProcessUnderProgress &quot;ProgressManagerImpl.java&quot; 60] [com.intellij.openapi.progress.impl.CoreProgressManager runProcess &quot;CoreProgressManager.java&quot; 175] [com.intellij.openapi.progress.impl.ProgressRunner lambda$submit$4 &quot;ProgressRunner.java&quot; 252] [java.util.concurrent.CompletableFuture$AsyncSupply run &quot;CompletableFuture.java&quot; 1768] [java.util.concurrent.ThreadPoolExecutor runWorker &quot;ThreadPoolExecutor.java&quot; 1136] [java.util.concurrent.ThreadPoolExecutor$Worker run &quot;ThreadPoolExecutor.java&quot; 635] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 702] [java.util.concurrent.Executors$PrivilegedThreadFactory$1$1 run &quot;Executors.java&quot; 699] [java.security.AccessController doPrivileged &quot;AccessController.java&quot; 399] [java.util.concurrent.Executors$PrivilegedThreadFactory$1 run &quot;Executors.java&quot; 699] [java.lang.Thread run &quot;Thread.java&quot; 833]], :cause &quot;Library io.github.cognitect-labs/test-runner has missing :sha in coordinate.&quot;, :data {:lib io.github.cognitect-labs/test-runner, :coord {:git/tag &quot;v0.5.0&quot;, :git/sha &quot;48c3c67&quot;}}}, :test-paths [&quot;/home/bobby/code/evidentsystems/converge/transit/test&quot;]}" />
+              <option name="hash" value="280b4b8a8ee474423bb899e05fd26089" />
+            </ModuleDetails>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+    <projectState path="$PROJECT_DIR$/java">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="converge" type="f1a62948:ProjectNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="converge" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="converge" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="build" type="c8890929:TasksNode$1" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="qb31imoc" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2EjJ7yQbXu8agLAzPkNHak2AnRk" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "/home/bobby/code/evidentsystems/converge/java/build.gradle",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.14676803",
+    "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Gradle.converge [assemble]">
+    <configuration default="true" type="Babashka" factoryName="BabashkaLocalRepl" activateToolWindowBeforeRun="false">
+      <setting name="displayName" value="" />
+      <setting name="bbPath" value="" />
+      <setting name="parameters" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <setting name="workingDir" value="" />
+      <setting name="focusEditor" value="false" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="ClojureREPL" factoryName="Local" activateToolWindowBeforeRun="false">
+      <setting name="displayName" value="" />
+      <setting name="replType" value="NREPL" />
+      <setting name="execution" value="LEININGEN" />
+      <setting name="jvmArgs" value="" />
+      <setting name="parameters" value="" />
+      <setting name="workingDir" value="" />
+      <setting name="profiles" value="" />
+      <setting name="aliases" value="" />
+      <setting name="fixLineNumbers" value="false" />
+      <setting name="focusEditor" value="false" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="ClojureREPL" factoryName="Remote" activateToolWindowBeforeRun="false">
+      <setting name="displayName" value="" />
+      <setting name="host" value="" />
+      <setting name="port" value="0" />
+      <setting name="replType" value="SOCKET" />
+      <setting name="configType" value="SPECIFY" />
+      <setting name="replPortFileType" value="STANDARD" />
+      <setting name="customPortFile" value="" />
+      <setting name="fixLineNumbers" value="false" />
+      <setting name="focusEditor" value="false" />
+      <method v="2" />
+    </configuration>
+    <configuration name="converge [assemble]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="assemble" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <method v="2" />
+    </configuration>
+    <configuration name="converge [clean]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="clean" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Gradle.converge [assemble]" />
+        <item itemvalue="Gradle.converge [clean]" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="c1f84ee5-f3ae-4390-84c7-157940280c4b" name="Changes" comment="" />
+      <created>1663102896179</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1663102896179</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+  </component>
+</project>

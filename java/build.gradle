@@ -15,11 +15,18 @@ repositories {
 
 dependencies {
     implementation("org.clojure:clojure:1.11.1")
-    implementation(project(":converge"))
-    implementation(project(":storage"))
+    implementation files("../storage/target/classes") {
+        builtBy "compileStorage"
+    }
+    //implementation(project(":storage"))
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
+}
+
+task compileStorage(type: Exec) {
+    workingDir "../storage/"
+    commandLine "/usr/bin/make", "compile-clj"
 }
 
 tasks.withType(Test) {
