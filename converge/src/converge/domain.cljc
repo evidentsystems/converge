@@ -293,12 +293,12 @@
   [log clock]
   (persistent!
    (reduce-kv (fn [ops {:keys [actor] :as id} op]
-                (let [clock-id (get clock actor)]
+                (let [clock-counter (get clock actor)]
                   (if (or
                        ;; the foreign clock doesn't contain any ops from this actor
-                       (nil? clock-id)
+                       (nil? clock-counter)
                        ;; this op is later than the latest in the foreign clock for this actor
-                       (pos? (compare id clock-id)))
+                       (pos? (compare (:counter id) clock-counter)))
                     (assoc! ops id op)
                     ops)))
               (transient {})

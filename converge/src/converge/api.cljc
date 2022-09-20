@@ -205,7 +205,7 @@
      (ref-id cr)
      (persistent!
       (reduce (fn [clock id]
-                (assoc! clock (:actor id) id))
+                (assoc! clock (:actor id) (:counter id)))
               (transient {})
               (keys (domain/-log cr)))))))
 

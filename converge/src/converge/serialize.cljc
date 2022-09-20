@@ -48,10 +48,13 @@
 (defn write-clock
   [clock]
   {:source (:source clock)
-   :clock  (:clock clock)})
+   :clock  (into [] (sort (:clock clock)))})
 
-(def read-clock
-  domain/map->Clock)
+(defn read-clock
+  [clock]
+  (domain/map->Clock
+   {:source (:source clock)
+    :clock  (into {} (:clock clock))}))
 
 (defn write-element
   [element]

@@ -218,8 +218,8 @@
             last2  (domain/last-indexed (convergent/ref-log r))
             clock  (convergent/clock r)]
         (is (= (-> clock :clock (dissoc (:actor domain/root-id)))
-               {actor1 (key last1)
-                actor2 (key last2)}))
+               {actor1 (-> last1 key :counter)
+                actor2 (-> last2 key :counter)}))
         (is (= (-> clock :source)
                (convergent/ref-id r)))))
     (testing (str "Creating patch from clock with backend: " backend)
