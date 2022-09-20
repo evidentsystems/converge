@@ -169,7 +169,7 @@
 
 (def max-javascript-integer
   #?(:clj  (long (dec (Math/pow 2 53)))
-     :cljs Number/MAX_SAFE_INTEGER))
+     :cljs js/Number.MAX_SAFE_INTEGER))
 
 (defn random-id-member
   "Generates a random integer between 1 and `max-javascript-integer`"
