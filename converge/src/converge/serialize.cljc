@@ -48,10 +48,13 @@
 (defn write-clock
   [clock]
   {:source (:source clock)
-   :clock  (:clock clock)})
+   :clock  (into [] (sort (:clock clock)))})
 
-(def read-clock
-  domain/map->Clock)
+(defn read-clock
+  [clock]
+  (domain/map->Clock
+   {:source (:source clock)
+    :clock  (into {} (:clock clock))}))
 
 (defn write-element
   [element]
@@ -92,7 +95,7 @@
 (defn read-opset-convergent-ref
   [{:keys [state meta]}]
   (opset/->OpsetConvergentRef
-   (domain/uuid)
+   (domain/random-id-member)
    state
    (domain/queue)
    meta
@@ -102,7 +105,7 @@
 (defn read-editscript-convergent-ref
   [{:keys [state meta]}]
   (editscript/->EditscriptConvergentRef
-   (domain/uuid)
+   (domain/random-id-member)
    state
    (domain/queue)
    meta

@@ -515,16 +515,16 @@
     (domain/uuid))
 
   (def creator
-    (domain/uuid))
+    (domain/random-id-member))
 
   (def log1
     (domain/make-log
-     (domain/make-id)
+     domain/root-id
      (domain/root-op ref-id creator :opset)))
 
   (edn/edn (interpret/interpret log1))
 
-  (def actor (domain/uuid))
+  (def actor (domain/random-id-member))
 
   (def val1 '{:empty-m {}, :empty-l [], :a :key, :another {:nested {:key [1 2 3]}}, :a-list [:foo "bar" baz {:nested :inalist}], :a-set #{1 4 3 2 5}})
 

@@ -104,13 +104,12 @@
 
 (defn root-element-id
   [{:keys [values entities]}]
-  (let [root-id (domain/make-id)]
-    (reduce-kv (fn [agg id {:keys [root?]}]
-                 (if root?
-                   (if (nat-int? (compare id agg)) id agg)
-                   agg))
-               root-id
-               (into entities values))))
+  (reduce-kv (fn [agg id {:keys [root?]}]
+               (if root?
+                 (if (nat-int? (compare id agg)) id agg)
+                 agg))
+             domain/root-id
+             (into entities values)))
 
 (defn edn
   "Transforms an converge.opset.interpret.Interpretation into an EDN value."
