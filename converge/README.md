@@ -70,7 +70,7 @@ actor.
 (reset! c [:whoops])
 ; throws
 
-(convergent/opset c)
+(convergent/ref-log c)
 ;=> sorted map of id -> op of all historical operations
 
 @c
@@ -90,7 +90,7 @@ actor.
   (Thread/sleep 1000)))
 
 ;=> remote (i.e. auto-generated actor distinct from that of `c`)
-(def remote-c (convergent/ref-from-opset an-opset))
+(def remote-c (convergent/ref-from-ops a-reflog))
 (swap! remote-c assoc :foo :bar)
 
 ;; Merge another convergent ref (be careful that each local convergent ref has a unique actor!)
